@@ -31,13 +31,16 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # Copiar código de Rasa
 COPY rasa_bot/ ./rasa_bot/
 
+# Crear directorio data primero
+RUN mkdir -p data
+
 # Usar configuración simple directamente
-RUN mkdir -p data && \
-    cp rasa_bot/config.simple.yml config.yml && \
+RUN cp rasa_bot/config.simple.yml config.yml && \
     cp rasa_bot/domain.simple.yml domain.yml && \
     cp rasa_bot/data/nlu.simple.yml data/nlu.yml && \
     cp rasa_bot/data/stories.simple.yml data/stories.yml && \
-    cp rasa_bot/actions.simple.py actions.py
+    cp rasa_bot/actions.simple.py actions.py && \
+    ls -la data/
 
 # Entrenar modelo simple
 RUN rasa train
