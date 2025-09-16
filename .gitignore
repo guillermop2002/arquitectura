@@ -73,5 +73,5 @@ test_*.py
 !FILES_FOR_GCP_ONLY.md
 
 # Oracle Cloud specific (not needed for GCP)
-*oracle*
-*arm64*
+# *oracle*
+# *arm64*
