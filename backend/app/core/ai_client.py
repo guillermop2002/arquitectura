@@ -141,7 +141,6 @@ class AIClient:
         return self.client is not None
     
     @log_performance
-    @log_api_call("Groq API", "chat completion")
     def chat_completion(
         self,
         messages: List[Dict[str, str]],
@@ -217,6 +216,9 @@ class AIClient:
                     self.stats['total_tokens'] += tokens_used
                     self.stats['total_processing_time'] += processing_time
                     
+                    # Log API call
+                    log_api_call("Groq API", "chat completion", "POST", 200, processing_time, len(content))
+                    
                     return AIResponse(
                         content=content,
                         success=True,
@@ -239,6 +241,9 @@ class AIClient:
             
             error_msg = f"AI API request failed: {str(e)}"
             logger.error(error_msg)
+            
+            # Log API call error
+            log_api_call("Groq API", "chat completion", "POST", 500, processing_time)
             
             return AIResponse(
                 content="",
