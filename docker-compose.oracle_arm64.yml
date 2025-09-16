@@ -104,20 +104,20 @@ services:
       - verificacion-network
     restart: unless-stopped
 
-    # Nginx como proxy reverso
-    nginx:
-        image: nginx:alpine
-        container_name: verificacion-nginx
-        ports:
-            - "80:80"
-        volumes:
-            - ./nginx.oracle_arm64.simple.conf:/etc/nginx/nginx.conf
-            - ./locations.conf:/etc/nginx/conf.d/locations.conf
-        depends_on:
-            - app
-            - rasa
-        networks:
-            - verificacion-network
+  # Nginx como proxy reverso
+  nginx:
+    image: nginx:alpine
+    container_name: verificacion-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.oracle_arm64.simple.conf:/etc/nginx/nginx.conf
+      - ./locations.conf:/etc/nginx/conf.d/locations.conf
+    depends_on:
+      - app
+      - rasa
+    networks:
+      - verificacion-network
     restart: unless-stopped
 
 volumes:
