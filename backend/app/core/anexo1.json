@@ -1,128 +1,26 @@
 {
-  "anexo1": {
-    "titulo": "Anexo I del Código Técnico de la Edificación",
-    "descripcion": "Documento que establece las secciones obligatorias para proyectos de edificación",
-    "version": "1.0.0",
-    "fecha_actualizacion": "2025-01-01",
-    "secciones_obligatorias": {
-      "memoria_descriptiva": {
-        "nombre": "Memoria Descriptiva",
-        "obligatoria": true,
-        "subsecciones": [
-          {
-            "nombre": "Agentes",
-            "obligatoria": true,
-            "palabras_clave": ["agentes", "intervinientes", "proyectista", "director", "constructor"],
-            "descripcion": "Identificación de los agentes intervinientes en el proyecto"
-          },
-          {
-            "nombre": "Objeto del Proyecto",
-            "obligatoria": true,
-            "palabras_clave": ["objeto", "proyecto", "edificación", "construcción", "rehabilitación"],
-            "descripcion": "Descripción del objeto del proyecto de edificación"
-          },
-          {
-            "nombre": "Descripción del Edificio",
-            "obligatoria": true,
-            "palabras_clave": ["descripción", "edificio", "características", "tipología", "uso"],
-            "descripcion": "Descripción detallada del edificio proyectado"
-          },
-          {
-            "nombre": "Justificación de Soluciones",
-            "obligatoria": true,
-            "palabras_clave": ["justificación", "soluciones", "criterios", "normativa", "cumplimiento"],
-            "descripcion": "Justificación de las soluciones adoptadas"
-          }
-        ]
+  "Proyecto_Basico_Obligatorio": {
+    "Memoria": {
+      "Memoria_Descriptiva": {
+        "Agentes": true,
+        "Informacion_Previa": true,
+        "Descripcion_Proyecto": true,
+        "Prestaciones_Edificio": true
       },
-      "planos": {
-        "nombre": "Planos",
-        "obligatoria": true,
-        "subsecciones": [
-          {
-            "nombre": "Planos de Planta",
-            "obligatoria": true,
-            "palabras_clave": ["planta", "plano", "distribución", "espacios", "dimensiones"],
-            "descripcion": "Planos de planta de todos los niveles"
-          },
-          {
-            "nombre": "Planos de Alzado",
-            "obligatoria": true,
-            "palabras_clave": ["alzado", "fachada", "elevación", "altura", "perfil"],
-            "descripcion": "Planos de alzado de todas las fachadas"
-          },
-          {
-            "nombre": "Planos de Sección",
-            "obligatoria": true,
-            "palabras_clave": ["sección", "corte", "perfil", "altura", "estructura"],
-            "descripcion": "Planos de sección transversal y longitudinal"
-          }
-        ]
-      },
-      "memoria_calculo": {
-        "nombre": "Memoria de Cálculo",
-        "obligatoria": true,
-        "subsecciones": [
-          {
-            "nombre": "Cálculo Estructural",
-            "obligatoria": true,
-            "palabras_clave": ["cálculo", "estructural", "estructura", "cargas", "dimensionamiento"],
-            "descripcion": "Cálculo de la estructura portante"
-          },
-          {
-            "nombre": "Cálculo de Instalaciones",
-            "obligatoria": true,
-            "palabras_clave": ["instalaciones", "cálculo", "sistemas", "servicios", "dimensionamiento"],
-            "descripcion": "Cálculo de las instalaciones del edificio"
-          }
-        ]
-      },
-      "mediciones": {
-        "nombre": "Mediciones y Presupuesto",
-        "obligatoria": true,
-        "subsecciones": [
-          {
-            "nombre": "Mediciones",
-            "obligatoria": true,
-            "palabras_clave": ["mediciones", "cantidades", "unidades", "metros", "superficie"],
-            "descripcion": "Mediciones de las unidades de obra"
-          },
-          {
-            "nombre": "Presupuesto",
-            "obligatoria": true,
-            "palabras_clave": ["presupuesto", "precios", "coste", "euros", "importe"],
-            "descripcion": "Presupuesto de la obra"
-          }
-        ]
+      "Cumplimiento_CTE": {
+        "Seguridad_Incendio": true
       }
     },
-    "normativas_aplicables": [
-      "DB-HE Ahorro de Energía",
-      "DB-HR Salubridad",
-      "DB-SI Seguridad en caso de Incendio",
-      "DB-SU Seguridad de Utilización"
-    ],
-    "tipos_edificacion": {
-      "residencial": {
-        "nombre": "Edificación Residencial",
-        "normativas": ["DB-HE", "DB-HR", "DB-SI", "DB-SU"],
-        "secciones_especificas": ["accesibilidad", "habitabilidad"]
-      },
-      "comercial": {
-        "nombre": "Edificación Comercial",
-        "normativas": ["DB-HE", "DB-HR", "DB-SI", "DB-SU"],
-        "secciones_especificas": ["accesibilidad", "seguridad", "evacuación"]
-      },
-      "industrial": {
-        "nombre": "Edificación Industrial",
-        "normativas": ["DB-HE", "DB-HR", "DB-SI", "DB-SU"],
-        "secciones_especificas": ["seguridad", "prevención", "riesgos"]
-      }
+    "Planos": {
+      "Plano_Situacion": true,
+      "Plano_Emplazamiento": true,
+      "Plano_Urbanizacion": true,
+      "Plantas_Generales": true,
+      "Planos_Cubiertas": true,
+      "Alzados_Secciones": true
     },
-    "validacion": {
-      "palabras_clave_minimas": 3,
-      "porcentaje_coincidencia": 0.7,
-      "secciones_obligatorias_minimas": 4
+    "Presupuesto": {
+      "Presupuesto_Aproximado": true
     }
   }
 }
