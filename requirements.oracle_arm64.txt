@@ -40,14 +40,14 @@ opencv-python==4.8.1.78
 numpy
 pandas==2.1.4
 matplotlib==3.5.3
-seaborn==0.12.2
+seaborn==0.13.2
 
 # Utilities
 python-dotenv==1.0.0
 schedule==1.2.0
 prometheus-client==0.19.0
 rdflib==7.0.0
-textstat==0.7.3
+textstat>=0.7,<0.8
 
 # Rasa como microservicio (sin dependencias directas)
 # rasa==3.6.21  # Comentado - se ejecuta como microservicio separado

@@ -68,6 +68,10 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 # Establecer directorio de trabajo
 WORKDIR /app
 
+# Configurar directorio de caché de Matplotlib para evitar warnings
+ENV MPLCONFIGDIR=/app/.config/matplotlib
+RUN mkdir -p ${MPLCONFIGDIR} && chown -R appuser:appuser ${MPLCONFIGDIR}
+
 # Copiar archivos de dependencias
 COPY requirements.oracle_arm64.txt .
 
