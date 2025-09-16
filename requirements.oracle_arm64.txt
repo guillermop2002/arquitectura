@@ -46,6 +46,7 @@ python-dotenv==1.0.0
 schedule==1.2.0
 prometheus-client==0.19.0
 rdflib==7.0.0
+textstat==0.7.3
 
 # Rasa como microservicio (sin dependencias directas)
 # rasa==3.6.21  # Comentado - se ejecuta como microservicio separado
