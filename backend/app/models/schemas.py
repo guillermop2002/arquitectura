@@ -57,6 +57,37 @@ class Question:
         if self.created_at is None:
             self.created_at = datetime.now()
 
+class DocumentType(Enum):
+    """Tipos de documentos arquitectónicos."""
+    MEMORIA_DESCRIPTIVA = "memoria_descriptiva"
+    PLANOS = "planos"
+    PRESUPUESTO = "presupuesto"
+    ANEXO_I = "anexo_i"
+    CTE_COMPLIANCE = "cte_compliance"
+    OTHER = "other"
+
+@dataclass
+class ProjectData:
+    """Datos de un proyecto arquitectónico."""
+    project_id: str
+    name: str
+    description: Optional[str] = None
+    document_type: DocumentType = DocumentType.OTHER
+    files: List[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    metadata: Dict[str, Any] = None
+    
+    def __post_init__(self):
+        if self.files is None:
+            self.files = []
+        if self.metadata is None:
+            self.metadata = {}
+        if self.created_at is None:
+            self.created_at = datetime.now()
+        if self.updated_at is None:
+            self.updated_at = datetime.now()
+
 @dataclass
 class VerificationResult:
     """Resultado de la verificación de un proyecto."""
