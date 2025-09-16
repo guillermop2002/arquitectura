@@ -6,214 +6,61 @@ nlu:
     - hola
     - buenos días
     - buenas tardes
-    - buenas noches
-    - hey
     - saludos
-    - ¿cómo estás?
-    - ¿qué tal?
+    - hey
+
+- intent: help
+  examples: |
+    - ayuda
+    - qué puedes hacer
+    - cómo funciona
+    - necesito ayuda
+    - no sé qué hacer
 
 - intent: goodbye
   examples: |
     - adiós
     - hasta luego
     - nos vemos
-    - hasta la vista
     - chao
-    - hasta pronto
-    - me voy
-    - hasta mañana
+    - hasta la vista
 
-- intent: affirm
+- intent: project_type
   examples: |
-    - sí
-    - correcto
-    - exacto
-    - perfecto
-    - de acuerdo
-    - claro
-    - por supuesto
-    - efectivamente
-    - así es
-    - bien
+    - es un edificio existente
+    - es un proyecto nuevo
+    - edificio nuevo
+    - reforma
+    - rehabilitación
 
-- intent: deny
+- intent: upload_documents
   examples: |
-    - no
-    - incorrecto
-    - falso
-    - no es así
-    - no estoy de acuerdo
-    - no es correcto
-    - no es verdad
-    - no es cierto
-    - no es exacto
-    - no es así
+    - subir documentos
+    - tengo planos
+    - memoria descriptiva
+    - presupuesto
+    - documentos del proyecto
 
-- intent: architectural_question
+- intent: analyze_project
   examples: |
-    - ¿puedes ayudarme con mi proyecto arquitectónico?
-    - necesito ayuda con la verificación de mi proyecto
-    - ¿cómo puedo verificar el cumplimiento normativo?
-    - ¿qué normativas debo cumplir?
-    - ¿puedes analizar mi proyecto?
-    - necesito verificar mi memoria técnica
-    - ¿cómo verifico mis planos?
-    - ¿qué documentos necesito?
-    - ¿puedes revisar mi proyecto?
-    - necesito ayuda con la normativa
+    - analizar proyecto
+    - verificar cumplimiento
+    - revisar documentos
+    - hacer análisis
+    - comprobar normativas
 
-- intent: norm_compliance_check
+- intent: check_compliance
   examples: |
-    - ¿cumple mi proyecto con la normativa?
-    - necesito verificar el cumplimiento del CTE
-    - ¿qué normativas debo cumplir en Madrid?
-    - ¿mi proyecto cumple con DB-HE?
-    - ¿necesito cumplir con DB-SI?
-    - ¿qué dice la normativa sobre [elemento]?
-    - ¿cumple con la accesibilidad?
-    - ¿es conforme con la normativa?
-    - ¿pasa la verificación normativa?
-    - ¿qué normativas aplican?
+    - cumplimiento CTE
+    - normativas
+    - código técnico
+    - reglamento
+    - legislación
 
-- intent: dimension_verification
+- intent: ask_questions
   examples: |
-    - ¿están correctas las dimensiones?
-    - necesito verificar las medidas
-    - ¿cuál es el ancho mínimo de paso?
-    - ¿cumple con las dimensiones mínimas?
-    - ¿está bien la altura de techo?
-    - ¿son correctas las cotas?
-    - ¿verifica las dimensiones de [elemento]?
-    - ¿cumple con las medidas reglamentarias?
-    - ¿están bien las escalas?
-    - ¿verifica las distancias?
-
-- intent: accessibility_question
-  examples: |
-    - ¿es accesible mi proyecto?
-    - necesito verificar la accesibilidad
-    - ¿cumple con DB-SUA?
-    - ¿hay rampas accesibles?
-    - ¿son accesibles los baños?
-    - ¿cumple con la normativa de accesibilidad?
-    - ¿hay barreras arquitectónicas?
-    - ¿es accesible para discapacitados?
-    - ¿verifica la accesibilidad universal?
-    - ¿cumple con la accesibilidad?
-
-- intent: fire_safety_question
-  examples: |
-    - ¿es seguro contra incendios?
-    - necesito verificar la seguridad contra incendios
-    - ¿cumple con DB-SI?
-    - ¿hay salidas de emergencia?
-    - ¿son correctas las distancias de evacuación?
-    - ¿cumple con la normativa de incendios?
-    - ¿hay detectores de humo?
-    - ¿es seguro el edificio?
-    - ¿verifica la seguridad contra incendios?
-    - ¿cumple con la seguridad?
-
-- intent: structural_question
-  examples: |
-    - ¿es estructuralmente seguro?
-    - necesito verificar la estructura
-    - ¿cumple con DB-SE?
-    - ¿son correctos los cálculos estructurales?
-    - ¿cumple con la normativa estructural?
-    - ¿es segura la estructura?
-    - ¿verifica la estabilidad?
-    - ¿cumple con la resistencia?
-    - ¿es correcta la cimentación?
-    - ¿verifica la estructura?
-
-- intent: plan_analysis_request
-  examples: |
-    - ¿puedes analizar mis planos?
-    - necesito que revises los planos
-    - ¿están correctos los planos?
-    - ¿puedes verificar los planos?
-    - ¿analiza los planos arquitectónicos?
-    - ¿revisa los planos de planta?
-    - ¿verifica los planos de sección?
-    - ¿analiza los planos de alzado?
-    - ¿puedes revisar los planos técnicos?
-    - ¿verifica los planos?
-
-- intent: document_verification
-  examples: |
-    - ¿puedes verificar mi memoria técnica?
-    - necesito que revises la documentación
-    - ¿está completa la documentación?
-    - ¿puedes analizar la memoria?
-    - ¿verifica los documentos técnicos?
-    - ¿revisa la memoria descriptiva?
-    - ¿analiza la documentación del proyecto?
-    - ¿verifica los anexos?
-    - ¿puedes revisar los documentos?
-    - ¿está correcta la documentación?
-
-- intent: compliance_report
-  examples: |
-    - ¿puedes generar un reporte de cumplimiento?
-    - necesito un informe de verificación
-    - ¿puedes crear un reporte?
-    - ¿genera un informe de cumplimiento?
-    - ¿puedes hacer un resumen?
-    - ¿crea un reporte técnico?
-    - ¿genera un informe de verificación?
-    - ¿puedes resumir los resultados?
-    - ¿hace un reporte completo?
-    - ¿genera un informe?
-
-- intent: clarification_request
-  examples: |
-    - ¿puedes explicarme mejor?
+    - tengo una pregunta
+    - consulta
+    - duda
     - no entiendo
-    - ¿puedes ser más específico?
-    - necesito más información
-    - ¿puedes aclarar?
-    - ¿qué significa eso?
-    - ¿puedes explicar?
-    - necesito más detalles
-    - ¿puedes ampliar la información?
-    - ¿qué quieres decir?
-
-- intent: technical_specification
-  examples: |
-    - ¿cuáles son las especificaciones técnicas?
-    - necesito las especificaciones
-    - ¿qué especificaciones debo cumplir?
-    - ¿cuáles son los requisitos técnicos?
-    - ¿qué especificaciones necesito?
-    - ¿cuáles son las características técnicas?
-    - ¿qué especificaciones aplican?
-    - ¿cuáles son los parámetros técnicos?
-    - ¿qué especificaciones debo seguir?
-    - ¿cuáles son los requisitos?
-
-- intent: regulation_lookup
-  examples: |
-    - ¿qué dice la normativa sobre [elemento]?
-    - necesito consultar la normativa
-    - ¿dónde puedo encontrar la normativa?
-    - ¿qué normativa aplica?
-    - ¿cuál es la normativa para [elemento]?
-    - ¿dónde está la normativa?
-    - ¿qué dice el CTE?
-    - ¿cuál es la normativa vigente?
-    - ¿dónde consulto la normativa?
-    - ¿qué normativa necesito?
-
-- intent: project_help
-  examples: |
-    - ¿puedes ayudarme con mi proyecto?
-    - necesito ayuda general
-    - ¿qué puedo hacer?
-    - ¿cómo empiezo?
-    - ¿por dónde empiezo?
-    - ¿qué necesito hacer?
-    - ¿cómo procedo?
-    - ¿qué pasos debo seguir?
-    - ¿cómo continúo?
-    - ¿qué hago ahora?
+    - explicame

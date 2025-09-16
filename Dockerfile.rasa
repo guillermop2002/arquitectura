@@ -31,6 +31,9 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # Copiar código de Rasa
 COPY rasa_bot/ ./rasa_bot/
 
+# Entrenar modelo de Rasa
+RUN rasa train
+
 # Cambiar propietario
 RUN chown -R rasauser:rasauser /app
 USER rasauser
