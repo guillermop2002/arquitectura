@@ -94,6 +94,13 @@ print(f"[shim] Escrito: {shim}")
 PY
 # --- fin shim ---
 
+# === Cache HF/Transformers en ruta escribible por appuser ===
+ENV HF_HOME=/app/.cache/hf \
+    HUGGINGFACE_HUB_CACHE=/app/.cache/hf \
+    TRANSFORMERS_CACHE=/app/.cache/hf
+
+RUN mkdir -p /app/.cache/hf && chown -R appuser:appuser /app/.cache
+
 # Copiar código de la aplicación
 COPY . .
 
