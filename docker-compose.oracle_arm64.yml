@@ -9,6 +9,8 @@ services:
     container_name: verificacion-app
     ports:
       - "5000:5000"
+    env_file:
+      - .env
     environment:
       - RASA_URL=http://rasa:5005
       - NEO4J_URI=neo4j://db:7687
@@ -45,6 +47,8 @@ services:
     container_name: verificacion-rasa
     ports:
       - "5005:5005"
+    env_file:
+      - .env
     environment:
       - RASA_ENDPOINT=http://rasa:5005
     volumes:
