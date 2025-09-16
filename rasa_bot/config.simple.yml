@@ -16,8 +16,6 @@ pipeline:
     epochs: 10
   - name: FallbackClassifier
     threshold: 0.3
-  - name: MemoizationPolicy
-  - name: RulePolicy
 
 policies:
   - name: MemoizationPolicy

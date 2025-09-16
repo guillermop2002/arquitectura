@@ -32,7 +32,8 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 COPY rasa_bot/ ./rasa_bot/
 
 # Usar configuración simple directamente
-RUN cp rasa_bot/config.simple.yml config.yml && \
+RUN mkdir -p data && \
+    cp rasa_bot/config.simple.yml config.yml && \
     cp rasa_bot/domain.simple.yml domain.yml && \
     cp rasa_bot/data/nlu.simple.yml data/nlu.yml && \
     cp rasa_bot/data/stories.simple.yml data/stories.yml && \

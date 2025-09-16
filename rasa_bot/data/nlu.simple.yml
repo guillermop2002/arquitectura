@@ -3,15 +3,17 @@ version: "3.1"
 nlu:
 - intent: pregunta_abierta
   examples: |
-    - [cualquier texto]
-    - [cualquier pregunta]
-    - [cualquier consulta]
+    - hola, necesito ayuda
+    - tengo una pregunta
+    - necesito información
+    - ¿puedes ayudarme?
 
 - intent: consulta_tecnica
   examples: |
-    - [cualquier consulta técnica]
-    - [cualquier pregunta sobre normativas]
-    - [cualquier duda arquitectónica]
+    - ¿cuáles son las normativas?
+    - necesito verificar cumplimiento
+    - ¿qué documentos necesito?
+    - consulta sobre CTE
 
 - intent: ayuda
   examples: |
