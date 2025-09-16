@@ -47,11 +47,11 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 WORKDIR /app
 
 # Copiar archivos de dependencias
-COPY requirements.oracle_arm64.minimal.txt .
+COPY requirements.oracle_arm64.txt .
 
-# Instalar dependencias de Python optimizadas para ARM64 (mínimas)
+# Instalar dependencias de Python optimizadas para ARM64
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.oracle_arm64.minimal.txt
+    pip install --no-cache-dir -r requirements.oracle_arm64.txt
 
 # Copiar código de la aplicación
 COPY . .

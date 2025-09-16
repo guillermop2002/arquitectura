@@ -18,11 +18,11 @@ psycopg2-binary==2.9.9
 redis==5.0.1
 neo4j==5.14.1
 
-# AI and ML (optimizado para ARM64 - versión mínima)
+# AI and ML (optimizado para ARM64)
 groq==0.4.1
 transformers==4.35.2
 torch==2.1.0
-# torchvision==0.16.0  # Comentado para ahorrar espacio
+torchvision==0.16.0
 sentence-transformers==2.2.2
 scikit-learn==1.3.2
 spacy==3.7.2
