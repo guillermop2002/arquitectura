@@ -31,7 +31,14 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # Copiar código de Rasa
 COPY rasa_bot/ ./rasa_bot/
 
-# Entrenar modelo de Rasa
+# Usar configuración simple (sin entrenamiento complejo)
+RUN cp rasa_bot/config.simple.yml rasa_bot/config.yml && \
+    cp rasa_bot/domain.simple.yml rasa_bot/domain.yml && \
+    cp rasa_bot/data/nlu.simple.yml rasa_bot/data/nlu.yml && \
+    cp rasa_bot/data/stories.simple.yml rasa_bot/data/stories.yml && \
+    cp rasa_bot/actions.simple.py rasa_bot/actions.py
+
+# Entrenar modelo simple
 RUN rasa train
 
 # Cambiar propietario

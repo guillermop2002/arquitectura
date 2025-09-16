@@ -1,0 +1,24 @@
+# config.simple.yml
+# Configuración MÍNIMA de Rasa solo para recibir mensajes y pasarlos a la LLM
+
+version: "3.1"
+
+assistant: "Verificación Arquitectónica Bot"
+
+language: es
+
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: DIETClassifier
+    epochs: 10
+  - name: FallbackClassifier
+    threshold: 0.3
+  - name: MemoizationPolicy
+  - name: RulePolicy
+
+policies:
+  - name: MemoizationPolicy
+  - name: RulePolicy

@@ -1,0 +1,17 @@
+version: "3.1"
+
+stories:
+- story: procesar pregunta
+  steps:
+  - intent: pregunta_abierta
+  - action: action_procesar_con_llm
+
+- story: procesar consulta técnica
+  steps:
+  - intent: consulta_tecnica
+  - action: action_procesar_con_llm
+
+- story: ayuda
+  steps:
+  - intent: ayuda
+  - action: utter_default
