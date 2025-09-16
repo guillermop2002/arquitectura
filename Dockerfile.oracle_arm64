@@ -76,6 +76,24 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir --upgrade certifi && \
     pip install --no-cache-dir -r requirements.oracle_arm64.txt
 
+# --- Shim para sentence-transformers 2.2.2 con huggingface_hub>=0.13 ---
+RUN python - <<'PY'
+from pathlib import Path
+import textwrap, importlib
+pkg = Path(importlib.import_module('huggingface_hub').__file__).parent
+shim = pkg / 'cached_download.py'
+shim.write_text(textwrap.dedent("""
+from huggingface_hub import hf_hub_download as _hf_hub_download
+
+def cached_download(*args, **kwargs):
+    # Mantener compat: sentence-transformers 2.2.2 llama a cached_download con args/kwargs variados.
+    # hf_hub_download es compatible con kwargs comunes (repo_id, filename, revision, cache_dir, repo_type, etc.)
+    return _hf_hub_download(*args, **kwargs)
+"""))
+print(f"[shim] Escrito: {shim}")
+PY
+# --- fin shim ---
+
 # Copiar código de la aplicación
 COPY . .
 
