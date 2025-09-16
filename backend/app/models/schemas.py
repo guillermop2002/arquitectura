@@ -42,6 +42,22 @@ class Issue:
             self.metadata = {}
 
 @dataclass
+class Question:
+    """Representa una pregunta del sistema conversacional."""
+    id: str
+    text: str
+    context: Optional[str] = None
+    answer: Optional[str] = None
+    created_at: Optional[datetime] = None
+    metadata: Dict[str, Any] = None
+    
+    def __post_init__(self):
+        if self.metadata is None:
+            self.metadata = {}
+        if self.created_at is None:
+            self.created_at = datetime.now()
+
+@dataclass
 class VerificationResult:
     """Resultado de la verificación de un proyecto."""
     project_id: str
