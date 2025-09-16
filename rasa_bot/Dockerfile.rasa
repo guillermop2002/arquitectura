@@ -1,0 +1,53 @@
+# Dockerfile para Rasa Chatbot
+# Fase 5: Optimización y Producción
+
+FROM python:3.10-slim
+
+# Metadatos
+LABEL maintainer="Sistema de Verificación Arquitectónica"
+LABEL version="1.0.0"
+LABEL description="Rasa Chatbot for Architectural Verification"
+
+# Variables de entorno
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_NO_CACHE_DIR=1
+
+# Directorio de trabajo
+WORKDIR /app
+
+# Instalar dependencias del sistema
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar Rasa y dependencias
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir rasa==3.6.21
+
+# Copiar archivos de Rasa
+COPY . .
+
+# Crear directorio de modelos
+RUN mkdir -p models
+
+# Entrenar modelo
+RUN rasa train
+
+# Crear usuario no-root
+RUN groupadd -r rasauser && useradd -r -g rasauser rasauser && \
+    chown -R rasauser:rasauser /app
+
+USER rasauser
+
+# Exponer puerto
+EXPOSE 5005
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5005/health || exit 1
+
+# Comando por defecto
+CMD ["rasa", "run", "--enable-api", "--cors", "*", "--port", "5005"]

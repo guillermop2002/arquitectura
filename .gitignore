@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+.venv_clean/
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+.env.local
+.env.production
+env_*.txt
+*.env
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+temp/
+tmp/
+uploads/processed/
+uploads/temp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+analysis_results/
+context_storage/
+backup_*/
+ssl/
+models/fine_tuned/
+models/pretrained/
+
+# Test files
+test_*.py
+*_test.py
+
+# Documentation (keep only GCP docs)
+*.md
+!GOOGLE_CLOUD_DEPLOYMENT_GUIDE.md
+!GCP_DEPLOYMENT_CHECKLIST.md
+!FILES_FOR_GCP_ONLY.md
+
+# Oracle Cloud specific (not needed for GCP)
+*oracle*
+*arm64*

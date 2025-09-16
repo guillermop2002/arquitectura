@@ -1,0 +1,74 @@
+# Dockerfile optimizado para Oracle Cloud ARM64
+# Sistema de Verificación Arquitectónica
+
+FROM python:3.10-slim
+
+# Metadatos
+LABEL maintainer="Sistema de Verificación Arquitectónica"
+LABEL description="Sistema de verificación normativa con IA para proyectos de edificación"
+LABEL version="1.0.0"
+
+# Variables de entorno
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Instalar dependencias del sistema optimizadas para ARM64
+RUN apt-get update && apt-get install -y \
+    # OCR y procesamiento de imágenes
+    tesseract-ocr \
+    tesseract-ocr-spa \
+    poppler-utils \
+    libpoppler-cpp-dev \
+    # OpenCV y visión por computador (optimizado para ARM64)
+    libgl1-mesa-dri \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libgthread-2.0-0 \
+    # Procesamiento de PDFs
+    libpoppler-dev \
+    # Herramientas del sistema
+    curl \
+    wget \
+    unzip \
+    git \
+    # Limpiar cache
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Crear usuario no-root para seguridad
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Copiar archivos de dependencias
+COPY requirements.oracle_arm64.txt .
+
+# Instalar dependencias de Python optimizadas para ARM64
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.oracle_arm64.txt
+
+# Copiar código de la aplicación
+COPY . .
+
+# Crear directorios necesarios
+RUN mkdir -p uploads temp logs reports analysis_results context_storage && \
+    chown -R appuser:appuser /app
+
+# Cambiar a usuario no-root
+USER appuser
+
+# Exponer puerto
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
+
+# Comando de inicio
+CMD ["python", "main.py"]

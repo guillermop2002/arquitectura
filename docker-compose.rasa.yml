@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # Contenedor principal de la aplicación (sin Rasa)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.gcp
+    container_name: verificacion-app
+    ports:
+      - "5000:5000"
+    environment:
+      - RASA_URL=http://rasa:5005
+    depends_on:
+      - db
+      - redis
+      - rasa
+    volumes:
+      - ./uploads:/app/uploads
+      - ./temp:/app/temp
+      - ./logs:/app/logs
+    networks:
+      - verificacion-network
+
+  # Contenedor separado para Rasa
+  rasa:
+    build:
+      context: .
+      dockerfile: Dockerfile.rasa
+    container_name: verificacion-rasa
+    ports:
+      - "5005:5005"
+    environment:
+      - RASA_ENDPOINT=http://rasa:5005
+    volumes:
+      - ./rasa_bot:/app/rasa_bot
+      - ./logs:/app/logs
+    networks:
+      - verificacion-network
+
+  # Base de datos Neo4j
+  db:
+    image: neo4j:5.14-community
+    container_name: verificacion-db
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/verificacion2025
+      - NEO4J_PLUGINS=["apoc"]
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    networks:
+      - verificacion-network
+
+  # Redis para cache
+  redis:
+    image: redis:7-alpine
+    container_name: verificacion-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - verificacion-network
+
+  # Nginx como proxy reverso
+  nginx:
+    image: nginx:alpine
+    container_name: verificacion-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.gcp.conf:/etc/nginx/nginx.conf
+      - ./nginx_locations.conf:/etc/nginx/conf.d/locations.conf
+    depends_on:
+      - app
+      - rasa
+    networks:
+      - verificacion-network
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  redis_data:
+
+networks:
+  verificacion-network:
+    driver: bridge

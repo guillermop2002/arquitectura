@@ -1,0 +1,41 @@
+# Dockerfile específico para Rasa
+FROM python:3.10-slim
+
+# Instalar dependencias del sistema
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    tesseract-ocr-spa \
+    libgl1-mesa-dri \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libgthread-2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Crear usuario no-root
+RUN groupadd -r rasauser && useradd -r -g rasauser rasauser
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Copiar requirements específicos para Rasa
+COPY requirements.rasa.txt .
+
+# Instalar dependencias de Python
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.rasa.txt
+
+# Copiar código de Rasa
+COPY rasa_bot/ ./rasa_bot/
+
+# Cambiar propietario
+RUN chown -R rasauser:rasauser /app
+USER rasauser
+
+# Exponer puerto
+EXPOSE 5005
+
+# Comando para iniciar Rasa
+CMD ["python", "-m", "rasa", "run", "--enable-api", "--cors", "*", "--port", "5005"]

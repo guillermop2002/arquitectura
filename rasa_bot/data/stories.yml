@@ -1,0 +1,138 @@
+version: "3.1"
+
+stories:
+- story: happy path
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: architectural_question
+  - action: utter_architectural_help
+  - intent: norm_compliance_check
+  - action: action_norm_compliance_check
+  - intent: affirm
+  - action: action_compliance_report
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: dimension verification
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: dimension_verification
+  - action: action_dimension_verification
+  - intent: affirm
+  - action: action_plan_analysis
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: accessibility check
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: accessibility_question
+  - action: action_accessibility_check
+  - intent: affirm
+  - action: action_compliance_report
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: fire safety check
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: fire_safety_question
+  - action: action_fire_safety_check
+  - intent: affirm
+  - action: action_compliance_report
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: structural analysis
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: structural_question
+  - action: action_structural_analysis
+  - intent: affirm
+  - action: action_compliance_report
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: plan analysis
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: plan_analysis_request
+  - action: action_plan_analysis
+  - intent: affirm
+  - action: action_compliance_report
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: document verification
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: document_verification
+  - action: action_document_verification
+  - intent: affirm
+  - action: action_compliance_report
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: technical specification
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: technical_specification
+  - action: action_technical_specification
+  - intent: affirm
+  - action: action_regulation_lookup
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: regulation lookup
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: regulation_lookup
+  - action: action_regulation_lookup
+  - intent: affirm
+  - action: utter_project_help
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: project help
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: project_help
+  - action: utter_project_help
+  - intent: architectural_question
+  - action: utter_architectural_help
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: clarification needed
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: architectural_question
+  - action: utter_clarification
+  - intent: clarification_request
+  - action: utter_architectural_help
+  - intent: norm_compliance_check
+  - action: action_norm_compliance_check
+  - intent: goodbye
+  - action: utter_goodbye
+
+- story: fallback
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: out_of_scope
+  - action: utter_default
+  - intent: architectural_question
+  - action: utter_architectural_help
+  - intent: goodbye
+  - action: utter_goodbye

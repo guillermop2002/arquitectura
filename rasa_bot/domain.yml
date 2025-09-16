@@ -1,0 +1,139 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - mood_great
+  - mood_unhappy
+  - bot_challenge
+  - architectural_question
+  - norm_compliance_check
+  - dimension_verification
+  - accessibility_question
+  - fire_safety_question
+  - structural_question
+  - plan_analysis_request
+  - document_verification
+  - compliance_report
+  - clarification_request
+  - technical_specification
+  - regulation_lookup
+  - project_help
+
+entities:
+  - project_type
+  - building_element
+  - regulation_code
+  - dimension_value
+  - room_type
+  - safety_requirement
+  - accessibility_feature
+  - structural_component
+
+slots:
+  project_type:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: project_type
+  building_element:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: building_element
+  regulation_code:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: regulation_code
+  dimension_value:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: dimension_value
+  room_type:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: room_type
+  safety_requirement:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: safety_requirement
+  accessibility_feature:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: accessibility_feature
+  structural_component:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: structural_component
+
+responses:
+  utter_greet:
+  - text: "¡Hola! Soy tu asistente especializado en verificación de proyectos arquitectónicos. ¿En qué puedo ayudarte con tu proyecto de construcción?"
+  - text: "¡Bienvenido! Estoy aquí para ayudarte con el análisis de cumplimiento normativo de tu proyecto arquitectónico. ¿Qué necesitas verificar?"
+
+  utter_goodbye:
+  - text: "¡Hasta luego! Si necesitas más ayuda con tu proyecto arquitectónico, no dudes en preguntarme."
+  - text: "¡Adiós! Recuerda que puedes consultarme cualquier duda sobre normativas de construcción."
+
+  utter_architectural_help:
+  - text: "Puedo ayudarte con análisis de cumplimiento normativo, verificación de dimensiones, accesibilidad, seguridad contra incendios, y análisis estructural. ¿Qué aspecto específico te interesa?"
+
+  utter_norm_compliance:
+  - text: "Te ayudo a verificar el cumplimiento de las normativas CTE de Madrid. ¿Qué elemento específico quieres analizar?"
+
+  utter_dimension_verification:
+  - text: "Puedo verificar las dimensiones de tu proyecto. ¿Qué elemento necesitas medir o verificar?"
+
+  utter_accessibility_help:
+  - text: "Te ayudo con temas de accesibilidad según la normativa DBSUA. ¿Qué aspecto específico necesitas verificar?"
+
+  utter_fire_safety_help:
+  - text: "Puedo ayudarte con la verificación de seguridad contra incendios según DB-SI. ¿Qué elemento quieres analizar?"
+
+  utter_structural_help:
+  - text: "Te ayudo con análisis estructural según DB-SE. ¿Qué componente estructural necesitas verificar?"
+
+  utter_plan_analysis:
+  - text: "Puedo analizar tus planos arquitectónicos para verificar cumplimiento normativo. ¿Qué tipo de análisis necesitas?"
+
+  utter_document_verification:
+  - text: "Te ayudo a verificar la documentación técnica de tu proyecto. ¿Qué documento necesitas analizar?"
+
+  utter_compliance_report:
+  - text: "Puedo generar un reporte completo de cumplimiento normativo. ¿Para qué tipo de proyecto necesitas el reporte?"
+
+  utter_clarification:
+  - text: "Necesito más información para ayudarte mejor. ¿Podrías ser más específico sobre tu consulta?"
+
+  utter_technical_specification:
+  - text: "Te ayudo con especificaciones técnicas según las normativas. ¿Qué especificación necesitas verificar?"
+
+  utter_regulation_lookup:
+  - text: "Puedo buscar información específica en las normativas CTE. ¿Qué reglamento necesitas consultar?"
+
+  utter_project_help:
+  - text: "Puedo ayudarte con todos los aspectos de tu proyecto arquitectónico. ¿Por dónde quieres empezar?"
+
+  utter_default:
+  - text: "Lo siento, no entiendo completamente tu consulta. ¿Podrías reformularla o ser más específico?"
+
+actions:
+  - action_architectural_analysis
+  - action_norm_compliance_check
+  - action_dimension_verification
+  - action_accessibility_check
+  - action_fire_safety_check
+  - action_structural_analysis
+  - action_plan_analysis
+  - action_document_verification
+  - action_compliance_report
+  - action_technical_specification
+  - action_regulation_lookup
