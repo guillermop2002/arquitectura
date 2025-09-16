@@ -24,7 +24,8 @@ WORKDIR /app
 COPY requirements.rasa.txt .
 
 # Instalar dependencias de Python
-RUN pip install --no-cache-dir --upgrade pip && \
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir --upgrade certifi && \
     pip install --no-cache-dir -r requirements.rasa.txt
 
 # Copiar código de Rasa
