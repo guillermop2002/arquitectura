@@ -58,16 +58,30 @@ check_env_file() {
     success "Archivo .env encontrado"
 }
 
-# Construir y levantar servicios
-deploy_services() {
-    info "Construyendo y levantando servicios..."
+# Limpiar dependencias corruptas
+clean_dependencies() {
+    info "Limpiando dependencias corruptas..."
     
     # Parar servicios existentes
     docker-compose -f docker-compose.oracle_arm64.yml down --remove-orphans 2>/dev/null || true
     
-    # Construir imágenes
+    # Limpiar imágenes Docker existentes
+    docker rmi arquitectura-app arquitectura-rasa 2>/dev/null || true
+    docker system prune -f
+    
+    # Limpiar cache de pip
+    pip cache purge 2>/dev/null || true
+    
+    success "Dependencias limpiadas"
+}
+
+# Construir y levantar servicios
+deploy_services() {
+    info "Construyendo y levantando servicios..."
+    
+    # Construir imágenes desde cero
     info "Construyendo imágenes Docker..."
-    docker-compose -f docker-compose.oracle_arm64.yml build --no-cache
+    docker-compose -f docker-compose.oracle_arm64.yml build --no-cache --pull
     
     # Levantar servicios
     info "Levantando servicios..."
@@ -97,13 +111,16 @@ test_application() {
     info "Probando la aplicación..."
     
     # Esperar un poco más para que la aplicación esté completamente lista
-    sleep 10
+    sleep 15
     
-    # Probar health check
+    # Probar health check de la aplicación principal
     if curl -f http://localhost:5000/health > /dev/null 2>&1; then
         success "Aplicación principal funcionando"
     else
         warning "Aplicación principal no responde aún"
+        # Mostrar logs de la aplicación para debugging
+        info "Logs de la aplicación:"
+        docker logs verificacion-app --tail=10
     fi
     
     # Probar Rasa
@@ -111,6 +128,9 @@ test_application() {
         success "Rasa funcionando"
     else
         warning "Rasa no responde aún"
+        # Mostrar logs de Rasa para debugging
+        info "Logs de Rasa:"
+        docker logs verificacion-rasa --tail=10
     fi
 }
 
@@ -136,6 +156,7 @@ main() {
     check_dependencies
     create_directories
     check_env_file
+    clean_dependencies
     deploy_services
     wait_for_services
     check_logs
