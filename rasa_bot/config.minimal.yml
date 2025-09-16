@@ -1,0 +1,24 @@
+# config.minimal.yml
+# Configuración MÍNIMA de Rasa solo para recibir mensajes
+
+version: "3.1"
+
+assistant: "Verificación Bot"
+
+language: es
+
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: DIETClassifier
+    epochs: 5
+  - name: FallbackClassifier
+    threshold: 0.3
+  - name: MemoizationPolicy
+  - name: RulePolicy
+
+policies:
+  - name: MemoizationPolicy
+  - name: RulePolicy

@@ -1,0 +1,7 @@
+version: "3.1"
+
+stories:
+- story: procesar pregunta
+  steps:
+  - intent: pregunta_abierta
+  - action: action_procesar_con_llm

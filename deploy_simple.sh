@@ -68,17 +68,17 @@ configure_rasa_simple() {
         exit 1
     fi
     
-    # Usar configuración simple de Rasa
-    if [ -f "rasa_bot/config.simple.yml" ]; then
-        info "Aplicando configuración simple de Rasa..."
-        cp rasa_bot/config.simple.yml rasa_bot/config.yml
-        cp rasa_bot/domain.simple.yml rasa_bot/domain.yml
-        cp rasa_bot/data/nlu.simple.yml rasa_bot/data/nlu.yml
-        cp rasa_bot/data/stories.simple.yml rasa_bot/data/stories.yml
+    # Usar configuración MÍNIMA de Rasa
+    if [ -f "rasa_bot/config.minimal.yml" ]; then
+        info "Aplicando configuración mínima de Rasa..."
+        cp rasa_bot/config.minimal.yml rasa_bot/config.yml
+        cp rasa_bot/domain.minimal.yml rasa_bot/domain.yml
+        cp rasa_bot/data/nlu.minimal.yml rasa_bot/data/nlu.yml
+        cp rasa_bot/data/stories.minimal.yml rasa_bot/data/stories.yml
         cp rasa_bot/actions.simple.py rasa_bot/actions.py
-        success "Rasa configurado como puente simple a LLM"
+        success "Rasa configurado como puente mínimo a LLM"
     else
-        warning "Archivos de configuración simple no encontrados, usando configuración por defecto"
+        warning "Archivos de configuración mínima no encontrados, usando configuración por defecto"
     fi
 }
 
