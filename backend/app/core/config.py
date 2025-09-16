@@ -144,6 +144,11 @@ class AIConfig:
         
         return self.groq_api_keys[self.current_key_index]
     
+    @property
+    def groq_api_key(self) -> str:
+        """Propiedad de compatibilidad para groq_api_key (singular)"""
+        return self.get_current_key()
+    
     def rotate_key(self) -> str:
         """Rotar a la siguiente clave disponible."""
         if not self.groq_api_keys:
