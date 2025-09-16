@@ -38,6 +38,12 @@ RUN cp rasa_bot/config.simple.yml rasa_bot/config.yml && \
     cp rasa_bot/data/stories.simple.yml rasa_bot/data/stories.yml && \
     cp rasa_bot/actions.simple.py rasa_bot/actions.py
 
+# Copiar archivos de configuración a la raíz para Rasa
+RUN cp rasa_bot/config.yml . && \
+    cp rasa_bot/domain.yml . && \
+    cp -r rasa_bot/data . && \
+    cp rasa_bot/actions.py .
+
 # Entrenar modelo simple
 RUN rasa train
 
