@@ -58,6 +58,30 @@ check_env_file() {
     success "Archivo .env encontrado"
 }
 
+# Configurar Rasa simple
+configure_rasa_simple() {
+    info "Configurando Rasa simple (puente a LLM)..."
+    
+    # Verificar que existe el directorio rasa_bot
+    if [ ! -d "rasa_bot" ]; then
+        error "Directorio rasa_bot no encontrado"
+        exit 1
+    fi
+    
+    # Usar configuración simple de Rasa
+    if [ -f "rasa_bot/config.simple.yml" ]; then
+        info "Aplicando configuración simple de Rasa..."
+        cp rasa_bot/config.simple.yml rasa_bot/config.yml
+        cp rasa_bot/domain.simple.yml rasa_bot/domain.yml
+        cp rasa_bot/data/nlu.simple.yml rasa_bot/data/nlu.yml
+        cp rasa_bot/data/stories.simple.yml rasa_bot/data/stories.yml
+        cp rasa_bot/actions.simple.py rasa_bot/actions.py
+        success "Rasa configurado como puente simple a LLM"
+    else
+        warning "Archivos de configuración simple no encontrados, usando configuración por defecto"
+    fi
+}
+
 # Limpiar dependencias corruptas
 clean_dependencies() {
     info "Limpiando dependencias corruptas..."
@@ -156,6 +180,7 @@ main() {
     check_dependencies
     create_directories
     check_env_file
+    configure_rasa_simple
     clean_dependencies
     deploy_services
     wait_for_services
@@ -164,7 +189,7 @@ main() {
     show_access_info
     
     echo "================================================================"
-    success "¡Despliegue completado!"
+    success "¡Despliegue completado con Rasa simple (puente a LLM)!"
 }
 
 # Ejecutar función principal
