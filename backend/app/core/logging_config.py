@@ -6,7 +6,7 @@ import sys
 import logging
 import logging.handlers
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 
 # Configurar el path del proyecto
 project_root = Path(__file__).parent.parent.parent.parent
@@ -112,3 +112,37 @@ def setup_application_logging() -> logging.Logger:
     
     # Retornar logger de la aplicación
     return get_logger("verificacion_app")
+
+def log_performance(operation: str, duration: float, details: Optional[Dict[str, Any]] = None) -> None:
+    """
+    Registrar métricas de rendimiento.
+    
+    Args:
+        operation: Nombre de la operación
+        duration: Duración en segundos
+        details: Detalles adicionales
+    """
+    logger = get_logger("performance")
+    message = f"Performance: {operation} took {duration:.3f}s"
+    if details:
+        message += f" - Details: {details}"
+    logger.info(message)
+
+def log_api_call(api_name: str, endpoint: str, method: str, status_code: int, 
+                duration: float, response_size: Optional[int] = None) -> None:
+    """
+    Registrar llamadas a API.
+    
+    Args:
+        api_name: Nombre de la API
+        endpoint: Endpoint llamado
+        method: Método HTTP
+        status_code: Código de estado
+        duration: Duración en segundos
+        response_size: Tamaño de la respuesta en bytes
+    """
+    logger = get_logger("api_calls")
+    message = f"API Call: {api_name} {method} {endpoint} - Status: {status_code} - Duration: {duration:.3f}s"
+    if response_size:
+        message += f" - Size: {response_size} bytes"
+    logger.info(message)
