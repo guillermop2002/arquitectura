@@ -78,7 +78,8 @@ COPY requirements.oracle_arm64.txt .
 # Instalar dependencias de Python optimizadas para ARM64
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir --upgrade certifi && \
-    pip install --no-cache-dir -r requirements.oracle_arm64.txt
+    pip install --no-cache-dir -r requirements.oracle_arm64.txt && \
+    python -m spacy download es_core_news_sm
 
 # --- Shim para sentence-transformers 2.2.2 con huggingface_hub>=0.13 ---
 RUN python - <<'PY'
