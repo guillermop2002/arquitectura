@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class FileManager:
     """Gestor de archivos del sistema."""
     
-    def __init__(self, base_path: str = "uploads"):
+    def __init__(self, base_path: str = "."):
         """
         Inicializar el gestor de archivos.
         
