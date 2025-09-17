@@ -96,7 +96,7 @@ async def startup_event():
             logger.info(f"Created directory: {directory}")
         
         # Initialize Redis connection
-        await state_manager.initialize()
+        await state_manager._initialize()
         
         # Clean up old jobs and files
         await state_manager.cleanup_old_jobs()
