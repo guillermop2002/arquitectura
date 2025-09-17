@@ -95,8 +95,8 @@ async def startup_event():
             os.makedirs(directory, exist_ok=True)
             logger.info(f"Created directory: {directory}")
         
-        # Initialize Redis connection
-        await state_manager._initialize()
+        # StateManager is already initialized in constructor
+        # No need to call initialize method
         
         # Clean up old jobs and files
         await state_manager.cleanup_old_jobs()
