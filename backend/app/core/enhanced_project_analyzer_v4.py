@@ -94,7 +94,7 @@ class EnhancedProjectAnalyzerV4:
             # self.rule_engine.load_compliance_rules()  # Comentado: ya se cargan en __init__
             
             # Inicializar modelos de IA
-            self.nlp_processor.initialize_models()
+            self.nlp_processor._initialize_models()
             
             # Inicializar gestor de Neo4j
             self.neo4j_manager.initialize_connection()
