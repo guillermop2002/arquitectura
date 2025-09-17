@@ -111,7 +111,7 @@ class ContextManager:
     def __init__(self, config: AppConfig):
         """Inicializar gestor de contexto."""
         self.config = config
-        self.neo4j_manager = Neo4jManager(config.neo4j)
+        self.neo4j_manager = Neo4jManager()
         
         # Almacenamiento en memoria de contextos activos
         self.active_contexts: Dict[str, ConversationContext] = {}
