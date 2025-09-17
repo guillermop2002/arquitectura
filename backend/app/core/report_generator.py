@@ -72,7 +72,13 @@ class ReportGenerator:
         self.report_templates = self._initialize_report_templates()
         
         # Configuración de gráficos
-        plt.style.use('seaborn-v0_8')
+        try:
+            plt.style.use('seaborn-v0_8')
+        except OSError:
+            try:
+                plt.style.use('seaborn')
+            except OSError:
+                plt.style.use('default')
         sns.set_palette("husl")
     
     def _initialize_report_templates(self) -> Dict[ReportType, Dict[str, Any]]:
