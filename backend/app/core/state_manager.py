@@ -182,11 +182,33 @@ class StateManager:
                     self.logger.info(f"Proyecto {project_id} eliminado del estado")
                     return self._save_state()
                 else:
-                    self.logger.warning(f"Proyecto {project_id} no encontrado")
+                    self.logger.warning(f"Proyecto {project_id} no encontrado para eliminar")
                     return False
         except Exception as e:
             self.logger.error(f"Error eliminando proyecto {project_id}: {e}")
             return False
+    
+    def health_check(self) -> Dict[str, Any]:
+        """
+        Verificar el estado de salud del StateManager.
+        
+        Returns:
+            Estado de salud del sistema
+        """
+        try:
+            with self._lock:
+                return {
+                    "status": "ok",
+                    "active_projects": len(self._state["active_projects"]),
+                    "last_updated": self._state["last_updated"],
+                    "version": self._state["version"]
+                }
+        except Exception as e:
+            self.logger.error(f"Error en health check: {e}")
+            return {
+                "status": "error",
+                "error": str(e)
+            }
     
     def get_active_projects(self) -> List[str]:
         """Obtener lista de proyectos activos."""
