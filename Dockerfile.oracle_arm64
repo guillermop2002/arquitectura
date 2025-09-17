@@ -63,14 +63,14 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean
 
 # Crear usuario no-root para seguridad
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+RUN groupadd -r appuser && useradd -r -g appuser -m -d /home/appuser appuser
 
 # Establecer directorio de trabajo
 WORKDIR /app
 
-# Configurar directorio de caché de Matplotlib para evitar warnings
-ENV MPLCONFIGDIR=/app/.config/matplotlib
-RUN mkdir -p ${MPLCONFIGDIR} && chown -R appuser:appuser ${MPLCONFIGDIR}
+# Configurar directorios y ownership
+RUN mkdir -p /home/appuser /app/.cache/hf /app/.config/matplotlib \
+    && chown -R appuser:appuser /home/appuser /app
 
 # Copiar archivos de dependencias
 COPY requirements.oracle_arm64.txt .
@@ -99,11 +99,14 @@ print(f"[shim] Escrito: {shim}")
 PY
 # --- fin shim ---
 
-# === Cache HF/Transformers en ruta escribible por appuser ===
-ENV HF_HOME=/app/.cache/hf \
+# === Variables de entorno para caches y directorio home ===
+ENV HOME=/home/appuser \
+    HF_HOME=/app/.cache/hf \
     HUGGINGFACE_HUB_CACHE=/app/.cache/hf \
     TRANSFORMERS_CACHE=/app/.cache/hf \
-    SENTENCE_TRANSFORMERS_HOME=/app/.cache/sentence_transformers
+    SENTENCE_TRANSFORMERS_HOME=/app/.cache/hf \
+    XDG_CACHE_HOME=/app/.cache \
+    MPLCONFIGDIR=/app/.config/matplotlib
 
 RUN mkdir -p /app/.cache/hf /app/.cache/sentence_transformers && chown -R appuser:appuser /app/.cache
 
