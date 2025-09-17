@@ -99,7 +99,7 @@ async def startup_event():
         # No need to call initialize method
         
         # Clean up old files
-        await file_manager.cleanup_old_files()
+        file_manager.cleanup_temp_files()
         
         logger.info("=" * 60)
         logger.info("BUILDING VERIFICATION SYSTEM")
