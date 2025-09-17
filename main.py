@@ -98,8 +98,7 @@ async def startup_event():
         # StateManager is already initialized in constructor
         # No need to call initialize method
         
-        # Clean up old jobs and files
-        await state_manager.cleanup_old_jobs()
+        # Clean up old files
         await file_manager.cleanup_old_files()
         
         logger.info("=" * 60)
