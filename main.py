@@ -36,6 +36,10 @@ from backend.app.core.enhanced_main_endpoints import EnhancedMainEndpoints
 from backend.app.core.rasa_integration import RasaIntegration
 from backend.app.core.context_manager import ContextManager, ProjectContext
 from backend.app.core.cleanup_manager import CleanupManager
+from backend.app.api.madrid_endpoints import madrid_router
+from backend.app.api.madrid_verification_endpoints import verification_router
+from backend.app.api.madrid_chatbot_endpoints import chatbot_router
+from backend.app.api.madrid_integration_endpoints import integration_router
 
 # Initialize logging
 initialize_logging()
@@ -120,6 +124,12 @@ async def startup_event():
 async def shutdown_event():
     """Cleanup on shutdown."""
     await state_manager.close()
+
+# Include Madrid routers
+app.include_router(madrid_router)
+app.include_router(verification_router)
+app.include_router(chatbot_router)
+app.include_router(integration_router)
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
