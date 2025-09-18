@@ -5,7 +5,7 @@ Coordina todos los componentes sin afectar la configuración existente.
 
 import logging
 from typing import Dict, List, Any, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 import asyncio
 
