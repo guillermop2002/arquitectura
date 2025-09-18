@@ -36,10 +36,12 @@ from backend.app.core.enhanced_main_endpoints import EnhancedMainEndpoints
 from backend.app.core.rasa_integration import RasaIntegration
 from backend.app.core.context_manager import ContextManager, ProjectContext
 from backend.app.core.cleanup_manager import CleanupManager
+from backend.app.core.neo4j_cleanup_scheduler import cleanup_scheduler
 from backend.app.api.madrid_endpoints import madrid_router
 from backend.app.api.madrid_verification_endpoints import verification_router
 from backend.app.api.madrid_chatbot_endpoints import chatbot_router
 from backend.app.api.madrid_document_classification_endpoints import classification_router
+from backend.app.api.madrid_document_analysis_endpoints import analysis_router
 from backend.app.api.madrid_normative_endpoints import normative_router
 from backend.app.api.madrid_final_checklist_endpoints import final_checklist_router
 from backend.app.api.madrid_integration_endpoints import integration_router
@@ -108,6 +110,9 @@ async def startup_event():
         # Clean up old files
         file_manager.cleanup_temp_files()
         
+        # Iniciar programador de limpieza de Neo4j
+        cleanup_scheduler.start_scheduler()
+        
         logger.info("=" * 60)
         logger.info("BUILDING VERIFICATION SYSTEM")
         logger.info("=" * 60)
@@ -127,12 +132,16 @@ async def startup_event():
 async def shutdown_event():
     """Cleanup on shutdown."""
     await state_manager.close()
+    
+    # Detener programador de limpieza de Neo4j
+    cleanup_scheduler.stop_scheduler()
 
 # Include Madrid routers
 app.include_router(madrid_router)
 app.include_router(verification_router)
 app.include_router(chatbot_router)
 app.include_router(classification_router)
+app.include_router(analysis_router)
 app.include_router(normative_router)
 app.include_router(final_checklist_router)
 app.include_router(integration_router)
@@ -227,6 +236,58 @@ async def cleanup_project(project_id: str, force: bool = False):
         
     except Exception as e:
         logger.error(f"Error cleaning up project {project_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/neo4j/cleanup/manual")
+async def manual_neo4j_cleanup(days_old: int = 30):
+    """Ejecutar limpieza manual de Neo4j."""
+    try:
+        result = cleanup_scheduler.manual_cleanup(days_old)
+        
+        if result['status'] == 'success':
+            return {
+                "status": "success",
+                "cleaned_projects": result['cleaned_projects'],
+                "cutoff_date": result['cutoff_date'],
+                "space_freed": result['space_freed'],
+                "stats_before": result['stats_before'],
+                "stats_after": result['stats_after']
+            }
+        else:
+            raise HTTPException(status_code=500, detail=result['error'])
+        
+    except Exception as e:
+        logger.error(f"Error en limpieza manual de Neo4j: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/neo4j/cleanup/status")
+async def get_neo4j_cleanup_status():
+    """Obtener estado del programador de limpieza de Neo4j."""
+    try:
+        status = cleanup_scheduler.get_cleanup_status()
+        return status
+        
+    except Exception as e:
+        logger.error(f"Error obteniendo estado de limpieza: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/neo4j/cleanup/config")
+async def update_neo4j_cleanup_config(config: dict):
+    """Actualizar configuración del programador de limpieza."""
+    try:
+        success = cleanup_scheduler.update_cleanup_config(config)
+        
+        if success:
+            return {
+                "status": "success",
+                "message": "Configuración actualizada correctamente",
+                "new_config": cleanup_scheduler.cleanup_config
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Error actualizando configuración")
+        
+    except Exception as e:
+        logger.error(f"Error actualizando configuración: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/cleanup/old-data")

@@ -589,6 +589,123 @@ class Neo4jManager:
             self.logger.error(f"Error limpiando datos del proyecto: {e}")
             return False
     
+    def create_issue_node(self, issue_data: Dict[str, Any], project_id: str) -> str:
+        """Crea un nodo de problema/ambigüedad en el grafo"""
+        try:
+            with self.get_session() as session:
+                node_id = f"issue_{issue_data.get('id', 'unknown')}"
+                
+                query = """
+                MERGE (i:Issue {id: $node_id})
+                SET i.title = $title,
+                    i.description = $description,
+                    i.priority = $priority,
+                    i.status = $status,
+                    i.type = $type,
+                    i.project_id = $project_id,
+                    i.created_at = datetime(),
+                    i.updated_at = datetime()
+                RETURN i.id as node_id
+                """
+                
+                result = session.run(query, {
+                    'node_id': node_id,
+                    'title': issue_data.get('title', ''),
+                    'description': issue_data.get('description', ''),
+                    'priority': issue_data.get('priority', 'medium'),
+                    'status': issue_data.get('status', 'pending'),
+                    'type': issue_data.get('type', 'issue'),
+                    'project_id': project_id
+                })
+                
+                return result.single()["node_id"]
+                
+        except Exception as e:
+            self.logger.error(f"Error creando nodo de problema: {e}")
+            return None
+    
+    def create_relationship(self, source_id: str, target_id: str, 
+                          relationship_type: str, properties: Dict[str, Any] = None) -> bool:
+        """Crea una relación entre dos nodos"""
+        try:
+            with self.get_session() as session:
+                query = """
+                MATCH (source {id: $source_id})
+                MATCH (target {id: $target_id})
+                MERGE (source)-[r:RELATIONSHIP {type: $rel_type}]->(target)
+                SET r += $properties,
+                    r.created_at = datetime()
+                RETURN r
+                """
+                
+                result = session.run(query, {
+                    'source_id': source_id,
+                    'target_id': target_id,
+                    'rel_type': relationship_type,
+                    'properties': properties or {}
+                })
+                
+                return result.single() is not None
+                
+        except Exception as e:
+            self.logger.error(f"Error creando relación: {e}")
+            return False
+    
+    def cleanup_old_projects(self, cutoff_date: datetime) -> int:
+        """Limpia proyectos antiguos del grafo"""
+        try:
+            with self.get_session() as session:
+                # Eliminar proyectos y todos sus nodos relacionados
+                query = """
+                MATCH (p:Project)
+                WHERE p.created_at < datetime($cutoff_date)
+                DETACH DELETE p
+                RETURN count(p) as deleted_count
+                """
+                
+                result = session.run(query, {'cutoff_date': cutoff_date.isoformat()})
+                deleted_count = result.single()["deleted_count"]
+                
+                self.logger.info(f"Limpieza Neo4j: {deleted_count} proyectos eliminados")
+                return deleted_count
+                
+        except Exception as e:
+            self.logger.error(f"Error en limpieza de Neo4j: {e}")
+            return 0
+    
+    def get_project_statistics(self) -> Dict[str, Any]:
+        """Obtiene estadísticas del grafo de conocimiento"""
+        try:
+            with self.get_session() as session:
+                # Contar nodos por tipo
+                nodes_query = """
+                MATCH (n)
+                RETURN labels(n)[0] as node_type, count(n) as count
+                """
+                
+                result = session.run(nodes_query)
+                node_counts = {record["node_type"]: record["count"] for record in result}
+                
+                # Contar relaciones por tipo
+                rels_query = """
+                MATCH ()-[r]->()
+                RETURN r.type as rel_type, count(r) as count
+                """
+                
+                result = session.run(rels_query)
+                rel_counts = {record["rel_type"]: record["count"] for record in result}
+                
+                return {
+                    'node_counts': node_counts,
+                    'relationship_counts': rel_counts,
+                    'total_nodes': sum(node_counts.values()),
+                    'total_relationships': sum(rel_counts.values())
+                }
+                
+        except Exception as e:
+            self.logger.error(f"Error obteniendo estadísticas: {e}")
+            return {}
+    
     def close(self):
         """Cierra la conexión con Neo4j"""
         if self.driver:

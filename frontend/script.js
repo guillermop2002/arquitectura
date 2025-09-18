@@ -3,7 +3,7 @@
 class MadridVerificationSystem {
     constructor() {
         this.currentStep = 1;
-        this.maxSteps = 7; // Aumentado para incluir el chatbot
+        this.maxSteps = 7; // 7 pasos: Info → Subida → Clasificación → Normativa → Análisis → Chatbot → Checklist
         this.projectData = {
             is_existing_building: false,
             primary_use: null,
@@ -218,6 +218,14 @@ class MadridVerificationSystem {
         if (applyNormativeBtn) {
             applyNormativeBtn.addEventListener('click', () => {
                 this.applyNormative();
+            });
+        }
+
+        // Document analysis button
+        const analyzeDocumentsBtn = document.getElementById('analyzeDocumentsBtn');
+        if (analyzeDocumentsBtn) {
+            analyzeDocumentsBtn.addEventListener('click', () => {
+                this.analyzeDocuments();
             });
         }
 
@@ -484,9 +492,8 @@ class MadridVerificationSystem {
                             return false;
                         }
                 break;
-            case 5:
-                // No validation needed for step 5
-                return true;
+            case 5: // Document Analysis
+                return this.projectData.analysis_results && this.projectData.analysis_results.documents_analyzed > 0;
         }
         return true;
     }
@@ -501,8 +508,8 @@ class MadridVerificationSystem {
                 return true; // Secondary uses are optional
             case 4:
                 return this.projectData.memoria_files.length > 0 && this.projectData.planos_files.length > 0;
-            case 5:
-                return true;
+            case 5: // Document Analysis
+                return this.projectData.analysis_results && this.projectData.analysis_results.documents_analyzed > 0;
         }
                     return false;
                 }
@@ -1004,9 +1011,8 @@ class MadridVerificationSystem {
                 return true; // Secondary uses are optional
             case 4:
                 return this.projectData.memoria_files.length > 0 && this.projectData.planos_files.length > 0;
-            case 5:
-                // El chatbot se maneja automáticamente
-                return true;
+            case 5: // Document Analysis
+                return this.projectData.analysis_results && this.projectData.analysis_results.documents_analyzed > 0;
             case 6:
                 return true;
         }
@@ -1286,6 +1292,157 @@ class MadridVerificationSystem {
         
         html += '</div></div>';
         container.innerHTML = html;
+    }
+
+    // =============================================================================
+    // DOCUMENT ANALYSIS FUNCTIONS
+    // =============================================================================
+
+    async analyzeDocuments() {
+        console.log('Analizando documentos...');
+        
+        try {
+            this.showSpinner();
+            
+            // Preparar datos para análisis
+            const analysisData = {
+                project_data: {
+                    project_id: this.projectData.jobId || 'temp_project',
+                    primary_use: this.projectData.primary_use,
+                    secondary_uses: this.projectData.secondary_uses,
+                    is_existing_building: this.projectData.is_existing_building,
+                    memoria_files: this.projectData.memoria_files.map(f => f.name),
+                    planos_files: this.projectData.planos_files.map(f => f.name)
+                },
+                files: {
+                    memoria: this.projectData.memoria_files,
+                    planos: this.projectData.planos_files
+                }
+            };
+
+            const response = await fetch('/api/madrid/analyze-documents', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(analysisData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('Análisis completado:', result);
+            
+            // Guardar resultados del análisis
+            this.projectData.analysis_results = result;
+            
+            // Mostrar resultados en la interfaz
+            this.displayAnalysisResults(result);
+            
+            this.hideSpinner();
+            this.showAlert('Análisis de documentos completado', 'success');
+            
+        } catch (error) {
+            console.error('Error analizando documentos:', error);
+            this.hideSpinner();
+            this.showAlert('Error en el análisis: ' + error.message, 'danger');
+        }
+    }
+
+    displayAnalysisResults(results) {
+        const container = document.getElementById('analysisResults');
+        if (!container) return;
+        
+        let html = '<div class="analysis-results">';
+        html += '<h5><i class="fas fa-search text-primary"></i> Resultados del Análisis</h5>';
+        
+        // Resumen del análisis
+        html += '<div class="row mb-4">';
+        html += '<div class="col-md-4">';
+        html += '<div class="card text-center">';
+        html += '<div class="card-body">';
+        html += `<h5 class="card-title text-primary">${results.documents_analyzed || 0}</h5>`;
+        html += '<p class="card-text">Documentos Analizados</p>';
+        html += '</div></div></div>';
+        
+        html += '<div class="col-md-4">';
+        html += '<div class="card text-center">';
+        html += '<div class="card-body">';
+        html += `<h5 class="card-title text-warning">${results.ambiguities_detected || 0}</h5>`;
+        html += '<p class="card-text">Ambigüedades Detectadas</p>';
+        html += '</div></div></div>';
+        
+        html += '<div class="col-md-4">';
+        html += '<div class="card text-center">';
+        html += '<div class="card-body">';
+        html += `<h5 class="card-title text-success">${results.compliance_issues || 0}</h5>`;
+        html += '<p class="card-text">Problemas de Cumplimiento</p>';
+        html += '</div></div></div>';
+        html += '</div>';
+        
+        // Detalles del análisis
+        if (results.analysis_details) {
+            html += '<div class="analysis-details">';
+            html += '<h6>Detalles del Análisis</h6>';
+            html += '<div class="accordion" id="analysisAccordion">';
+            
+            results.analysis_details.forEach((detail, index) => {
+                html += '<div class="accordion-item">';
+                html += `<h2 class="accordion-header" id="analysisHeading${index}">`;
+                html += `<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#analysisCollapse${index}">`;
+                html += `<i class="fas fa-file-alt me-2"></i>${detail.document_name}`;
+                html += '</button></h2>';
+                html += `<div id="analysisCollapse${index}" class="accordion-collapse collapse" data-bs-parent="#analysisAccordion">`;
+                html += '<div class="accordion-body">';
+                html += `<p><strong>Tipo:</strong> ${detail.document_type}</p>`;
+                html += `<p><strong>Confianza:</strong> ${(detail.confidence * 100).toFixed(1)}%</p>`;
+                html += `<p><strong>Páginas analizadas:</strong> ${detail.pages_analyzed}</p>`;
+                if (detail.key_findings && detail.key_findings.length > 0) {
+                    html += '<p><strong>Hallazgos clave:</strong></p>';
+                    html += '<ul>';
+                    detail.key_findings.forEach(finding => {
+                        html += `<li>${finding}</li>`;
+                    });
+                    html += '</ul>';
+                }
+                html += '</div></div></div>';
+            });
+            
+            html += '</div></div>';
+        }
+        
+        html += '</div>';
+        container.innerHTML = html;
+        
+        // Mostrar ambigüedades si las hay
+        if (results.ambiguities && results.ambiguities.length > 0) {
+            this.displayAmbiguities(results.ambiguities);
+        }
+    }
+
+    displayAmbiguities(ambiguities) {
+        const container = document.getElementById('ambiguitiesDetected');
+        const listContainer = document.getElementById('ambiguitiesList');
+        
+        if (!container || !listContainer) return;
+        
+        container.style.display = 'block';
+        
+        let html = '';
+        ambiguities.forEach((ambiguity, index) => {
+            html += '<div class="list-group-item">';
+            html += '<div class="d-flex w-100 justify-content-between">';
+            html += `<h6 class="mb-1">${ambiguity.title}</h6>`;
+            html += `<small class="text-muted">Prioridad: ${ambiguity.priority}</small>`;
+            html += '</div>';
+            html += `<p class="mb-1">${ambiguity.description}</p>`;
+            html += `<small class="text-muted">Documento: ${ambiguity.document_name} | Página: ${ambiguity.page_number}</small>`;
+            html += '</div>';
+        });
+        
+        listContainer.innerHTML = html;
     }
 
     // =============================================================================

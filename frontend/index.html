@@ -282,9 +282,39 @@
                                     </div>
                                 </div>
 
-                                <!-- Step 5: Ambiguity Resolution Chatbot -->
+                                <!-- Step 5: Document Analysis -->
                                 <div id="step5" class="verification-step">
-                                    <h4 class="mb-4">5. Resolución de Ambigüedades</h4>
+                                    <h4 class="mb-4">5. Análisis de Documentos</h4>
+                                    
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-search"></i> Análisis Inteligente</h6>
+                                        <p class="mb-0">
+                                            El sistema analizará automáticamente los documentos subidos para detectar ambigüedades y problemas normativos.
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="text-center mb-4">
+                                        <button id="analyzeDocumentsBtn" class="btn btn-primary btn-lg">
+                                            <i class="fas fa-search"></i> Analizar Documentos
+                                        </button>
+                                    </div>
+                                    
+                                    <div id="analysisResults" class="mt-4">
+                                        <!-- Los resultados del análisis se mostrarán aquí -->
+                                    </div>
+                                    
+                                    <div id="ambiguitiesDetected" class="mt-4" style="display: none;">
+                                        <h6><i class="fas fa-exclamation-triangle text-warning"></i> Ambigüedades Detectadas</h6>
+                                        <div id="ambiguitiesList" class="list-group">
+                                            <!-- Las ambigüedades se mostrarán aquí -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 6: Ambiguity Resolution Chatbot -->
+                                <div id="step6" class="verification-step">
+                                    <h4 class="mb-4">6. Resolución de Ambigüedades</h4>
+                                    
                                     <div class="chatbot-container">
                                         <div class="chatbot-header">
                                             <div class="chatbot-avatar">
@@ -295,7 +325,7 @@
                                                 <small class="text-muted">Resolviendo ambigüedades del proyecto</small>
                                             </div>
                                             <div class="chatbot-status">
-                                                <span id="chatbotStatus" class="badge bg-warning">Analizando</span>
+                                                <span id="chatbotStatus" class="badge bg-warning">Esperando</span>
                                             </div>
                                         </div>
                                         
@@ -306,8 +336,8 @@
                                                 </div>
                                                 <div class="message-content">
                                                     <div class="message-text">
-                                                        ¡Hola! Soy el asistente de verificación arquitectónica de Madrid. 
-                                                        Estoy analizando tu proyecto para detectar posibles ambigüedades que necesiten aclaración.
+                                                        ¡Hola! He analizado tus documentos y he detectado algunas ambigüedades que necesitan aclaración.
+                                                        Te haré preguntas específicas para resolverlas y determinar si incumplen la normativa.
                                                     </div>
                                                     <div class="message-time">
                                                         <small class="text-muted">Ahora</small>
@@ -341,9 +371,10 @@
                                     </div>
                                 </div>
 
-                                <!-- Step 6: Final Checklist -->
-                                <div id="step6" class="verification-step">
-                                    <h4 class="mb-4">6. Checklist Final de Verificación</h4>
+                                <!-- Step 7: Final Checklist -->
+                                <div id="step7" class="verification-step">
+                                    <h4 class="mb-4">7. Checklist Final de Verificación</h4>
+                                    
                                     <div class="alert alert-info">
                                         <h6><i class="fas fa-clipboard-check"></i> Checklist Final</h6>
                                         <p class="mb-0">
@@ -358,20 +389,6 @@
                                     </div>
                                     
                                     <div id="finalChecklistContainer" class="mt-4"></div>
-                                </div>
-
-                                <!-- Step 7: Madrid Verification Process -->
-                                <div id="step7" class="verification-step">
-                                    <h4 class="mb-4">7. Proceso de Verificación Madrid</h4>
-                                    <div class="progress mb-4">
-                                        <div class="progress-bar" role="progressbar" style="width: 0%" id="progressBar"></div>
-                                    </div>
-                                    <div id="verificationStatus" class="text-center">
-                                        <div class="spinner-border text-primary" role="status">
-                                            <span class="visually-hidden">Procesando...</span>
-                                        </div>
-                                        <p class="mt-2">Iniciando verificación Madrid...</p>
-                                    </div>
                                 </div>
 
                                 <!-- Navigation Buttons -->

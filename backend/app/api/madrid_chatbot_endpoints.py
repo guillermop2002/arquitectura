@@ -15,6 +15,7 @@ from ..core.madrid_chatbot_system import MadridChatbotSystem, ChatbotSession, Ch
 from ..core.madrid_ambiguity_detector import MadridAmbiguityDetector
 from ..core.madrid_verification_engine import MadridVerificationEngine
 from ..core.madrid_floor_processor import MadridFloorProcessor
+from ..core.neo4j_manager import Neo4jManager
 from ..models.madrid_schemas import MadridProjectData
 
 logger = logging.getLogger(__name__)
