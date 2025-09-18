@@ -1,13 +1,15 @@
-// Sistema de Verificación Arquitectónica - Frontend JavaScript
+// Sistema de Verificación Arquitectónica Madrid - Frontend JavaScript
 
-class VerificationSystem {
+class MadridVerificationSystem {
     constructor() {
         this.currentStep = 1;
-        this.maxSteps = 4;
+        this.maxSteps = 5;
         this.projectData = {
-            type: null,
+            is_existing_building: false,
+            primary_use: null,
+            has_secondary_uses: false,
+            secondary_uses: [],
             files: [],
-            details: {},
             jobId: null
         };
         this.init();
@@ -49,15 +51,210 @@ class VerificationSystem {
         });
     }
 
-    selectProjectType(type) {
-        this.projectData.type = type;
+    toggleBuildingType() {
+        this.projectData.is_existing_building = document.getElementById('isExistingBuilding').checked;
+        this.updateNavigationButtons();
+    }
+
+    updatePrimaryUse() {
+        this.projectData.primary_use = document.getElementById('primaryUse').value;
+        this.updateNavigationButtons();
+    }
+
+    toggleSecondaryUses() {
+        this.projectData.has_secondary_uses = document.getElementById('hasSecondaryUses').checked;
+        const section = document.getElementById('secondaryUsesSection');
         
-        // Update UI
-        document.querySelectorAll('.project-type-card').forEach(card => {
-            card.classList.remove('selected');
-        });
-        event.currentTarget.classList.add('selected');
+        if (this.projectData.has_secondary_uses) {
+            section.classList.remove('d-none');
+        } else {
+            section.classList.add('d-none');
+            // Clear secondary uses
+            this.projectData.secondary_uses = [];
+            document.getElementById('secondaryUsesFloors').innerHTML = '';
+        }
         
+        this.updateNavigationButtons();
+    }
+
+    toggleSecondaryUse(useType) {
+        const checkbox = document.getElementById(`sec_${useType.replace('-', '_')}`);
+        const isChecked = checkbox.checked;
+        
+        if (isChecked) {
+            // Add to secondary uses
+            this.projectData.secondary_uses.push({
+                use_type: useType,
+                floors: []
+            });
+            this.createFloorSelector(useType);
+        } else {
+            // Remove from secondary uses
+            this.projectData.secondary_uses = this.projectData.secondary_uses.filter(use => use.use_type !== useType);
+            this.removeFloorSelector(useType);
+        }
+        
+        this.updateNavigationButtons();
+    }
+
+    createFloorSelector(useType) {
+        const container = document.getElementById('secondaryUsesFloors');
+        const floorSelectorId = `floors_${useType.replace('-', '_')}`;
+        
+        const floorSelector = document.createElement('div');
+        floorSelector.className = 'card mb-3';
+        floorSelector.id = `floor_selector_${useType.replace('-', '_')}`;
+        floorSelector.innerHTML = `
+            <div class="card-header">
+                <h6 class="mb-0">Plantas para uso: ${this.getUseDisplayName(useType)}</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <label class="form-label">Selecciona las plantas donde se encuentra este uso:</label>
+                        <div class="floor-selection">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h6>Plantas Especiales:</h6>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="-0.5" id="${floorSelectorId}_entresotano" onchange="updateSecondaryUseFloors('${useType}')">
+                                        <label class="form-check-label" for="${floorSelectorId}_entresotano">Entresótano (-0.5)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="0" id="${floorSelectorId}_planta_baja" onchange="updateSecondaryUseFloors('${useType}')">
+                                        <label class="form-check-label" for="${floorSelectorId}_planta_baja">Planta Baja (0)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="0.5" id="${floorSelectorId}_entreplanta" onchange="updateSecondaryUseFloors('${useType}')">
+                                        <label class="form-check-label" for="${floorSelectorId}_entreplanta">Entreplanta (0.5)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Sótanos (-100 a -1):</h6>
+                                    <div class="floor-range">
+                                        <input type="number" class="form-control form-control-sm mb-2" placeholder="Desde" min="-100" max="-1" id="${floorSelectorId}_sotano_desde">
+                                        <input type="number" class="form-control form-control-sm" placeholder="Hasta" min="-100" max="-1" id="${floorSelectorId}_sotano_hasta">
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addFloorRange('${useType}', 'sotano')">Agregar Rango</button>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Pisos (1 a 100):</h6>
+                                    <div class="floor-range">
+                                        <input type="number" class="form-control form-control-sm mb-2" placeholder="Desde" min="1" max="100" id="${floorSelectorId}_piso_desde">
+                                        <input type="number" class="form-control form-control-sm" placeholder="Hasta" min="1" max="100" id="${floorSelectorId}_piso_hasta">
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addFloorRange('${useType}', 'piso')">Agregar Rango</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h6>Plantas Seleccionadas:</h6>
+                                <div id="${floorSelectorId}_selected" class="selected-floors">
+                                    <span class="text-muted">Ninguna planta seleccionada</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(floorSelector);
+    }
+
+    removeFloorSelector(useType) {
+        const selector = document.getElementById(`floor_selector_${useType.replace('-', '_')}`);
+        if (selector) {
+            selector.remove();
+        }
+    }
+
+    updateSecondaryUseFloors(useType) {
+        const floorSelectorId = `floors_${useType.replace('-', '_')}`;
+        const checkboxes = document.querySelectorAll(`#${floorSelectorId}_selected`).length > 0 ? 
+            document.querySelectorAll(`input[id^="${floorSelectorId}_"]:checked`) : 
+            document.querySelectorAll(`input[id^="${floorSelectorId}_"]:checked`);
+        
+        const floors = Array.from(checkboxes).map(cb => parseFloat(cb.value));
+        
+        // Update project data
+        const secondaryUse = this.projectData.secondary_uses.find(use => use.use_type === useType);
+        if (secondaryUse) {
+            secondaryUse.floors = floors;
+        }
+        
+        // Update display
+        this.updateSelectedFloorsDisplay(useType, floors);
+        this.updateNavigationButtons();
+    }
+
+    updateSelectedFloorsDisplay(useType, floors) {
+        const floorSelectorId = `floors_${useType.replace('-', '_')}`;
+        const display = document.getElementById(`${floorSelectorId}_selected`);
+        
+        if (floors.length === 0) {
+            display.innerHTML = '<span class="text-muted">Ninguna planta seleccionada</span>';
+        } else {
+            const floorNames = floors.map(floor => {
+                if (floor === -0.5) return 'Entresótano';
+                if (floor === 0) return 'Planta Baja';
+                if (floor === 0.5) return 'Entreplanta';
+                if (floor < 0) return `Sótano ${Math.abs(floor)}`;
+                return `Planta ${floor}`;
+            });
+            display.innerHTML = floorNames.map(name => `<span class="badge bg-primary me-1">${name}</span>`).join('');
+        }
+    }
+
+    getUseDisplayName(useType) {
+        const names = {
+            'residencial': 'Residencial',
+            'industrial': 'Industrial',
+            'garaje-aparcamiento': 'Garaje-Aparcamiento',
+            'servicios_terciarios': 'Servicios Terciarios',
+            'dotacional_zona_verde': 'Dotacional zona verde',
+            'dotacional_deportivo': 'Dotacional Deportivo',
+            'dotacional_equipamiento': 'Dotacional equipamiento',
+            'dotacional_servicios_publicos': 'Dotacional servicios públicos',
+            'dotacional_administracion_publica': 'Dotacional administración pública',
+            'dotacional_infraestructural': 'Dotacional Infraestructural',
+            'dotacional_via_publica': 'Dotacional Vía Pública',
+            'dotacional_transporte': 'Dotacional Transporte'
+        };
+        return names[useType] || useType;
+    }
+
+    addFloorRange(useType, type) {
+        const floorSelectorId = `floors_${useType.replace('-', '_')}`;
+        const desde = document.getElementById(`${floorSelectorId}_${type}_desde`).value;
+        const hasta = document.getElementById(`${floorSelectorId}_${type}_hasta`).value;
+        
+        if (!desde || !hasta) {
+            this.showAlert('Por favor, completa ambos campos del rango.', 'warning');
+            return;
+        }
+        
+        const start = parseInt(desde);
+        const end = parseInt(hasta);
+        
+        if (start > end) {
+            this.showAlert('El valor "desde" debe ser menor o igual que "hasta".', 'warning');
+            return;
+        }
+        
+        // Add range to floors
+        const secondaryUse = this.projectData.secondary_uses.find(use => use.use_type === useType);
+        if (secondaryUse) {
+            for (let i = start; i <= end; i++) {
+                if (!secondaryUse.floors.includes(i)) {
+                    secondaryUse.floors.push(i);
+                }
+            }
+            // Sort floors
+            secondaryUse.floors.sort((a, b) => a - b);
+        }
+        
+        // Update display
+        this.updateSelectedFloorsDisplay(useType, secondaryUse.floors);
         this.updateNavigationButtons();
     }
 
@@ -88,7 +285,7 @@ class VerificationSystem {
                     <small class="text-muted">${this.formatFileSize(file.size)}</small>
                 </div>
                 <div class="file-actions">
-                    <button class="btn btn-sm btn-outline-danger" onclick="verificationSystem.removeFile(${index})">
+                    <button class="btn btn-sm btn-outline-danger" onclick="madridSystem.removeFile(${index})">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -127,30 +324,34 @@ class VerificationSystem {
     validateCurrentStep() {
         switch (this.currentStep) {
             case 1:
-                if (!this.projectData.type) {
-                    this.showAlert('Por favor, selecciona el tipo de proyecto.', 'warning');
-                    return false;
-                }
-                break;
+                // Building type is optional, always valid
+                return true;
             case 2:
-                if (this.projectData.files.length === 0) {
-                    this.showAlert('Por favor, sube al menos un archivo PDF.', 'warning');
+                if (!this.projectData.primary_use) {
+                    this.showAlert('Por favor, selecciona el uso principal del edificio.', 'warning');
                     return false;
                 }
                 break;
             case 3:
-                const projectName = document.getElementById('projectName').value.trim();
-                const buildingUse = document.getElementById('buildingUse').value;
-                if (!projectName || !buildingUse) {
-                    this.showAlert('Por favor, completa todos los campos requeridos.', 'warning');
+                if (this.projectData.has_secondary_uses) {
+                    if (this.projectData.secondary_uses.length === 0) {
+                        this.showAlert('Por favor, selecciona al menos un uso secundario.', 'warning');
+                        return false;
+                    }
+                    // Check if all secondary uses have floors selected
+                    for (const use of this.projectData.secondary_uses) {
+                        if (use.floors.length === 0) {
+                            this.showAlert(`Por favor, selecciona las plantas para el uso: ${this.getUseDisplayName(use.use_type)}`, 'warning');
+                            return false;
+                        }
+                    }
+                }
+                break;
+            case 4:
+                if (this.projectData.files.length === 0) {
+                    this.showAlert('Por favor, sube al menos un archivo PDF (memoria o planos).', 'warning');
                     return false;
                 }
-                this.projectData.details = {
-                    name: projectName,
-                    location: document.getElementById('projectLocation').value.trim(),
-                    buildingUse: buildingUse,
-                    totalArea: document.getElementById('totalArea').value
-                };
                 break;
         }
         return true;
@@ -169,8 +370,8 @@ class VerificationSystem {
         prevBtn.disabled = this.currentStep === 1;
 
         if (this.currentStep === this.maxSteps) {
-            nextBtn.innerHTML = '<i class="fas fa-check me-2"></i>Iniciar Verificación';
-            nextBtn.onclick = () => this.startVerification();
+            nextBtn.innerHTML = '<i class="fas fa-check me-2"></i>Iniciar Verificación Madrid';
+            nextBtn.onclick = () => this.startMadridVerification();
         } else {
             nextBtn.innerHTML = 'Siguiente <i class="fas fa-arrow-right ms-2"></i>';
             nextBtn.onclick = () => this.changeStep(1);
@@ -181,42 +382,55 @@ class VerificationSystem {
     canProceedToNextStep() {
         switch (this.currentStep) {
             case 1:
-                return this.projectData.type !== null;
+                return true; // Building type is optional
             case 2:
-                return this.projectData.files.length > 0;
+                return this.projectData.primary_use !== null;
             case 3:
-                const projectName = document.getElementById('projectName').value.trim();
-                const buildingUse = document.getElementById('buildingUse').value;
-                return projectName && buildingUse;
+                if (this.projectData.has_secondary_uses) {
+                    return this.projectData.secondary_uses.length > 0 && 
+                           this.projectData.secondary_uses.every(use => use.floors.length > 0);
+                }
+                return true;
+            case 4:
+                return this.projectData.files.length > 0;
             default:
                 return true;
         }
     }
 
-    async startVerification() {
+    async startMadridVerification() {
         if (!this.validateCurrentStep()) {
             return;
         }
 
-        this.currentStep = 4;
+        this.currentStep = 5;
         this.updateStepVisibility();
         this.updateNavigationButtons();
 
         try {
             // Show loading state
-            this.showVerificationStatus('Iniciando verificación...', 'loading');
+            this.showVerificationStatus('Iniciando verificación Madrid...', 'loading');
 
-            // Prepare form data
-            const formData = new FormData();
-            this.projectData.files.forEach(file => {
-                formData.append('files', file);
-            });
-            formData.append('is_existing_building', this.projectData.type === 'existing');
+            // Prepare project data for Madrid API
+            const madridProjectData = {
+                is_existing_building: this.projectData.is_existing_building,
+                primary_use: this.projectData.primary_use,
+                has_secondary_uses: this.projectData.has_secondary_uses,
+                secondary_uses: this.projectData.secondary_uses,
+                files: this.projectData.files.map(file => file.name) // Just file names for now
+            };
 
-            // Start verification
-            const response = await fetch('/verify', {
+            // Start Madrid verification
+            const response = await fetch('/madrid/integration/process-project', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    project_data: madridProjectData,
+                    auto_resolve_ambiguities: false,
+                    generate_report: true
+                })
             });
 
             if (!response.ok) {
@@ -224,46 +438,15 @@ class VerificationSystem {
             }
 
             const result = await response.json();
-            this.projectData.jobId = result.job_id;
+            this.projectData.jobId = result.project_id;
 
-            // Show success and continue with next phase
-            this.showVerificationStatus('Verificación inicial completada. Continuando con análisis completo...', 'success');
-            
-            // Continue with complete verification
-            await this.continueVerification();
-
-        } catch (error) {
-            console.error('Error during verification:', error);
-            this.showVerificationStatus('Error durante la verificación. Por favor, inténtalo de nuevo.', 'error');
-        }
-    }
-
-    async continueVerification() {
-        try {
-            this.showVerificationStatus('Realizando verificación normativa completa...', 'loading');
-
-            const formData = new FormData();
-            formData.append('job_id', this.projectData.jobId);
-            formData.append('is_existing_building', this.projectData.type === 'existing');
-
-            const response = await fetch('/continue-verification', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            
-            // Show final results
-            this.showVerificationStatus('Verificación completada exitosamente!', 'success');
+            // Show success and display results
+            this.showVerificationStatus('Verificación Madrid completada exitosamente!', 'success');
             this.displayResults(result);
 
         } catch (error) {
-            console.error('Error during complete verification:', error);
-            this.showVerificationStatus('Error durante la verificación completa. Por favor, inténtalo de nuevo.', 'error');
+            console.error('Error during Madrid verification:', error);
+            this.showVerificationStatus('Error durante la verificación Madrid. Por favor, inténtalo de nuevo.', 'error');
         }
     }
 
@@ -304,78 +487,81 @@ class VerificationSystem {
         resultsContainer.scrollIntoView({ behavior: 'smooth' });
 
         // Generate results HTML
-        resultsContent.innerHTML = this.generateResultsHTML(result);
+        resultsContent.innerHTML = this.generateMadridResultsHTML(result);
     }
 
-    generateResultsHTML(result) {
-        const issues = result.issues || [];
-        const summary = result.summary || {};
+    generateMadridResultsHTML(result) {
+        const verification = result.verification_result || {};
+        const summary = {
+            overall_status: verification.overall_status || 'unknown',
+            compliance_percentage: verification.compliance_percentage || 0,
+            total_items: verification.total_items || 0,
+            compliant_items: verification.compliant_items || 0,
+            non_compliant_items: verification.non_compliant_items || 0
+        };
 
         return `
             <div class="row">
                 <!-- Summary Cards -->
                 <div class="col-md-3">
                     <div class="summary-card">
-                        <div class="summary-number">${summary.total_issues || 0}</div>
-                        <div class="summary-label">Total de Issues</div>
+                        <div class="summary-number">${summary.total_items}</div>
+                        <div class="summary-label">Total de Items</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                        <div class="summary-number">${summary.compliant_items}</div>
+                        <div class="summary-label">Cumplidos</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="summary-card" style="background: linear-gradient(135deg, #dc3545, #fd7e14);">
-                        <div class="summary-number">${summary.high_severity || 0}</div>
-                        <div class="summary-label">Alta Prioridad</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="summary-card" style="background: linear-gradient(135deg, #ffc107, #fd7e14);">
-                        <div class="summary-number">${summary.medium_severity || 0}</div>
-                        <div class="summary-label">Media Prioridad</div>
+                        <div class="summary-number">${summary.non_compliant_items}</div>
+                        <div class="summary-label">No Cumplidos</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="summary-card" style="background: linear-gradient(135deg, #0dcaf0, #6f42c1);">
-                        <div class="summary-number">${summary.low_severity || 0}</div>
-                        <div class="summary-label">Baja Prioridad</div>
+                        <div class="summary-number">${summary.compliance_percentage}%</div>
+                        <div class="summary-label">Cumplimiento</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Issues List -->
-            <div class="mt-5">
-                <h3>Issues Detectados</h3>
-                ${issues.length > 0 ? issues.map(issue => `
-                    <div class="issue-card ${issue.severity?.toLowerCase() || 'low'}">
-                        <div class="issue-title">
-                            <span class="status-indicator ${issue.severity?.toLowerCase() || 'low'}"></span>
-                            ${issue.title || 'Issue sin título'}
-                        </div>
-                        <div class="issue-description">
-                            ${issue.description || 'Sin descripción disponible'}
-                        </div>
-                        ${issue.recommendation ? `
-                            <div class="issue-recommendation">
-                                <strong>Recomendación:</strong> ${issue.recommendation}
-                            </div>
-                        ` : ''}
-                        ${issue.reference ? `
-                            <div class="mt-2">
-                                <small class="text-muted">
-                                    <i class="fas fa-book me-1"></i>
-                                    Referencia: ${issue.reference}
-                                </small>
-                            </div>
-                        ` : ''}
+            <!-- Status -->
+            <div class="mt-4">
+                <div class="alert alert-${summary.overall_status === 'compliant' ? 'success' : 'warning'}">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-${summary.overall_status === 'compliant' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                        Estado General: ${summary.overall_status === 'compliant' ? 'CUMPLE' : 'NO CUMPLE'}
+                    </h5>
+                    <p class="mb-0">El proyecto ${summary.overall_status === 'compliant' ? 'cumple' : 'no cumple'} con la normativa PGOUM de Madrid.</p>
+                </div>
+            </div>
+
+            <!-- Project Data Summary -->
+            <div class="mt-4">
+                <h4>Datos del Proyecto Madrid</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Tipo de edificio:</strong> ${this.projectData.is_existing_building ? 'Existente' : 'Nuevo'}</p>
+                        <p><strong>Uso principal:</strong> ${this.getUseDisplayName(this.projectData.primary_use)}</p>
                     </div>
-                `).join('') : '<p class="text-muted">No se detectaron issues en este proyecto.</p>'}
+                    <div class="col-md-6">
+                        <p><strong>Usos secundarios:</strong> ${this.projectData.has_secondary_uses ? this.projectData.secondary_uses.length : 'Ninguno'}</p>
+                        <p><strong>Archivos subidos:</strong> ${this.projectData.files.length}</p>
+                    </div>
+                </div>
             </div>
 
             <!-- Actions -->
             <div class="mt-4 text-center">
-                <button class="btn btn-primary me-2" onclick="verificationSystem.downloadReport()">
+                <button class="btn btn-primary me-2" onclick="madridSystem.downloadReport()">
                     <i class="fas fa-download me-2"></i>
-                    Descargar Reporte
+                    Descargar Reporte Madrid
                 </button>
-                <button class="btn btn-outline-primary" onclick="verificationSystem.startNewVerification()">
+                <button class="btn btn-outline-primary" onclick="madridSystem.startNewVerification()">
                     <i class="fas fa-plus me-2"></i>
                     Nueva Verificación
                 </button>
@@ -385,7 +571,7 @@ class VerificationSystem {
 
     downloadReport() {
         if (this.projectData.jobId) {
-            window.open(`/project/${this.projectData.jobId}/report`, '_blank');
+            window.open(`/madrid/integration/reports/${this.projectData.jobId}`, '_blank');
         } else {
             this.showAlert('No hay reporte disponible para descargar.', 'warning');
         }
@@ -395,23 +581,28 @@ class VerificationSystem {
         // Reset form
         this.currentStep = 1;
         this.projectData = {
-            type: null,
+            is_existing_building: false,
+            primary_use: null,
+            has_secondary_uses: false,
+            secondary_uses: [],
             files: [],
-            details: {},
             jobId: null
         };
 
         // Reset UI
-        document.querySelectorAll('.project-type-card').forEach(card => {
-            card.classList.remove('selected');
-        });
+        document.getElementById('isExistingBuilding').checked = false;
+        document.getElementById('primaryUse').value = '';
+        document.getElementById('hasSecondaryUses').checked = false;
+        document.getElementById('secondaryUsesSection').classList.add('d-none');
+        document.getElementById('secondaryUsesFloors').innerHTML = '';
         document.getElementById('fileList').innerHTML = '';
         document.getElementById('fileInput').value = '';
-        document.getElementById('projectName').value = '';
-        document.getElementById('projectLocation').value = '';
-        document.getElementById('buildingUse').value = '';
-        document.getElementById('totalArea').value = '';
         document.getElementById('resultsContainer').classList.add('d-none');
+
+        // Clear all secondary use checkboxes
+        document.querySelectorAll('input[id^="sec_"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
 
         this.updateStepVisibility();
         this.updateNavigationButtons();
@@ -441,16 +632,36 @@ class VerificationSystem {
 }
 
 // Global functions for HTML onclick handlers
-function selectProjectType(type) {
-    verificationSystem.selectProjectType(type);
+function toggleBuildingType() {
+    madridSystem.toggleBuildingType();
+}
+
+function updatePrimaryUse() {
+    madridSystem.updatePrimaryUse();
+}
+
+function toggleSecondaryUses() {
+    madridSystem.toggleSecondaryUses();
+}
+
+function toggleSecondaryUse(useType) {
+    madridSystem.toggleSecondaryUse(useType);
+}
+
+function updateSecondaryUseFloors(useType) {
+    madridSystem.updateSecondaryUseFloors(useType);
+}
+
+function addFloorRange(useType, type) {
+    madridSystem.addFloorRange(useType, type);
 }
 
 function changeStep(direction) {
-    verificationSystem.changeStep(direction);
+    madridSystem.changeStep(direction);
 }
 
-function startVerification() {
-    verificationSystem.startVerification();
+function startMadridVerification() {
+    madridSystem.startMadridVerification();
 }
 
 function scrollToSection(sectionId) {
@@ -458,7 +669,7 @@ function scrollToSection(sectionId) {
 }
 
 // Initialize the system when the page loads
-let verificationSystem;
+let madridSystem;
 document.addEventListener('DOMContentLoaded', () => {
-    verificationSystem = new VerificationSystem();
+    madridSystem = new MadridVerificationSystem();
 });
