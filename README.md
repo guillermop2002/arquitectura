@@ -6,10 +6,12 @@ Sistema de verificación de proyectos de edificación basado en IA para el cumpl
 
 - **Verificación Automática**: Análisis automático de documentos de proyecto
 - **IA Avanzada**: Integración con Groq para análisis inteligente
-- **Cumplimiento Normativo**: Verificación del Anexo I del CTE
-- **Interfaz Web**: Frontend moderno y responsive
+- **Cumplimiento Normativo**: Verificación específica de normativa Madrid (PGOUM)
+- **Sistema Conversacional**: Chatbot Rasa para resolución de ambigüedades
+- **Grafo de Conocimiento**: Neo4j para interconexión de memoria, planos y normativa
+- **Limpieza Automática**: Sistema de limpieza automática de Neo4j cada 24h
+- **Interfaz Web**: Frontend moderno y responsive con 7 pasos de verificación
 - **Microservicios**: Arquitectura escalable con Docker
-- **Base de Datos**: Neo4j para grafos de conocimiento
 
 ## 🚀 Despliegue Rápido
 
@@ -112,26 +114,50 @@ python test_groq_system_complete.py
 - [Integración Groq](GROQ_SYSTEM_DOCUMENTATION.md)
 - [Flujo Completo](FINAL_FLOW_DOCUMENTATION.md)
 
-## 🔍 Verificación de Proyectos
+## 🔍 Flujo de Verificación Madrid (7 Pasos)
 
-El sistema verifica automáticamente:
+El sistema verifica automáticamente proyectos de edificación en Madrid:
 
-1. **Anexo I del CTE**: Secciones obligatorias
-2. **Normativas Aplicables**: DB-HE, DB-HR, DB-SI, DB-SU
-3. **Documentación**: Planos, memorias, cálculos
-4. **Cumplimiento**: Verificación automática de requisitos
+1. **Información del Proyecto**: Tipo de edificio, uso principal, usos secundarios
+2. **Subida de Documentos**: Memoria descriptiva y planos arquitectónicos
+3. **Clasificación Automática**: IA clasifica documentos como memoria o plano
+4. **Aplicación de Normativa**: Normativa específica PGOUM según tipo de edificio
+5. **Análisis de Documentos**: Detección de ambigüedades con Neo4j
+6. **Resolución de Ambigüedades**: Chatbot resuelve problemas específicos
+7. **Checklist Final**: Generación de checklist con trazabilidad completa
+
+### Normativas Aplicables:
+- **Documentos Básicos**: DB-HE, DB-HR, DB-SI, DB-SU
+- **PGOUM General**: Siempre aplicable
+- **PGOUM Específico**: Según tipo de edificio (residencial, industrial, etc.)
+- **Documentos de Apoyo**: Para edificios existentes
 
 ## 🤖 Chatbot Inteligente
 
-- **Rasa Integration**: Chatbot conversacional
+- **Rasa Integration**: Chatbot conversacional para resolución de ambigüedades
 - **Contexto de Proyecto**: Mantiene contexto entre conversaciones
-- **Respuestas Inteligentes**: Basadas en IA y normativas
+- **Respuestas Inteligentes**: Basadas en IA y normativas específicas de Madrid
+- **Trazabilidad**: Todas las conversaciones se guardan en Neo4j
+
+## 🗄️ Grafo de Conocimiento Neo4j
+
+- **Interconexión**: Relaciones entre memoria, planos y normativa
+- **Trazabilidad**: Seguimiento completo de ambigüedades y resoluciones
+- **Análisis Avanzado**: Patrones y dependencias entre elementos
+- **Limpieza Automática**: Limpieza diaria a las 2:00 AM (30 días de retención)
 
 ## 📊 Monitoreo
 
 - **Grafana Dashboards**: Métricas en tiempo real
 - **Prometheus**: Recopilación de métricas
 - **Logs Centralizados**: Sistema de logging avanzado
+- **Neo4j Browser**: Interfaz web para explorar el grafo de conocimiento
+- **Endpoints de Gestión**: API para limpieza y estadísticas de Neo4j
+
+### Endpoints Neo4j:
+- `GET /neo4j/cleanup/status` - Estado del programador de limpieza
+- `POST /neo4j/cleanup/manual` - Limpieza manual de datos antiguos
+- `POST /neo4j/cleanup/config` - Configuración de limpieza
 
 ## 🚨 Solución de Problemas
 

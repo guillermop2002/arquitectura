@@ -163,13 +163,23 @@ show_access_info() {
     info "Información de acceso:"
     echo "🌐 Aplicación principal: http://$(curl -s ifconfig.me)"
     echo "🔧 Health check: http://$(curl -s ifconfig.me)/health"
-    echo "🤖 Rasa: http://$(curl -s ifconfig.me):5005"
-    echo "🗄️ Neo4j: http://$(curl -s ifconfig.me):7474"
+    echo "🤖 Rasa Chatbot: http://$(curl -s ifconfig.me):5005"
+    echo "🗄️ Neo4j Browser: http://$(curl -s ifconfig.me):7474"
+    echo "📊 PostgreSQL: puerto 5432"
+    echo "🔄 Redis: puerto 6379"
+    echo ""
+    echo "🎯 NUEVAS FUNCIONALIDADES MADRID:"
+    echo "  • Análisis inteligente de documentos con Neo4j"
+    echo "  • Resolución de ambigüedades con chatbot"
+    echo "  • Checklist final con trazabilidad completa"
+    echo "  • Limpieza automática de Neo4j cada 24h"
     echo ""
     echo "📋 Comandos útiles:"
     echo "  Ver logs: docker-compose -f docker-compose.oracle_arm64.yml logs -f"
     echo "  Parar servicios: docker-compose -f docker-compose.oracle_arm64.yml down"
     echo "  Reiniciar: docker-compose -f docker-compose.oracle_arm64.yml restart"
+    echo "  Limpieza Neo4j: curl -X POST http://localhost:5000/neo4j/cleanup/manual"
+    echo "  Estado Neo4j: curl http://localhost:5000/neo4j/cleanup/status"
 }
 
 # Función principal
@@ -189,7 +199,7 @@ main() {
     show_access_info
     
     echo "================================================================"
-    success "¡Despliegue completado con Rasa simple (puente a LLM)!"
+    success "¡Despliegue completado con sistema Madrid + Neo4j integrado!"
 }
 
 # Ejecutar función principal
