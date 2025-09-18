@@ -15,6 +15,7 @@ aiohttp==3.9.1
 # Database
 sqlalchemy==1.4.53
 psycopg2-binary==2.9.9
+asyncpg==0.29.0
 redis==5.0.1
 neo4j==5.14.1
 
