@@ -16,48 +16,110 @@ class MadridVerificationSystem {
     }
 
     init() {
-        this.setupEventListeners();
-        this.updateStepVisibility();
-        this.updateNavigationButtons();
+        // Esperar a que el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.setupEventListeners();
+                this.updateStepVisibility();
+                this.updateNavigationButtons();
+            });
+        } else {
+            this.setupEventListeners();
+            this.updateStepVisibility();
+            this.updateNavigationButtons();
+        }
     }
 
     setupEventListeners() {
+        console.log('Configurando event listeners...');
+        
         // File input change
-        document.getElementById('fileInput').addEventListener('change', (e) => {
-            this.handleFileSelection(e.target.files);
-        });
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                console.log('Archivos seleccionados:', e.target.files);
+                this.handleFileSelection(e.target.files);
+            });
+        }
 
         // Drag and drop
         const uploadArea = document.getElementById('uploadArea');
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
+        if (uploadArea) {
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+                console.log('Drag over');
+            });
 
-        uploadArea.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-        });
+            uploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                console.log('Drag leave');
+            });
 
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            this.handleFileSelection(e.dataTransfer.files);
-        });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                console.log('Files dropped:', e.dataTransfer.files);
+                this.handleFileSelection(e.dataTransfer.files);
+            });
 
-        // Click to select files
-        uploadArea.addEventListener('click', () => {
-            document.getElementById('fileInput').click();
+            // Click to select files
+            uploadArea.addEventListener('click', () => {
+                console.log('Upload area clicked');
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput) {
+                    fileInput.click();
+                }
+            });
+        }
+
+        // Building type toggle
+        const buildingToggle = document.getElementById('isExistingBuilding');
+        if (buildingToggle) {
+            buildingToggle.addEventListener('change', () => {
+                console.log('Building type changed:', buildingToggle.checked);
+                this.toggleBuildingType();
+            });
+        }
+
+        // Primary use selector
+        const primaryUse = document.getElementById('primaryUse');
+        if (primaryUse) {
+            primaryUse.addEventListener('change', () => {
+                console.log('Primary use changed:', primaryUse.value);
+                this.updatePrimaryUse();
+            });
+        }
+
+        // Secondary uses toggle
+        const secondaryToggle = document.getElementById('hasSecondaryUses');
+        if (secondaryToggle) {
+            secondaryToggle.addEventListener('change', () => {
+                console.log('Secondary uses toggle changed:', secondaryToggle.checked);
+                this.toggleSecondaryUses();
+            });
+        }
+
+        // Secondary use checkboxes
+        document.querySelectorAll('input[id^="sec_"]').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const useType = e.target.value;
+                console.log('Secondary use changed:', useType, e.target.checked);
+                this.toggleSecondaryUse(useType);
+            });
         });
     }
 
     toggleBuildingType() {
         this.projectData.is_existing_building = document.getElementById('isExistingBuilding').checked;
+        console.log('Building type:', this.projectData.is_existing_building);
         this.updateNavigationButtons();
     }
 
     updatePrimaryUse() {
         this.projectData.primary_use = document.getElementById('primaryUse').value;
+        console.log('Primary use:', this.projectData.primary_use);
         this.updateNavigationButtons();
     }
 
@@ -65,13 +127,17 @@ class MadridVerificationSystem {
         this.projectData.has_secondary_uses = document.getElementById('hasSecondaryUses').checked;
         const section = document.getElementById('secondaryUsesSection');
         
+        console.log('Secondary uses toggle:', this.projectData.has_secondary_uses);
+        
         if (this.projectData.has_secondary_uses) {
             section.classList.remove('d-none');
+            console.log('Showing secondary uses section');
         } else {
             section.classList.add('d-none');
             // Clear secondary uses
             this.projectData.secondary_uses = [];
             document.getElementById('secondaryUsesFloors').innerHTML = '';
+            console.log('Hiding secondary uses section');
         }
         
         this.updateNavigationButtons();
@@ -80,6 +146,8 @@ class MadridVerificationSystem {
     toggleSecondaryUse(useType) {
         const checkbox = document.getElementById(`sec_${useType.replace('-', '_')}`);
         const isChecked = checkbox.checked;
+        
+        console.log('Toggling secondary use:', useType, isChecked);
         
         if (isChecked) {
             // Add to secondary uses
@@ -101,6 +169,8 @@ class MadridVerificationSystem {
         const container = document.getElementById('secondaryUsesFloors');
         const floorSelectorId = `floors_${useType.replace('-', '_')}`;
         
+        console.log('Creating floor selector for:', useType);
+        
         const floorSelector = document.createElement('div');
         floorSelector.className = 'card mb-3';
         floorSelector.id = `floor_selector_${useType.replace('-', '_')}`;
@@ -117,15 +187,15 @@ class MadridVerificationSystem {
                                 <div class="col-md-4">
                                     <h6>Plantas Especiales:</h6>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value="-0.5" id="${floorSelectorId}_entresotano" onchange="updateSecondaryUseFloors('${useType}')">
+                                        <input class="form-check-input" type="checkbox" value="-0.5" id="${floorSelectorId}_entresotano" onchange="madridSystem.updateSecondaryUseFloors('${useType}')">
                                         <label class="form-check-label" for="${floorSelectorId}_entresotano">Entresótano (-0.5)</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value="0" id="${floorSelectorId}_planta_baja" onchange="updateSecondaryUseFloors('${useType}')">
+                                        <input class="form-check-input" type="checkbox" value="0" id="${floorSelectorId}_planta_baja" onchange="madridSystem.updateSecondaryUseFloors('${useType}')">
                                         <label class="form-check-label" for="${floorSelectorId}_planta_baja">Planta Baja (0)</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value="0.5" id="${floorSelectorId}_entreplanta" onchange="updateSecondaryUseFloors('${useType}')">
+                                        <input class="form-check-input" type="checkbox" value="0.5" id="${floorSelectorId}_entreplanta" onchange="madridSystem.updateSecondaryUseFloors('${useType}')">
                                         <label class="form-check-label" for="${floorSelectorId}_entreplanta">Entreplanta (0.5)</label>
                                     </div>
                                 </div>
@@ -134,7 +204,7 @@ class MadridVerificationSystem {
                                     <div class="floor-range">
                                         <input type="number" class="form-control form-control-sm mb-2" placeholder="Desde" min="-100" max="-1" id="${floorSelectorId}_sotano_desde">
                                         <input type="number" class="form-control form-control-sm" placeholder="Hasta" min="-100" max="-1" id="${floorSelectorId}_sotano_hasta">
-                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addFloorRange('${useType}', 'sotano')">Agregar Rango</button>
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="madridSystem.addFloorRange('${useType}', 'sotano')">Agregar Rango</button>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -142,7 +212,7 @@ class MadridVerificationSystem {
                                     <div class="floor-range">
                                         <input type="number" class="form-control form-control-sm mb-2" placeholder="Desde" min="1" max="100" id="${floorSelectorId}_piso_desde">
                                         <input type="number" class="form-control form-control-sm" placeholder="Hasta" min="1" max="100" id="${floorSelectorId}_piso_hasta">
-                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addFloorRange('${useType}', 'piso')">Agregar Rango</button>
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="madridSystem.addFloorRange('${useType}', 'piso')">Agregar Rango</button>
                                     </div>
                                 </div>
                             </div>
@@ -170,11 +240,11 @@ class MadridVerificationSystem {
 
     updateSecondaryUseFloors(useType) {
         const floorSelectorId = `floors_${useType.replace('-', '_')}`;
-        const checkboxes = document.querySelectorAll(`#${floorSelectorId}_selected`).length > 0 ? 
-            document.querySelectorAll(`input[id^="${floorSelectorId}_"]:checked`) : 
-            document.querySelectorAll(`input[id^="${floorSelectorId}_"]:checked`);
+        const checkboxes = document.querySelectorAll(`input[id^="${floorSelectorId}_"]:checked`);
         
         const floors = Array.from(checkboxes).map(cb => parseFloat(cb.value));
+        
+        console.log('Updating floors for:', useType, floors);
         
         // Update project data
         const secondaryUse = this.projectData.secondary_uses.find(use => use.use_type === useType);
@@ -259,6 +329,8 @@ class MadridVerificationSystem {
     }
 
     handleFileSelection(files) {
+        console.log('Handling file selection:', files);
+        
         const fileArray = Array.from(files).filter(file => file.type === 'application/pdf');
         
         if (fileArray.length === 0) {
@@ -309,6 +381,8 @@ class MadridVerificationSystem {
     }
 
     changeStep(direction) {
+        console.log('Changing step:', direction, 'from', this.currentStep);
+        
         if (direction > 0 && this.currentStep < this.maxSteps) {
             if (this.validateCurrentStep()) {
                 this.currentStep++;
@@ -322,6 +396,8 @@ class MadridVerificationSystem {
     }
 
     validateCurrentStep() {
+        console.log('Validating step:', this.currentStep);
+        
         switch (this.currentStep) {
             case 1:
                 // Building type is optional, always valid
@@ -358,8 +434,12 @@ class MadridVerificationSystem {
     }
 
     updateStepVisibility() {
+        console.log('Updating step visibility, current step:', this.currentStep);
+        
         document.querySelectorAll('.verification-step').forEach((step, index) => {
-            step.classList.toggle('active', index + 1 === this.currentStep);
+            const isActive = index + 1 === this.currentStep;
+            step.classList.toggle('active', isActive);
+            console.log(`Step ${index + 1} active:`, isActive);
         });
     }
 
@@ -367,16 +447,22 @@ class MadridVerificationSystem {
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
 
-        prevBtn.disabled = this.currentStep === 1;
-
-        if (this.currentStep === this.maxSteps) {
-            nextBtn.innerHTML = '<i class="fas fa-check me-2"></i>Iniciar Verificación Madrid';
-            nextBtn.onclick = () => this.startMadridVerification();
-        } else {
-            nextBtn.innerHTML = 'Siguiente <i class="fas fa-arrow-right ms-2"></i>';
-            nextBtn.onclick = () => this.changeStep(1);
-            nextBtn.disabled = !this.canProceedToNextStep();
+        if (prevBtn) {
+            prevBtn.disabled = this.currentStep === 1;
         }
+
+        if (nextBtn) {
+            if (this.currentStep === this.maxSteps) {
+                nextBtn.innerHTML = '<i class="fas fa-check me-2"></i>Iniciar Verificación Madrid';
+                nextBtn.onclick = () => this.startMadridVerification();
+            } else {
+                nextBtn.innerHTML = 'Siguiente <i class="fas fa-arrow-right ms-2"></i>';
+                nextBtn.onclick = () => this.changeStep(1);
+                nextBtn.disabled = !this.canProceedToNextStep();
+            }
+        }
+        
+        console.log('Navigation buttons updated. Can proceed:', this.canProceedToNextStep());
     }
 
     canProceedToNextStep() {
@@ -399,6 +485,8 @@ class MadridVerificationSystem {
     }
 
     async startMadridVerification() {
+        console.log('Starting Madrid verification...');
+        
         if (!this.validateCurrentStep()) {
             return;
         }
@@ -419,6 +507,8 @@ class MadridVerificationSystem {
                 secondary_uses: this.projectData.secondary_uses,
                 files: this.projectData.files.map(file => file.name) // Just file names for now
             };
+
+            console.log('Sending Madrid project data:', madridProjectData);
 
             // Start Madrid verification
             const response = await fetch('/madrid/integration/process-project', {
@@ -633,35 +723,51 @@ class MadridVerificationSystem {
 
 // Global functions for HTML onclick handlers
 function toggleBuildingType() {
-    madridSystem.toggleBuildingType();
+    if (window.madridSystem) {
+        window.madridSystem.toggleBuildingType();
+    }
 }
 
 function updatePrimaryUse() {
-    madridSystem.updatePrimaryUse();
+    if (window.madridSystem) {
+        window.madridSystem.updatePrimaryUse();
+    }
 }
 
 function toggleSecondaryUses() {
-    madridSystem.toggleSecondaryUses();
+    if (window.madridSystem) {
+        window.madridSystem.toggleSecondaryUses();
+    }
 }
 
 function toggleSecondaryUse(useType) {
-    madridSystem.toggleSecondaryUse(useType);
+    if (window.madridSystem) {
+        window.madridSystem.toggleSecondaryUse(useType);
+    }
 }
 
 function updateSecondaryUseFloors(useType) {
-    madridSystem.updateSecondaryUseFloors(useType);
+    if (window.madridSystem) {
+        window.madridSystem.updateSecondaryUseFloors(useType);
+    }
 }
 
 function addFloorRange(useType, type) {
-    madridSystem.addFloorRange(useType, type);
+    if (window.madridSystem) {
+        window.madridSystem.addFloorRange(useType, type);
+    }
 }
 
 function changeStep(direction) {
-    madridSystem.changeStep(direction);
+    if (window.madridSystem) {
+        window.madridSystem.changeStep(direction);
+    }
 }
 
 function startMadridVerification() {
-    madridSystem.startMadridVerification();
+    if (window.madridSystem) {
+        window.madridSystem.startMadridVerification();
+    }
 }
 
 function scrollToSection(sectionId) {
@@ -671,5 +777,8 @@ function scrollToSection(sectionId) {
 // Initialize the system when the page loads
 let madridSystem;
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing Madrid system...');
     madridSystem = new MadridVerificationSystem();
+    window.madridSystem = madridSystem; // Make it globally available
+    console.log('Madrid system initialized');
 });

@@ -91,7 +91,7 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" id="isExistingBuilding" onchange="toggleBuildingType()">
+                                                <input class="form-check-input" type="checkbox" id="isExistingBuilding">
                                                 <label class="form-check-label" for="isExistingBuilding">
                                                     <strong>Edificio existente</strong>
                                                 </label>
@@ -109,7 +109,7 @@
                                     <div class="row">
                                         <div class="col-md-8">
                                             <label for="primaryUse" class="form-label">Selecciona el uso principal:</label>
-                                            <select class="form-select" id="primaryUse" onchange="updatePrimaryUse()">
+                                            <select class="form-select" id="primaryUse">
                                                 <option value="">Seleccionar uso principal...</option>
                                                 <option value="residencial">Residencial</option>
                                                 <option value="industrial">Industrial</option>
@@ -134,7 +134,7 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" id="hasSecondaryUses" onchange="toggleSecondaryUses()">
+                                                <input class="form-check-input" type="checkbox" id="hasSecondaryUses">
                                                 <label class="form-check-label" for="hasSecondaryUses">
                                                     <strong>Tiene uso secundario</strong>
                                                 </label>
@@ -150,53 +150,53 @@
                                                 <div class="row">
                                                     <div class="col-md-6">
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" value="residencial" id="sec_residencial" onchange="toggleSecondaryUse('residencial')">
+                                                            <input class="form-check-input" type="checkbox" value="residencial" id="sec_residencial">
                                                             <label class="form-check-label" for="sec_residencial">Residencial</label>
                                                         </div>
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" value="industrial" id="sec_industrial" onchange="toggleSecondaryUse('industrial')">
+                                                            <input class="form-check-input" type="checkbox" value="industrial" id="sec_industrial">
                                                             <label class="form-check-label" for="sec_industrial">Industrial</label>
                                                         </div>
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" value="garaje-aparcamiento" id="sec_garaje" onchange="toggleSecondaryUse('garaje-aparcamiento')">
+                                                            <input class="form-check-input" type="checkbox" value="garaje-aparcamiento" id="sec_garaje">
                                                             <label class="form-check-label" for="sec_garaje">Garaje-Aparcamiento</label>
                                                         </div>
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" value="servicios_terciarios" id="sec_terciarios" onchange="toggleSecondaryUse('servicios_terciarios')">
+                                                            <input class="form-check-input" type="checkbox" value="servicios_terciarios" id="sec_terciarios">
                                                             <label class="form-check-label" for="sec_terciarios">Servicios Terciarios</label>
                                                         </div>
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" value="dotacional_zona_verde" id="sec_zona_verde" onchange="toggleSecondaryUse('dotacional_zona_verde')">
+                                                            <input class="form-check-input" type="checkbox" value="dotacional_zona_verde" id="sec_zona_verde">
                                                             <label class="form-check-label" for="sec_zona_verde">Dotacional zona verde</label>
                                                         </div>
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" value="dotacional_deportivo" id="sec_deportivo" onchange="toggleSecondaryUse('dotacional_deportivo')">
+                                                            <input class="form-check-input" type="checkbox" value="dotacional_deportivo" id="sec_deportivo">
                                                             <label class="form-check-label" for="sec_deportivo">Dotacional Deportivo</label>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" value="dotacional_equipamiento" id="sec_equipamiento" onchange="toggleSecondaryUse('dotacional_equipamiento')">
+                                                            <input class="form-check-input" type="checkbox" value="dotacional_equipamiento" id="sec_equipamiento">
                                                             <label class="form-check-label" for="sec_equipamiento">Dotacional equipamiento</label>
                                                         </div>
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" value="dotacional_servicios_publicos" id="sec_servicios_publicos" onchange="toggleSecondaryUse('dotacional_servicios_publicos')">
+                                                            <input class="form-check-input" type="checkbox" value="dotacional_servicios_publicos" id="sec_servicios_publicos">
                                                             <label class="form-check-label" for="sec_servicios_publicos">Dotacional servicios públicos</label>
                                                         </div>
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" value="dotacional_administracion_publica" id="sec_administracion" onchange="toggleSecondaryUse('dotacional_administracion_publica')">
+                                                            <input class="form-check-input" type="checkbox" value="dotacional_administracion_publica" id="sec_administracion">
                                                             <label class="form-check-label" for="sec_administracion">Dotacional administración pública</label>
                                                         </div>
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" value="dotacional_infraestructural" id="sec_infraestructural" onchange="toggleSecondaryUse('dotacional_infraestructural')">
+                                                            <input class="form-check-input" type="checkbox" value="dotacional_infraestructural" id="sec_infraestructural">
                                                             <label class="form-check-label" for="sec_infraestructural">Dotacional Infraestructural</label>
                                                         </div>
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" value="dotacional_via_publica" id="sec_via_publica" onchange="toggleSecondaryUse('dotacional_via_publica')">
+                                                            <input class="form-check-input" type="checkbox" value="dotacional_via_publica" id="sec_via_publica">
                                                             <label class="form-check-label" for="sec_via_publica">Dotacional Vía Pública</label>
                                                         </div>
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" value="dotacional_transporte" id="sec_transporte" onchange="toggleSecondaryUse('dotacional_transporte')">
+                                                            <input class="form-check-input" type="checkbox" value="dotacional_transporte" id="sec_transporte">
                                                             <label class="form-check-label" for="sec_transporte">Dotacional Transporte</label>
                                                         </div>
                                                     </div>
