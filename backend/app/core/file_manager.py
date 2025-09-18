@@ -4,8 +4,10 @@ Gestor de archivos para la aplicación.
 import os
 import shutil
 import hashlib
+import json
 from pathlib import Path
 from typing import Optional, Dict, Any, List
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -223,3 +225,158 @@ class FileManager:
         except Exception as e:
             logger.error(f"Error obteniendo información de almacenamiento: {e}")
             return {}
+    
+    async def process_uploaded_files(self, files: List[Any], job_id: str, is_existing_building: bool) -> Dict[str, Any]:
+        """
+        Procesar archivos subidos con clasificación automática.
+        
+        Args:
+            files: Lista de archivos subidos
+            job_id: ID del trabajo
+            is_existing_building: Si es edificio existente
+            
+        Returns:
+            Datos extraídos de los archivos
+        """
+        try:
+            logger.info(f"Procesando {len(files)} archivos para trabajo {job_id}")
+            
+            # Crear directorio del trabajo
+            job_dir = self.temp_dir / job_id
+            job_dir.mkdir(exist_ok=True)
+            
+            # Importar procesadores
+            from .pdf_processor import PDFProcessor
+            from .document_classifier import DocumentClassifier
+            from .document_analyzer import DocumentAnalyzer
+            from .ai_client import AIClient
+            
+            # Inicializar procesadores
+            pdf_processor = PDFProcessor()
+            ai_client = AIClient()
+            classifier = DocumentClassifier(ai_client)
+            analyzer = DocumentAnalyzer()
+            
+            # Procesar archivos
+            processed_files = []
+            extracted_data = {}
+            
+            for file in files:
+                try:
+                    # Guardar archivo
+                    file_path = job_dir / file.filename
+                    with open(file_path, 'wb') as f:
+                        f.write(await file.read())
+                    
+                    # Procesar PDF
+                    pdf_doc = pdf_processor.process_pdf(str(file_path))
+                    
+                    # Clasificar documento
+                    classification = await classifier.classify_document(str(file_path))
+                    
+                    # Analizar contenido
+                    content = analyzer.analyze_document(pdf_doc, classification)
+                    
+                    # Guardar resultados
+                    file_result = {
+                        'filename': file.filename,
+                        'file_path': str(file_path),
+                        'classification': classification,
+                        'content': content,
+                        'pdf_document': pdf_doc
+                    }
+                    
+                    processed_files.append(file_result)
+                    extracted_data[file.filename] = file_result
+                    
+                    logger.info(f"Archivo procesado: {file.filename} - {classification.document_type}")
+                    
+                except Exception as e:
+                    logger.error(f"Error procesando archivo {file.filename}: {e}")
+                    continue
+            
+            # Crear resumen del procesamiento
+            summary = {
+                'total_files': len(files),
+                'processed_files': len(processed_files),
+                'memoria_files': [f for f in processed_files if f['classification'].document_type == 'memoria'],
+                'plano_files': [f for f in processed_files if f['classification'].document_type == 'plano'],
+                'processing_complete': True,
+                'job_id': job_id,
+                'is_existing_building': is_existing_building
+            }
+            
+            # Guardar datos del trabajo
+            await self.update_job_data(job_id, {
+                'extracted_data': extracted_data,
+                'summary': summary,
+                'processing_complete': True,
+                'created_at': datetime.now().isoformat()
+            })
+            
+            return {
+                'extracted_data': extracted_data,
+                'summary': summary,
+                'job_id': job_id
+            }
+            
+        except Exception as e:
+            logger.error(f"Error procesando archivos: {e}")
+            raise
+    
+    async def update_job_data(self, job_id: str, data: Dict[str, Any]) -> bool:
+        """
+        Actualizar datos de un trabajo.
+        
+        Args:
+            job_id: ID del trabajo
+            data: Datos a actualizar
+            
+        Returns:
+            True si se actualizó correctamente
+        """
+        try:
+            job_file = self.temp_dir / job_id / 'job_data.json'
+            
+            # Cargar datos existentes
+            existing_data = {}
+            if job_file.exists():
+                with open(job_file, 'r', encoding='utf-8') as f:
+                    existing_data = json.load(f)
+            
+            # Actualizar datos
+            existing_data.update(data)
+            existing_data['updated_at'] = datetime.now().isoformat()
+            
+            # Guardar datos actualizados
+            with open(job_file, 'w', encoding='utf-8') as f:
+                json.dump(existing_data, f, indent=2, ensure_ascii=False)
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error actualizando datos del trabajo {job_id}: {e}")
+            return False
+    
+    async def get_job_data(self, job_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Obtener datos de un trabajo.
+        
+        Args:
+            job_id: ID del trabajo
+            
+        Returns:
+            Datos del trabajo o None si no existe
+        """
+        try:
+            job_file = self.temp_dir / job_id / 'job_data.json'
+            
+            if not job_file.exists():
+                return None
+            
+            with open(job_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+                
+        except Exception as e:
+            logger.error(f"Error obteniendo datos del trabajo {job_id}: {e}")
+            return None

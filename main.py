@@ -39,6 +39,9 @@ from backend.app.core.cleanup_manager import CleanupManager
 from backend.app.api.madrid_endpoints import madrid_router
 from backend.app.api.madrid_verification_endpoints import verification_router
 from backend.app.api.madrid_chatbot_endpoints import chatbot_router
+from backend.app.api.madrid_document_classification_endpoints import classification_router
+from backend.app.api.madrid_normative_endpoints import normative_router
+from backend.app.api.madrid_final_checklist_endpoints import final_checklist_router
 from backend.app.api.madrid_integration_endpoints import integration_router
 
 # Initialize logging
@@ -129,6 +132,9 @@ async def shutdown_event():
 app.include_router(madrid_router)
 app.include_router(verification_router)
 app.include_router(chatbot_router)
+app.include_router(classification_router)
+app.include_router(normative_router)
+app.include_router(final_checklist_router)
 app.include_router(integration_router)
 
 @app.get("/", response_class=HTMLResponse)

@@ -214,23 +214,155 @@
                                 <!-- Step 4: File Upload -->
                                 <div id="step4" class="verification-step">
                                     <h4 class="mb-4">4. Subir Memoria y Planos</h4>
-                                    <div class="upload-area" id="uploadArea">
-                                        <div class="upload-content">
-                                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
-                                            <h5>Arrastra y suelta memoria y planos aquí</h5>
-                                            <p class="text-muted">o haz clic para seleccionar archivos PDF</p>
-                                            <input type="file" id="fileInput" multiple accept=".pdf" class="d-none">
-                                            <button class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
-                                                Seleccionar Archivos
-                                            </button>
+                                    
+                                    <!-- Memoria Upload Section -->
+                                    <div class="mb-4">
+                                        <h5 class="mb-3">
+                                            <i class="fas fa-file-alt me-2 text-primary"></i>
+                                            Subir Memoria Descriptiva
+                                        </h5>
+                                        <div class="upload-area memoria-upload" id="memoriaUploadArea">
+                                            <div class="upload-content">
+                                                <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                                                <h6>Arrastra y suelta la memoria aquí</h6>
+                                                <p class="text-muted">o haz clic para seleccionar archivo PDF</p>
+                                                <input type="file" id="memoriaInput" accept=".pdf" class="d-none">
+                                                <button class="btn btn-outline-primary btn-sm" onclick="document.getElementById('memoriaInput').click()">
+                                                    Seleccionar Memoria
+                                                </button>
+                                            </div>
                                         </div>
+                                        <div id="memoriaFileList" class="mt-2"></div>
                                     </div>
-                                    <div id="fileList" class="mt-3"></div>
+
+                                    <!-- Planos Upload Section -->
+                                    <div class="mb-4">
+                                        <h5 class="mb-3">
+                                            <i class="fas fa-drafting-compass me-2 text-success"></i>
+                                            Subir Planos Arquitectónicos
+                                        </h5>
+                                        <div class="upload-area planos-upload" id="planosUploadArea">
+                                            <div class="upload-content">
+                                                <i class="fas fa-drafting-compass fa-3x text-muted mb-3"></i>
+                                                <h6>Arrastra y suelta los planos aquí</h6>
+                                                <p class="text-muted">o haz clic para seleccionar archivos PDF</p>
+                                                <input type="file" id="planosInput" multiple accept=".pdf" class="d-none">
+                                                <button class="btn btn-outline-success btn-sm" onclick="document.getElementById('planosInput').click()">
+                                                    Seleccionar Planos
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="planosFileList" class="mt-2"></div>
+                                    </div>
+                                    
+                                    <!-- Document Classification Section -->
+                                    <div class="mt-4 p-3 bg-light rounded">
+                                        <h6><i class="fas fa-robot text-info"></i> Clasificación Automática</h6>
+                                        <p class="text-muted small">
+                                            El sistema puede clasificar automáticamente tus documentos entre memorias y planos usando IA.
+                                        </p>
+                                        <button id="classifyDocumentsBtn" class="btn btn-outline-info btn-sm">
+                                            <i class="fas fa-magic"></i> Clasificar Automáticamente
+                                        </button>
+                                        <div id="classificationDetails" class="mt-3"></div>
+                                    </div>
+                                    
+                                    <!-- Normative Application Section -->
+                                    <div class="mt-4 p-3 bg-light rounded">
+                                        <h6><i class="fas fa-gavel text-warning"></i> Aplicación de Normativa Específica</h6>
+                                        <p class="text-muted small">
+                                            Aplica la normativa específica de Madrid según el tipo de edificio, uso secundario y plantas.
+                                        </p>
+                                        <button id="applyNormativeBtn" class="btn btn-outline-warning btn-sm">
+                                            <i class="fas fa-gavel"></i> Aplicar Normativa Específica
+                                        </button>
+                                        <div id="normativeDocuments" class="mt-3"></div>
+                                        <div id="floorAssignments" class="mt-3"></div>
+                                        <div id="complianceRequirements" class="mt-3"></div>
+                                    </div>
                                 </div>
 
-                                <!-- Step 5: Verification Process -->
+                                <!-- Step 5: Ambiguity Resolution Chatbot -->
                                 <div id="step5" class="verification-step">
-                                    <h4 class="mb-4">5. Proceso de Verificación Madrid</h4>
+                                    <h4 class="mb-4">5. Resolución de Ambigüedades</h4>
+                                    <div class="chatbot-container">
+                                        <div class="chatbot-header">
+                                            <div class="chatbot-avatar">
+                                                <i class="fas fa-robot"></i>
+                                            </div>
+                                            <div class="chatbot-info">
+                                                <h5 class="mb-0">Asistente de Verificación Madrid</h5>
+                                                <small class="text-muted">Resolviendo ambigüedades del proyecto</small>
+                                            </div>
+                                            <div class="chatbot-status">
+                                                <span id="chatbotStatus" class="badge bg-warning">Analizando</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="chatbot-messages" id="chatbotMessages">
+                                            <div class="message bot-message">
+                                                <div class="message-avatar">
+                                                    <i class="fas fa-robot"></i>
+                                                </div>
+                                                <div class="message-content">
+                                                    <div class="message-text">
+                                                        ¡Hola! Soy el asistente de verificación arquitectónica de Madrid. 
+                                                        Estoy analizando tu proyecto para detectar posibles ambigüedades que necesiten aclaración.
+                                                    </div>
+                                                    <div class="message-time">
+                                                        <small class="text-muted">Ahora</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="chatbot-input-container">
+                                            <div class="input-group">
+                                                <input type="text" id="chatbotInput" class="form-control" 
+                                                       placeholder="Escribe tu respuesta aquí..." disabled>
+                                                <button id="sendMessageBtn" class="btn btn-primary" disabled>
+                                                    <i class="fas fa-paper-plane"></i>
+                                                </button>
+                                            </div>
+                                            <div class="suggested-actions" id="suggestedActions">
+                                                <!-- Las acciones sugeridas aparecerán aquí -->
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="chatbot-progress">
+                                            <div class="progress">
+                                                <div id="ambiguityProgress" class="progress-bar bg-info" role="progressbar" style="width: 0%"></div>
+                                            </div>
+                                            <small class="text-muted">
+                                                <span id="ambiguityCount">0</span> ambigüedades detectadas | 
+                                                <span id="resolvedCount">0</span> resueltas
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 6: Final Checklist -->
+                                <div id="step6" class="verification-step">
+                                    <h4 class="mb-4">6. Checklist Final de Verificación</h4>
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-clipboard-check"></i> Checklist Final</h6>
+                                        <p class="mb-0">
+                                            Genera un checklist final completo basado en la normativa aplicada y los resultados de verificación.
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="text-center mb-4">
+                                        <button id="generateFinalChecklistBtn" class="btn btn-primary btn-lg">
+                                            <i class="fas fa-clipboard-check"></i> Generar Checklist Final
+                                        </button>
+                                    </div>
+                                    
+                                    <div id="finalChecklistContainer" class="mt-4"></div>
+                                </div>
+
+                                <!-- Step 7: Madrid Verification Process -->
+                                <div id="step7" class="verification-step">
+                                    <h4 class="mb-4">7. Proceso de Verificación Madrid</h4>
                                     <div class="progress mb-4">
                                         <div class="progress-bar" role="progressbar" style="width: 0%" id="progressBar"></div>
                                     </div>

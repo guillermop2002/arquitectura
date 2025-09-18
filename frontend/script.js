@@ -3,15 +3,20 @@
 class MadridVerificationSystem {
     constructor() {
         this.currentStep = 1;
-        this.maxSteps = 5;
+        this.maxSteps = 7; // Aumentado para incluir el chatbot
         this.projectData = {
             is_existing_building: false,
             primary_use: null,
             has_secondary_uses: false,
             secondary_uses: [],
-            files: [],
+            secondary_uses_floors: {},
+            memoria_files: [],
+            planos_files: [],
             jobId: null
         };
+        this.chatbotSession = null;
+        this.ambiguities = [];
+        this.resolvedAmbiguities = [];
         this.init();
     }
 
@@ -32,47 +37,6 @@ class MadridVerificationSystem {
 
     setupEventListeners() {
         console.log('Configurando event listeners...');
-        
-        // File input change
-        const fileInput = document.getElementById('fileInput');
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => {
-                console.log('Archivos seleccionados:', e.target.files);
-                this.handleFileSelection(e.target.files);
-            });
-        }
-
-        // Drag and drop
-        const uploadArea = document.getElementById('uploadArea');
-        if (uploadArea) {
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.classList.add('dragover');
-                console.log('Drag over');
-            });
-
-            uploadArea.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('dragover');
-                console.log('Drag leave');
-            });
-
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('dragover');
-                console.log('Files dropped:', e.dataTransfer.files);
-                this.handleFileSelection(e.dataTransfer.files);
-            });
-
-            // Click to select files
-            uploadArea.addEventListener('click', () => {
-                console.log('Upload area clicked');
-                const fileInput = document.getElementById('fileInput');
-                if (fileInput) {
-                    fileInput.click();
-                }
-            });
-        }
 
         // Building type toggle
         const buildingToggle = document.getElementById('isExistingBuilding');
@@ -102,13 +66,168 @@ class MadridVerificationSystem {
         }
 
         // Secondary use checkboxes
-        document.querySelectorAll('input[id^="sec_"]').forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
+        document.addEventListener('change', (e) => {
+            if (e.target.id && e.target.id.startsWith('sec_')) {
                 const useType = e.target.value;
                 console.log('Secondary use changed:', useType, e.target.checked);
                 this.toggleSecondaryUse(useType);
-            });
+            }
         });
+
+        // Memoria input change
+        const memoriaInput = document.getElementById('memoriaInput');
+        if (memoriaInput) {
+            memoriaInput.addEventListener('change', (e) => {
+                console.log('Memoria seleccionada:', e.target.files);
+                this.handleMemoriaSelection(e.target.files);
+            });
+        }
+
+        // Planos input change
+        const planosInput = document.getElementById('planosInput');
+        if (planosInput) {
+            planosInput.addEventListener('change', (e) => {
+                console.log('Planos seleccionados:', e.target.files);
+                this.handlePlanosSelection(e.target.files);
+            });
+        }
+
+        // Drag and drop for Memoria
+        const memoriaUploadArea = document.getElementById('memoriaUploadArea');
+        if (memoriaUploadArea) {
+            memoriaUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                memoriaUploadArea.classList.add('dragover');
+                console.log('Memoria drag over');
+            });
+
+            memoriaUploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                memoriaUploadArea.classList.remove('dragover');
+                console.log('Memoria drag leave');
+            });
+
+            memoriaUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                memoriaUploadArea.classList.remove('dragover');
+                console.log('Memoria files dropped:', e.dataTransfer.files);
+                this.handleMemoriaSelection(e.dataTransfer.files);
+            });
+
+            // Click to select memoria
+            memoriaUploadArea.addEventListener('click', () => {
+                console.log('Memoria upload area clicked');
+                const memoriaInput = document.getElementById('memoriaInput');
+                if (memoriaInput) {
+                    memoriaInput.click();
+                }
+            });
+        }
+
+        // Drag and drop for Planos
+        const planosUploadArea = document.getElementById('planosUploadArea');
+        if (planosUploadArea) {
+            planosUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                planosUploadArea.classList.add('dragover');
+                console.log('Planos drag over');
+            });
+
+            planosUploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                planosUploadArea.classList.remove('dragover');
+                console.log('Planos drag leave');
+            });
+
+            planosUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                planosUploadArea.classList.remove('dragover');
+                console.log('Planos files dropped:', e.dataTransfer.files);
+                this.handlePlanosSelection(e.dataTransfer.files);
+            });
+
+            // Click to select planos
+            planosUploadArea.addEventListener('click', () => {
+                console.log('Planos upload area clicked');
+                const planosInput = document.getElementById('planosInput');
+                if (planosInput) {
+                    planosInput.click();
+                }
+            });
+        }
+
+        // Navigation buttons
+        const prevButton = document.getElementById('prevButton');
+        if (prevButton) {
+            prevButton.addEventListener('click', () => {
+                this.previousStep();
+            });
+        }
+
+        const nextButton = document.getElementById('nextButton');
+        if (nextButton) {
+            nextButton.addEventListener('click', () => {
+                this.nextStep();
+            });
+        }
+
+        // Start verification button
+        const startButton = document.getElementById('startVerification');
+        if (startButton) {
+            startButton.addEventListener('click', () => {
+                this.startMadridVerification();
+            });
+        }
+
+        // New verification button
+        const newVerificationButton = document.getElementById('newVerification');
+        if (newVerificationButton) {
+            newVerificationButton.addEventListener('click', () => {
+                this.startNewVerification();
+            });
+        }
+
+        // Chatbot input
+        const chatbotInput = document.getElementById('chatbotInput');
+        if (chatbotInput) {
+            chatbotInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.sendChatbotMessage();
+                }
+            });
+        }
+
+        // Send message button
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        if (sendMessageBtn) {
+            sendMessageBtn.addEventListener('click', () => {
+                this.sendChatbotMessage();
+            });
+        }
+
+        // Document classification button
+        const classifyDocumentsBtn = document.getElementById('classifyDocumentsBtn');
+        if (classifyDocumentsBtn) {
+            classifyDocumentsBtn.addEventListener('click', () => {
+                this.classifyDocuments();
+            });
+        }
+
+        // Normative application button
+        const applyNormativeBtn = document.getElementById('applyNormativeBtn');
+        if (applyNormativeBtn) {
+            applyNormativeBtn.addEventListener('click', () => {
+                this.applyNormative();
+            });
+        }
+
+        // Final checklist button
+        const generateFinalChecklistBtn = document.getElementById('generateFinalChecklistBtn');
+        if (generateFinalChecklistBtn) {
+            generateFinalChecklistBtn.addEventListener('click', () => {
+                this.generateFinalChecklist();
+            });
+        }
     }
 
     toggleBuildingType() {
@@ -136,6 +255,7 @@ class MadridVerificationSystem {
             section.classList.add('d-none');
             // Clear secondary uses
             this.projectData.secondary_uses = [];
+            this.projectData.secondary_uses_floors = {};
             document.getElementById('secondaryUsesFloors').innerHTML = '';
             console.log('Hiding secondary uses section');
         }
@@ -167,189 +287,102 @@ class MadridVerificationSystem {
 
     createFloorSelector(useType) {
         const container = document.getElementById('secondaryUsesFloors');
-        const floorSelectorId = `floors_${useType.replace('-', '_')}`;
-        
-        console.log('Creating floor selector for:', useType);
-        
         const floorSelector = document.createElement('div');
-        floorSelector.className = 'card mb-3';
         floorSelector.id = `floor_selector_${useType.replace('-', '_')}`;
+        floorSelector.className = 'mb-3';
+        
+        const floors = this.generateFloorOptions();
         floorSelector.innerHTML = `
-            <div class="card-header">
-                <h6 class="mb-0">Plantas para uso: ${this.getUseDisplayName(useType)}</h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-8">
-                        <label class="form-label">Selecciona las plantas donde se encuentra este uso:</label>
-                        <div class="floor-selection">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <h6>Plantas Especiales:</h6>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value="-0.5" id="${floorSelectorId}_entresotano" onchange="madridSystem.updateSecondaryUseFloors('${useType}')">
-                                        <label class="form-check-label" for="${floorSelectorId}_entresotano">Entresótano (-0.5)</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value="0" id="${floorSelectorId}_planta_baja" onchange="madridSystem.updateSecondaryUseFloors('${useType}')">
-                                        <label class="form-check-label" for="${floorSelectorId}_planta_baja">Planta Baja (0)</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value="0.5" id="${floorSelectorId}_entreplanta" onchange="madridSystem.updateSecondaryUseFloors('${useType}')">
-                                        <label class="form-check-label" for="${floorSelectorId}_entreplanta">Entreplanta (0.5)</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <h6>Sótanos (-100 a -1):</h6>
-                                    <div class="floor-range">
-                                        <input type="number" class="form-control form-control-sm mb-2" placeholder="Desde" min="-100" max="-1" id="${floorSelectorId}_sotano_desde">
-                                        <input type="number" class="form-control form-control-sm" placeholder="Hasta" min="-100" max="-1" id="${floorSelectorId}_sotano_hasta">
-                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="madridSystem.addFloorRange('${useType}', 'sotano')">Agregar Rango</button>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <h6>Pisos (1 a 100):</h6>
-                                    <div class="floor-range">
-                                        <input type="number" class="form-control form-control-sm mb-2" placeholder="Desde" min="1" max="100" id="${floorSelectorId}_piso_desde">
-                                        <input type="number" class="form-control form-control-sm" placeholder="Hasta" min="1" max="100" id="${floorSelectorId}_piso_hasta">
-                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="madridSystem.addFloorRange('${useType}', 'piso')">Agregar Rango</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mt-3">
-                                <h6>Plantas Seleccionadas:</h6>
-                                <div id="${floorSelectorId}_selected" class="selected-floors">
-                                    <span class="text-muted">Ninguna planta seleccionada</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <label class="form-label fw-bold">Plantas para ${useType}:</label>
+            <select class="form-select" id="floors_${useType.replace('-', '_')}" multiple>
+                ${floors.map(floor => `<option value="${floor}">${floor}</option>`).join('')}
+            </select>
+            <small class="form-text text-muted">Selecciona las plantas donde se encuentra este uso secundario</small>
         `;
         
         container.appendChild(floorSelector);
+        
+        // Add event listener for floor selection
+        const floorSelect = document.getElementById(`floors_${useType.replace('-', '_')}`);
+        floorSelect.addEventListener('change', () => {
+            const selectedFloors = Array.from(floorSelect.selectedOptions).map(option => option.value);
+            this.updateSecondaryUseFloors(useType, selectedFloors);
+        });
     }
 
     removeFloorSelector(useType) {
-        const selector = document.getElementById(`floor_selector_${useType.replace('-', '_')}`);
-        if (selector) {
-            selector.remove();
+        const floorSelector = document.getElementById(`floor_selector_${useType.replace('-', '_')}`);
+        if (floorSelector) {
+            floorSelector.remove();
         }
+        delete this.projectData.secondary_uses_floors[useType];
     }
 
-    updateSecondaryUseFloors(useType) {
-        const floorSelectorId = `floors_${useType.replace('-', '_')}`;
-        const checkboxes = document.querySelectorAll(`input[id^="${floorSelectorId}_"]:checked`);
-        
-        const floors = Array.from(checkboxes).map(cb => parseFloat(cb.value));
-        
-        console.log('Updating floors for:', useType, floors);
-        
-        // Update project data
-        const secondaryUse = this.projectData.secondary_uses.find(use => use.use_type === useType);
-        if (secondaryUse) {
-            secondaryUse.floors = floors;
-        }
-        
-        // Update display
-        this.updateSelectedFloorsDisplay(useType, floors);
-        this.updateNavigationButtons();
-    }
-
-    updateSelectedFloorsDisplay(useType, floors) {
-        const floorSelectorId = `floors_${useType.replace('-', '_')}`;
-        const display = document.getElementById(`${floorSelectorId}_selected`);
-        
-        if (floors.length === 0) {
-            display.innerHTML = '<span class="text-muted">Ninguna planta seleccionada</span>';
+    generateFloorOptions() {
+        const floors = [];
+        // Generar plantas de -100 a 100
+        for (let i = -100; i <= 100; i++) {
+            if (i === 0) {
+                floors.push('Planta Baja');
+            } else if (i > 0) {
+                floors.push(`Planta ${i}`);
         } else {
-            const floorNames = floors.map(floor => {
-                if (floor === -0.5) return 'Entresótano';
-                if (floor === 0) return 'Planta Baja';
-                if (floor === 0.5) return 'Entreplanta';
-                if (floor < 0) return `Sótano ${Math.abs(floor)}`;
-                return `Planta ${floor}`;
-            });
-            display.innerHTML = floorNames.map(name => `<span class="badge bg-primary me-1">${name}</span>`).join('');
-        }
-    }
-
-    getUseDisplayName(useType) {
-        const names = {
-            'residencial': 'Residencial',
-            'industrial': 'Industrial',
-            'garaje-aparcamiento': 'Garaje-Aparcamiento',
-            'servicios_terciarios': 'Servicios Terciarios',
-            'dotacional_zona_verde': 'Dotacional zona verde',
-            'dotacional_deportivo': 'Dotacional Deportivo',
-            'dotacional_equipamiento': 'Dotacional equipamiento',
-            'dotacional_servicios_publicos': 'Dotacional servicios públicos',
-            'dotacional_administracion_publica': 'Dotacional administración pública',
-            'dotacional_infraestructural': 'Dotacional Infraestructural',
-            'dotacional_via_publica': 'Dotacional Vía Pública',
-            'dotacional_transporte': 'Dotacional Transporte'
-        };
-        return names[useType] || useType;
-    }
-
-    addFloorRange(useType, type) {
-        const floorSelectorId = `floors_${useType.replace('-', '_')}`;
-        const desde = document.getElementById(`${floorSelectorId}_${type}_desde`).value;
-        const hasta = document.getElementById(`${floorSelectorId}_${type}_hasta`).value;
-        
-        if (!desde || !hasta) {
-            this.showAlert('Por favor, completa ambos campos del rango.', 'warning');
-            return;
-        }
-        
-        const start = parseInt(desde);
-        const end = parseInt(hasta);
-        
-        if (start > end) {
-            this.showAlert('El valor "desde" debe ser menor o igual que "hasta".', 'warning');
-            return;
-        }
-        
-        // Add range to floors
-        const secondaryUse = this.projectData.secondary_uses.find(use => use.use_type === useType);
-        if (secondaryUse) {
-            for (let i = start; i <= end; i++) {
-                if (!secondaryUse.floors.includes(i)) {
-                    secondaryUse.floors.push(i);
-                }
+                floors.push(`Sótano ${Math.abs(i)}`);
             }
-            // Sort floors
-            secondaryUse.floors.sort((a, b) => a - b);
         }
-        
-        // Update display
-        this.updateSelectedFloorsDisplay(useType, secondaryUse.floors);
-        this.updateNavigationButtons();
+        floors.push('Entreplanta');
+        floors.push('Entresótano');
+        return floors;
     }
 
-    handleFileSelection(files) {
-        console.log('Handling file selection:', files);
+    updateSecondaryUseFloors(useType, floors) {
+        this.projectData.secondary_uses_floors[useType] = floors;
+        console.log('Updated floors for', useType, ':', floors);
+    }
+
+    handleMemoriaSelection(files) {
+        console.log('Handling memoria selection:', files);
         
         const fileArray = Array.from(files).filter(file => file.type === 'application/pdf');
         
         if (fileArray.length === 0) {
-            this.showAlert('Por favor, selecciona solo archivos PDF.', 'warning');
+            this.showAlert('Por favor, selecciona solo archivos PDF para la memoria.', 'warning');
             return;
         }
-
-        this.projectData.files = fileArray;
-        this.displayFileList();
+        
+        // Solo permitir un archivo de memoria
+        if (fileArray.length > 1) {
+            this.showAlert('Solo se permite un archivo de memoria descriptiva.', 'warning');
+            return;
+        }
+        
+        this.projectData.memoria_files = fileArray;
+        this.displayMemoriaFileList();
         this.updateNavigationButtons();
     }
 
-    displayFileList() {
-        const fileList = document.getElementById('fileList');
+    handlePlanosSelection(files) {
+        console.log('Handling planos selection:', files);
+        
+        const fileArray = Array.from(files).filter(file => file.type === 'application/pdf');
+        
+        if (fileArray.length === 0) {
+            this.showAlert('Por favor, selecciona solo archivos PDF para los planos.', 'warning');
+            return;
+        }
+
+        this.projectData.planos_files = fileArray;
+        this.displayPlanosFileList();
+        this.updateNavigationButtons();
+    }
+
+    displayMemoriaFileList() {
+        const fileList = document.getElementById('memoriaFileList');
         fileList.innerHTML = '';
 
-        this.projectData.files.forEach((file, index) => {
+        this.projectData.memoria_files.forEach((file, index) => {
             const fileItem = document.createElement('div');
-            fileItem.className = 'file-item';
+            fileItem.className = 'file-item memoria-file';
             fileItem.innerHTML = `
                 <i class="fas fa-file-pdf file-icon"></i>
                 <div class="file-info">
@@ -357,7 +390,7 @@ class MadridVerificationSystem {
                     <small class="text-muted">${this.formatFileSize(file.size)}</small>
                 </div>
                 <div class="file-actions">
-                    <button class="btn btn-sm btn-outline-danger" onclick="madridSystem.removeFile(${index})">
+                    <button class="btn btn-sm btn-outline-danger" onclick="madridSystem.removeMemoriaFile(${index})">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -366,9 +399,38 @@ class MadridVerificationSystem {
         });
     }
 
-    removeFile(index) {
-        this.projectData.files.splice(index, 1);
-        this.displayFileList();
+    displayPlanosFileList() {
+        const fileList = document.getElementById('planosFileList');
+        fileList.innerHTML = '';
+
+        this.projectData.planos_files.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item planos-file';
+            fileItem.innerHTML = `
+                <i class="fas fa-file-pdf file-icon"></i>
+                <div class="file-info">
+                    <div class="fw-bold">${file.name}</div>
+                    <small class="text-muted">${this.formatFileSize(file.size)}</small>
+                </div>
+                <div class="file-actions">
+                    <button class="btn btn-sm btn-outline-danger" onclick="madridSystem.removePlanosFile(${index})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            fileList.appendChild(fileItem);
+        });
+    }
+
+    removeMemoriaFile(index) {
+        this.projectData.memoria_files.splice(index, 1);
+        this.displayMemoriaFileList();
+        this.updateNavigationButtons();
+    }
+
+    removePlanosFile(index) {
+        this.projectData.planos_files.splice(index, 1);
+        this.displayPlanosFileList();
         this.updateNavigationButtons();
     }
 
@@ -380,27 +442,28 @@ class MadridVerificationSystem {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    changeStep(direction) {
-        console.log('Changing step:', direction, 'from', this.currentStep);
-        
-        if (direction > 0 && this.currentStep < this.maxSteps) {
+    nextStep() {
             if (this.validateCurrentStep()) {
+            if (this.currentStep < this.maxSteps) {
                 this.currentStep++;
+                this.updateStepVisibility();
+                this.updateNavigationButtons();
             }
-        } else if (direction < 0 && this.currentStep > 1) {
-            this.currentStep--;
+        }
         }
 
+    previousStep() {
+        if (this.currentStep > 1) {
+            this.currentStep--;
         this.updateStepVisibility();
         this.updateNavigationButtons();
+        }
     }
 
     validateCurrentStep() {
-        console.log('Validating step:', this.currentStep);
-        
         switch (this.currentStep) {
             case 1:
-                // Building type is optional, always valid
+                // No validation needed for step 1
                 return true;
             case 2:
                 if (!this.projectData.primary_use) {
@@ -409,118 +472,156 @@ class MadridVerificationSystem {
                 }
                 break;
             case 3:
-                if (this.projectData.has_secondary_uses) {
-                    if (this.projectData.secondary_uses.length === 0) {
-                        this.showAlert('Por favor, selecciona al menos un uso secundario.', 'warning');
+                // No validation needed for step 3 (secondary uses are optional)
+                return true;
+            case 4:
+                if (this.projectData.memoria_files.length === 0) {
+                    this.showAlert('Por favor, sube la memoria descriptiva del proyecto.', 'warning');
                         return false;
                     }
-                    // Check if all secondary uses have floors selected
-                    for (const use of this.projectData.secondary_uses) {
-                        if (use.floors.length === 0) {
-                            this.showAlert(`Por favor, selecciona las plantas para el uso: ${this.getUseDisplayName(use.use_type)}`, 'warning');
+                if (this.projectData.planos_files.length === 0) {
+                    this.showAlert('Por favor, sube al menos un plano del proyecto.', 'warning');
                             return false;
                         }
-                    }
-                }
                 break;
-            case 4:
-                if (this.projectData.files.length === 0) {
-                    this.showAlert('Por favor, sube al menos un archivo PDF (memoria o planos).', 'warning');
-                    return false;
-                }
-                break;
+            case 5:
+                // No validation needed for step 5
+                return true;
         }
         return true;
-    }
-
-    updateStepVisibility() {
-        console.log('Updating step visibility, current step:', this.currentStep);
-        
-        document.querySelectorAll('.verification-step').forEach((step, index) => {
-            const isActive = index + 1 === this.currentStep;
-            step.classList.toggle('active', isActive);
-            console.log(`Step ${index + 1} active:`, isActive);
-        });
-    }
-
-    updateNavigationButtons() {
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-
-        if (prevBtn) {
-            prevBtn.disabled = this.currentStep === 1;
-        }
-
-        if (nextBtn) {
-            if (this.currentStep === this.maxSteps) {
-                nextBtn.innerHTML = '<i class="fas fa-check me-2"></i>Iniciar Verificación Madrid';
-                nextBtn.onclick = () => this.startMadridVerification();
-            } else {
-                nextBtn.innerHTML = 'Siguiente <i class="fas fa-arrow-right ms-2"></i>';
-                nextBtn.onclick = () => this.changeStep(1);
-                nextBtn.disabled = !this.canProceedToNextStep();
-            }
-        }
-        
-        console.log('Navigation buttons updated. Can proceed:', this.canProceedToNextStep());
     }
 
     canProceedToNextStep() {
         switch (this.currentStep) {
             case 1:
-                return true; // Building type is optional
+                return true;
             case 2:
                 return this.projectData.primary_use !== null;
             case 3:
-                if (this.projectData.has_secondary_uses) {
-                    return this.projectData.secondary_uses.length > 0 && 
-                           this.projectData.secondary_uses.every(use => use.floors.length > 0);
-                }
-                return true;
+                return true; // Secondary uses are optional
             case 4:
-                return this.projectData.files.length > 0;
-            default:
+                return this.projectData.memoria_files.length > 0 && this.projectData.planos_files.length > 0;
+            case 5:
                 return true;
         }
+                    return false;
+                }
+
+    updateStepVisibility() {
+        // Hide all steps
+        for (let i = 1; i <= this.maxSteps; i++) {
+            const step = document.getElementById(`step${i}`);
+            if (step) {
+                step.classList.add('d-none');
+            }
+        }
+
+        // Show current step
+        const currentStep = document.getElementById(`step${this.currentStep}`);
+        if (currentStep) {
+            currentStep.classList.remove('d-none');
+        }
+
+        // Update progress bar
+        const progressBar = document.getElementById('progressBar');
+        if (progressBar) {
+            const progress = ((this.currentStep - 1) / (this.maxSteps - 1)) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        // Update step indicators
+        for (let i = 1; i <= this.maxSteps; i++) {
+            const indicator = document.getElementById(`stepIndicator${i}`);
+            if (indicator) {
+                if (i < this.currentStep) {
+                    indicator.classList.remove('bg-primary', 'bg-secondary');
+                    indicator.classList.add('bg-success');
+                } else if (i === this.currentStep) {
+                    indicator.classList.remove('bg-success', 'bg-secondary');
+                    indicator.classList.add('bg-primary');
+                } else {
+                    indicator.classList.remove('bg-primary', 'bg-success');
+                    indicator.classList.add('bg-secondary');
+                }
+            }
+        }
+    }
+
+    updateNavigationButtons() {
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+
+        if (prevButton) {
+            prevButton.disabled = this.currentStep === 1;
+        }
+
+        if (nextButton) {
+            if (this.currentStep === this.maxSteps) {
+                nextButton.style.display = 'none';
+            } else {
+                nextButton.style.display = 'inline-block';
+                nextButton.disabled = !this.canProceedToNextStep();
+            }
+        }
+    }
+
+    showAlert(message, type = 'info') {
+        // Remove existing alerts
+        const existingAlerts = document.querySelectorAll('.alert');
+        existingAlerts.forEach(alert => alert.remove());
+
+        // Create new alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        // Insert at the top of the form
+        const form = document.querySelector('.verification-form');
+        if (form) {
+            form.insertBefore(alertDiv, form.firstChild);
+        }
+
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
     }
 
     async startMadridVerification() {
         console.log('Starting Madrid verification...');
         
-        if (!this.validateCurrentStep()) {
-            return;
-        }
-
-        this.currentStep = 5;
-        this.updateStepVisibility();
-        this.updateNavigationButtons();
+        // Show loading state
+        const startButton = document.getElementById('startVerification');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        
+        if (startButton) startButton.disabled = true;
+        if (loadingSpinner) loadingSpinner.classList.remove('d-none');
 
         try {
-            // Show loading state
-            this.showVerificationStatus('Iniciando verificación Madrid...', 'loading');
-
             // Prepare project data for Madrid API
             const madridProjectData = {
                 is_existing_building: this.projectData.is_existing_building,
                 primary_use: this.projectData.primary_use,
                 has_secondary_uses: this.projectData.has_secondary_uses,
                 secondary_uses: this.projectData.secondary_uses,
-                files: this.projectData.files.map(file => file.name) // Just file names for now
+                secondary_uses_floors: this.projectData.secondary_uses_floors,
+                memoria_files: this.projectData.memoria_files.map(file => file.name),
+                planos_files: this.projectData.planos_files.map(file => file.name)
             };
 
-            console.log('Sending Madrid project data:', madridProjectData);
+            console.log('Sending data to Madrid API:', madridProjectData);
 
-            // Start Madrid verification
-            const response = await fetch('/madrid/integration/process-project', {
+            const response = await fetch('/api/madrid/verify', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    project_data: madridProjectData,
-                    auto_resolve_ambiguities: false,
-                    generate_report: true
-                })
+                body: JSON.stringify(madridProjectData)
             });
 
             if (!response.ok) {
@@ -528,146 +629,50 @@ class MadridVerificationSystem {
             }
 
             const result = await response.json();
-            this.projectData.jobId = result.project_id;
+            console.log('Madrid verification result:', result);
 
-            // Show success and display results
-            this.showVerificationStatus('Verificación Madrid completada exitosamente!', 'success');
+            this.projectData.jobId = result.job_id;
             this.displayResults(result);
 
         } catch (error) {
             console.error('Error during Madrid verification:', error);
-            this.showVerificationStatus('Error durante la verificación Madrid. Por favor, inténtalo de nuevo.', 'error');
+            this.showAlert(`Error durante la verificación: ${error.message}`, 'danger');
+        } finally {
+            // Hide loading state
+            if (startButton) startButton.disabled = false;
+            if (loadingSpinner) loadingSpinner.classList.add('d-none');
         }
-    }
-
-    showVerificationStatus(message, type) {
-        const statusDiv = document.getElementById('verificationStatus');
-        let iconClass = 'fas fa-spinner fa-spin';
-        let textClass = 'text-primary';
-
-        switch (type) {
-            case 'success':
-                iconClass = 'fas fa-check-circle';
-                textClass = 'text-success';
-                break;
-            case 'error':
-                iconClass = 'fas fa-exclamation-circle';
-                textClass = 'text-danger';
-                break;
-            case 'loading':
-                iconClass = 'fas fa-spinner fa-spin';
-                textClass = 'text-primary';
-                break;
-        }
-
-        statusDiv.innerHTML = `
-            <div class="verification-status">
-                <i class="${iconClass} fa-3x ${textClass} mb-3"></i>
-                <p class="status-text ${textClass}">${message}</p>
-            </div>
-        `;
     }
 
     displayResults(result) {
         const resultsContainer = document.getElementById('resultsContainer');
         const resultsContent = document.getElementById('resultsContent');
 
-        // Show results section
-        resultsContainer.classList.remove('d-none');
-        resultsContainer.scrollIntoView({ behavior: 'smooth' });
-
-        // Generate results HTML
-        resultsContent.innerHTML = this.generateMadridResultsHTML(result);
-    }
-
-    generateMadridResultsHTML(result) {
-        const verification = result.verification_result || {};
-        const summary = {
-            overall_status: verification.overall_status || 'unknown',
-            compliance_percentage: verification.compliance_percentage || 0,
-            total_items: verification.total_items || 0,
-            compliant_items: verification.compliant_items || 0,
-            non_compliant_items: verification.non_compliant_items || 0
-        };
-
-        return `
+        if (resultsContainer && resultsContent) {
+            resultsContent.innerHTML = `
             <div class="row">
-                <!-- Summary Cards -->
-                <div class="col-md-3">
-                    <div class="summary-card">
-                        <div class="summary-number">${summary.total_items}</div>
-                        <div class="summary-label">Total de Items</div>
+                    <div class="col-12">
+                        <h4 class="mb-4">Resultados de la Verificación</h4>
+                        <div class="alert alert-info">
+                            <strong>Job ID:</strong> ${result.job_id}
+                    </div>
+                        <div class="alert alert-success">
+                            <strong>Estado:</strong> ${result.status}
+                </div>
+                        <div class="alert alert-primary">
+                            <strong>Mensaje:</strong> ${result.message}
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="summary-card" style="background: linear-gradient(135deg, #28a745, #20c997);">
-                        <div class="summary-number">${summary.compliant_items}</div>
-                        <div class="summary-label">Cumplidos</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="summary-card" style="background: linear-gradient(135deg, #dc3545, #fd7e14);">
-                        <div class="summary-number">${summary.non_compliant_items}</div>
-                        <div class="summary-label">No Cumplidos</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="summary-card" style="background: linear-gradient(135deg, #0dcaf0, #6f42c1);">
-                        <div class="summary-number">${summary.compliance_percentage}%</div>
-                        <div class="summary-label">Cumplimiento</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Status -->
-            <div class="mt-4">
-                <div class="alert alert-${summary.overall_status === 'compliant' ? 'success' : 'warning'}">
-                    <h5 class="alert-heading">
-                        <i class="fas fa-${summary.overall_status === 'compliant' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
-                        Estado General: ${summary.overall_status === 'compliant' ? 'CUMPLE' : 'NO CUMPLE'}
-                    </h5>
-                    <p class="mb-0">El proyecto ${summary.overall_status === 'compliant' ? 'cumple' : 'no cumple'} con la normativa PGOUM de Madrid.</p>
-                </div>
-            </div>
-
-            <!-- Project Data Summary -->
-            <div class="mt-4">
-                <h4>Datos del Proyecto Madrid</h4>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Tipo de edificio:</strong> ${this.projectData.is_existing_building ? 'Existente' : 'Nuevo'}</p>
-                        <p><strong>Uso principal:</strong> ${this.getUseDisplayName(this.projectData.primary_use)}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>Usos secundarios:</strong> ${this.projectData.has_secondary_uses ? this.projectData.secondary_uses.length : 'Ninguno'}</p>
-                        <p><strong>Archivos subidos:</strong> ${this.projectData.files.length}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="mt-4 text-center">
-                <button class="btn btn-primary me-2" onclick="madridSystem.downloadReport()">
-                    <i class="fas fa-download me-2"></i>
-                    Descargar Reporte Madrid
-                </button>
-                <button class="btn btn-outline-primary" onclick="madridSystem.startNewVerification()">
-                    <i class="fas fa-plus me-2"></i>
-                    Nueva Verificación
-                </button>
             </div>
         `;
-    }
-
-    downloadReport() {
-        if (this.projectData.jobId) {
-            window.open(`/madrid/integration/reports/${this.projectData.jobId}`, '_blank');
-        } else {
-            this.showAlert('No hay reporte disponible para descargar.', 'warning');
+            
+            resultsContainer.classList.remove('d-none');
         }
     }
 
     startNewVerification() {
+        console.log('Starting new verification...');
+        
         // Reset form
         this.currentStep = 1;
         this.projectData = {
@@ -675,7 +680,9 @@ class MadridVerificationSystem {
             primary_use: null,
             has_secondary_uses: false,
             secondary_uses: [],
-            files: [],
+            secondary_uses_floors: {},
+            memoria_files: [],
+            planos_files: [],
             jobId: null
         };
 
@@ -685,100 +692,990 @@ class MadridVerificationSystem {
         document.getElementById('hasSecondaryUses').checked = false;
         document.getElementById('secondaryUsesSection').classList.add('d-none');
         document.getElementById('secondaryUsesFloors').innerHTML = '';
-        document.getElementById('fileList').innerHTML = '';
-        document.getElementById('fileInput').value = '';
+        document.getElementById('memoriaFileList').innerHTML = '';
+        document.getElementById('planosFileList').innerHTML = '';
+        document.getElementById('memoriaInput').value = '';
+        document.getElementById('planosInput').value = '';
         document.getElementById('resultsContainer').classList.add('d-none');
 
-        // Clear all secondary use checkboxes
-        document.querySelectorAll('input[id^="sec_"]').forEach(checkbox => {
-            checkbox.checked = false;
-        });
-
+        // Update UI
         this.updateStepVisibility();
         this.updateNavigationButtons();
-
-        // Scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    showAlert(message, type = 'info') {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    // =============================================================================
+    // CHATBOT FUNCTIONS
+    // =============================================================================
+
+    async startChatbotSession() {
+        console.log('Iniciando sesión de chatbot...');
+        
+        try {
+            // Preparar datos del proyecto para el chatbot
+            const chatbotProjectData = {
+                is_existing_building: this.projectData.is_existing_building,
+                primary_use: this.projectData.primary_use,
+                has_secondary_uses: this.projectData.has_secondary_uses,
+                secondary_uses: this.projectData.secondary_uses,
+                secondary_uses_floors: this.projectData.secondary_uses_floors,
+                files: [
+                    ...this.projectData.memoria_files.map(f => f.name),
+                    ...this.projectData.planos_files.map(f => f.name)
+                ]
+            };
+
+            const response = await fetch('/api/madrid/chatbot/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    project_data: chatbotProjectData
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            this.chatbotSession = result;
+            
+            // Actualizar interfaz del chatbot
+            this.updateChatbotInterface(result);
+            
+            // Habilitar input del chatbot
+            this.enableChatbotInput();
+            
+            console.log('Sesión de chatbot iniciada:', result.session_id);
+            
+        } catch (error) {
+            console.error('Error iniciando sesión de chatbot:', error);
+            this.showChatbotError('Error iniciando el asistente de verificación');
+        }
+    }
+
+    updateChatbotInterface(sessionData) {
+        // Actualizar estado del chatbot
+        const statusElement = document.getElementById('chatbotStatus');
+        if (statusElement) {
+            statusElement.textContent = sessionData.state === 'resolving_ambiguities' ? 'Resolviendo' : 'Analizando';
+            statusElement.className = `badge ${sessionData.state === 'resolving_ambiguities' ? 'bg-info' : 'bg-warning'}`;
+        }
+
+        // Actualizar contadores
+        const ambiguityCount = document.getElementById('ambiguityCount');
+        const resolvedCount = document.getElementById('resolvedCount');
+        if (ambiguityCount) ambiguityCount.textContent = sessionData.ambiguities_count || 0;
+        if (resolvedCount) resolvedCount.textContent = 0;
+
+        // Mostrar mensaje inicial si hay
+        if (sessionData.message) {
+            this.addChatbotMessage(sessionData.message, 'bot');
+        }
+
+        // Mostrar acciones sugeridas si las hay
+        if (sessionData.message && sessionData.message.suggested_actions) {
+            this.showSuggestedActions(sessionData.message.suggested_actions);
+        }
+    }
+
+    enableChatbotInput() {
+        const chatbotInput = document.getElementById('chatbotInput');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        
+        if (chatbotInput) {
+            chatbotInput.disabled = false;
+            chatbotInput.focus();
+        }
+        if (sendMessageBtn) {
+            sendMessageBtn.disabled = false;
+        }
+    }
+
+    async sendChatbotMessage() {
+        const chatbotInput = document.getElementById('chatbotInput');
+        const message = chatbotInput.value.trim();
+        
+        if (!message || !this.chatbotSession) return;
+
+        // Agregar mensaje del usuario
+        this.addChatbotMessage(message, 'user');
+        
+        // Limpiar input
+        chatbotInput.value = '';
+        
+        // Deshabilitar input temporalmente
+        this.disableChatbotInput();
+
+        try {
+            const response = await fetch('/api/madrid/chatbot/message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: this.chatbotSession.session_id,
+                    message: message
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            // Agregar respuesta del chatbot
+            this.addChatbotMessage(result.content, 'bot');
+            
+            // Mostrar acciones sugeridas si las hay
+            if (result.suggested_actions && result.suggested_actions.length > 0) {
+                this.showSuggestedActions(result.suggested_actions);
+            } else {
+                this.hideSuggestedActions();
+            }
+
+            // Actualizar estado de la sesión
+            if (result.session_status) {
+                this.updateChatbotStatus(result.session_status);
+            }
+
+            // Verificar si se completó la resolución de ambigüedades
+            if (result.type === 'completion') {
+                this.completeAmbiguityResolution();
+            }
+
+        } catch (error) {
+            console.error('Error enviando mensaje al chatbot:', error);
+            this.showChatbotError('Error enviando mensaje al asistente');
+        } finally {
+            // Rehabilitar input
+            this.enableChatbotInput();
+        }
+    }
+
+    addChatbotMessage(content, type) {
+        const messagesContainer = document.getElementById('chatbotMessages');
+        if (!messagesContainer) return;
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}-message`;
+        
+        const avatar = type === 'bot' ? '<i class="fas fa-robot"></i>' : '<i class="fas fa-user"></i>';
+        const time = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        
+        messageDiv.innerHTML = `
+            <div class="message-avatar">
+                ${avatar}
+            </div>
+            <div class="message-content">
+                <div class="message-text">${content}</div>
+                <div class="message-time">
+                    <small class="text-muted">${time}</small>
+                </div>
+            </div>
         `;
 
-        document.body.appendChild(alertDiv);
+        messagesContainer.appendChild(messageDiv);
+        
+        // Scroll al final
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
 
-        // Auto remove after 5 seconds
+    showSuggestedActions(actions) {
+        const actionsContainer = document.getElementById('suggestedActions');
+        if (!actionsContainer) return;
+
+        actionsContainer.innerHTML = '';
+        
+        actions.forEach(action => {
+            const button = document.createElement('button');
+            button.className = 'btn btn-outline-primary btn-sm me-2 mb-2';
+            button.textContent = action.label;
+            button.onclick = () => {
+                this.selectSuggestedAction(action);
+            };
+            actionsContainer.appendChild(button);
+        });
+    }
+
+    hideSuggestedActions() {
+        const actionsContainer = document.getElementById('suggestedActions');
+        if (actionsContainer) {
+            actionsContainer.innerHTML = '';
+        }
+    }
+
+    selectSuggestedAction(action) {
+        // Simular click en el botón sugerido
+        const chatbotInput = document.getElementById('chatbotInput');
+        if (chatbotInput) {
+            chatbotInput.value = action.label;
+            this.sendChatbotMessage();
+        }
+    }
+
+    updateChatbotStatus(status) {
+        // Actualizar contadores
+        const ambiguityCount = document.getElementById('ambiguityCount');
+        const resolvedCount = document.getElementById('resolvedCount');
+        const progressBar = document.getElementById('ambiguityProgress');
+        
+        if (ambiguityCount) ambiguityCount.textContent = status.ambiguities_remaining || 0;
+        if (resolvedCount) resolvedCount.textContent = status.ambiguities_resolved || 0;
+        
+        if (progressBar) {
+            const total = (status.ambiguities_remaining || 0) + (status.ambiguities_resolved || 0);
+            const resolved = status.ambiguities_resolved || 0;
+            const percentage = total > 0 ? (resolved / total) * 100 : 0;
+            progressBar.style.width = `${percentage}%`;
+        }
+    }
+
+    completeAmbiguityResolution() {
+        console.log('Resolución de ambigüedades completada');
+        
+        // Actualizar estado del chatbot
+        const statusElement = document.getElementById('chatbotStatus');
+        if (statusElement) {
+            statusElement.textContent = 'Completado';
+            statusElement.className = 'badge bg-success';
+        }
+
+        // Deshabilitar input del chatbot
+        this.disableChatbotInput();
+        
+        // Mostrar mensaje de finalización
+        this.addChatbotMessage(
+            '¡Perfecto! He resuelto todas las ambigüedades. Ahora procederé con la verificación normativa completa de tu proyecto.',
+            'bot'
+        );
+
+        // Habilitar botón de verificación
         setTimeout(() => {
-            if (alertDiv.parentNode) {
-                alertDiv.parentNode.removeChild(alertDiv);
+            this.updateNavigationButtons();
+        }, 2000);
+    }
+
+    disableChatbotInput() {
+        const chatbotInput = document.getElementById('chatbotInput');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        
+        if (chatbotInput) {
+            chatbotInput.disabled = true;
+        }
+        if (sendMessageBtn) {
+            sendMessageBtn.disabled = true;
+        }
+    }
+
+    showChatbotError(message) {
+        this.addChatbotMessage(`❌ ${message}`, 'bot');
+    }
+
+    // =============================================================================
+    // UPDATED NAVIGATION FUNCTIONS
+    // =============================================================================
+
+    nextStep() {
+        if (this.validateCurrentStep()) {
+            if (this.currentStep < this.maxSteps) {
+                this.currentStep++;
+                
+                // Si llegamos al paso 5 (chatbot), iniciar sesión
+                if (this.currentStep === 5) {
+                    this.startChatbotSession();
+                }
+                
+                this.updateStepVisibility();
+                this.updateNavigationButtons();
             }
-        }, 5000);
+        }
     }
-}
 
-// Global functions for HTML onclick handlers
-function toggleBuildingType() {
-    if (window.madridSystem) {
-        window.madridSystem.toggleBuildingType();
+    canProceedToNextStep() {
+        switch (this.currentStep) {
+            case 1:
+                return true;
+            case 2:
+                return this.projectData.primary_use !== null;
+            case 3:
+                return true; // Secondary uses are optional
+            case 4:
+                return this.projectData.memoria_files.length > 0 && this.projectData.planos_files.length > 0;
+            case 5:
+                // El chatbot se maneja automáticamente
+                return true;
+            case 6:
+                return true;
+        }
+        return false;
     }
-}
 
-function updatePrimaryUse() {
-    if (window.madridSystem) {
-        window.madridSystem.updatePrimaryUse();
+    // =============================================================================
+    // DOCUMENT CLASSIFICATION FUNCTIONS
+    // =============================================================================
+
+    async classifyDocuments() {
+        console.log('Clasificando documentos automáticamente...');
+        
+        try {
+            this.showSpinner();
+            
+            // Preparar archivos para clasificación
+            const formData = new FormData();
+            
+            // Agregar archivos de memoria
+            this.projectData.memoria_files.forEach(file => {
+                formData.append('memoria_files', file);
+            });
+            
+            // Agregar archivos de planos
+            this.projectData.planos_files.forEach(file => {
+                formData.append('plano_files', file);
+            });
+            
+            // Agregar datos del proyecto
+            formData.append('is_existing_building', this.projectData.is_existing_building);
+            formData.append('primary_use', this.projectData.primary_use);
+            formData.append('has_secondary_uses', this.projectData.has_secondary_uses);
+            formData.append('secondary_uses', JSON.stringify(this.projectData.secondary_uses));
+
+            const response = await fetch('/api/madrid/classify-documents', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('Resultado de clasificación:', result);
+            
+            // Actualizar interfaz con resultados de clasificación
+            this.updateDocumentClassificationUI(result);
+            
+            this.hideSpinner();
+            this.showAlert('Documentos clasificados automáticamente', 'success');
+            
+        } catch (error) {
+            console.error('Error en clasificación de documentos:', error);
+            this.hideSpinner();
+            this.showAlert('Error en la clasificación: ' + error.message, 'danger');
+        }
     }
-}
 
-function toggleSecondaryUses() {
-    if (window.madridSystem) {
-        window.madridSystem.toggleSecondaryUses();
+    updateDocumentClassificationUI(classificationResult) {
+        // Actualizar contadores de documentos
+        const memoriaCount = document.getElementById('memoriaCount');
+        const planosCount = document.getElementById('planosCount');
+        
+        if (memoriaCount) {
+            memoriaCount.textContent = classificationResult.memoria_files?.length || 0;
+        }
+        if (planosCount) {
+            planosCount.textContent = classificationResult.plano_files?.length || 0;
+        }
+        
+        // Mostrar detalles de clasificación
+        this.showClassificationDetails(classificationResult);
     }
-}
 
-function toggleSecondaryUse(useType) {
-    if (window.madridSystem) {
-        window.madridSystem.toggleSecondaryUse(useType);
+    showClassificationDetails(classificationResult) {
+        // Crear modal o sección para mostrar detalles de clasificación
+        const detailsContainer = document.getElementById('classificationDetails');
+        if (!detailsContainer) return;
+        
+        let html = '<div class="classification-details">';
+        html += '<h5>Clasificación Automática de Documentos</h5>';
+        
+        // Mostrar memorias clasificadas
+        if (classificationResult.memoria_files?.length > 0) {
+            html += '<div class="memoria-classification">';
+            html += '<h6><i class="fas fa-file-alt text-primary"></i> Memorias Descriptivas</h6>';
+            html += '<ul class="list-group list-group-flush">';
+            
+            classificationResult.memoria_files.forEach(file => {
+                html += `<li class="list-group-item d-flex justify-content-between align-items-center">`;
+                html += `<span>${file.filename}</span>`;
+                html += `<span class="badge bg-primary">Confianza: ${(file.classification.confidence * 100).toFixed(1)}%</span>`;
+                html += `</li>`;
+            });
+            
+            html += '</ul></div>';
+        }
+        
+        // Mostrar planos clasificados
+        if (classificationResult.plano_files?.length > 0) {
+            html += '<div class="plano-classification">';
+            html += '<h6><i class="fas fa-compass text-success"></i> Planos Arquitectónicos</h6>';
+            html += '<ul class="list-group list-group-flush">';
+            
+            classificationResult.plano_files.forEach(file => {
+                html += `<li class="list-group-item d-flex justify-content-between align-items-center">`;
+                html += `<span>${file.filename}</span>`;
+                html += `<span class="badge bg-success">Confianza: ${(file.classification.confidence * 100).toFixed(1)}%</span>`;
+                html += `</li>`;
+            });
+            
+            html += '</ul></div>';
+        }
+        
+        html += '</div>';
+        detailsContainer.innerHTML = html;
     }
-}
 
-function updateSecondaryUseFloors(useType) {
-    if (window.madridSystem) {
-        window.madridSystem.updateSecondaryUseFloors(useType);
+    // =============================================================================
+    // NORMATIVE INTEGRATION FUNCTIONS
+    // =============================================================================
+
+    async applyNormative() {
+        console.log('Aplicando normativa específica...');
+        
+        try {
+            this.showSpinner();
+            
+            // Preparar datos del proyecto para aplicación de normativa
+            const normativeData = {
+                project_id: this.projectData.jobId || 'temp_project',
+                primary_use: this.projectData.primary_use,
+                secondary_uses: this.projectData.secondary_uses,
+                is_existing_building: this.projectData.is_existing_building,
+                memoria_files: this.projectData.memoria_files.map(f => f.name),
+                planos_files: this.projectData.planos_files.map(f => f.name)
+            };
+
+            const response = await fetch('/api/madrid/apply-normative', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(normativeData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('Resultado de aplicación de normativa:', result);
+            
+            // Actualizar interfaz con normativa aplicada
+            this.updateNormativeUI(result);
+            
+            this.hideSpinner();
+            this.showAlert('Normativa específica aplicada correctamente', 'success');
+            
+        } catch (error) {
+            console.error('Error aplicando normativa:', error);
+            this.hideSpinner();
+            this.showAlert('Error aplicando normativa: ' + error.message, 'danger');
+        }
     }
-}
 
-function addFloorRange(useType, type) {
-    if (window.madridSystem) {
-        window.madridSystem.addFloorRange(useType, type);
+    updateNormativeUI(normativeResult) {
+        // Mostrar documentos normativos aplicables
+        this.showApplicableDocuments(normativeResult.applicable_documents);
+        
+        // Mostrar asignación por plantas
+        this.showFloorAssignments(normativeResult.floor_assignments);
+        
+        // Mostrar requisitos de cumplimiento
+        this.showComplianceRequirements(normativeResult.compliance_requirements);
     }
-}
 
-function changeStep(direction) {
-    if (window.madridSystem) {
-        window.madridSystem.changeStep(direction);
+    showApplicableDocuments(documents) {
+        const container = document.getElementById('normativeDocuments');
+        if (!container) return;
+        
+        let html = '<div class="normative-documents">';
+        html += '<h6><i class="fas fa-book text-info"></i> Documentos Normativos Aplicables</h6>';
+        html += '<div class="row">';
+        
+        // Agrupar por tipo
+        const byType = {
+            'basic': documents.filter(d => d.type === 'basic'),
+            'pgoum': documents.filter(d => d.type === 'pgoum'),
+            'support': documents.filter(d => d.type === 'support')
+        };
+        
+        Object.entries(byType).forEach(([type, docs]) => {
+            if (docs.length > 0) {
+                html += '<div class="col-md-4 mb-3">';
+                html += `<h6 class="text-${type === 'basic' ? 'primary' : type === 'pgoum' ? 'success' : 'warning'}">`;
+                html += `${type === 'basic' ? 'Básicos' : type === 'pgoum' ? 'PGOUM' : 'Apoyo'}</h6>`;
+                html += '<ul class="list-group list-group-flush">';
+                
+                docs.forEach(doc => {
+                    html += `<li class="list-group-item d-flex justify-content-between align-items-center">`;
+                    html += `<span>${doc.name}</span>`;
+                    html += `<span class="badge bg-${type === 'basic' ? 'primary' : type === 'pgoum' ? 'success' : 'warning'}">${doc.priority}</span>`;
+                    html += `</li>`;
+                });
+                
+                html += '</ul></div>';
+            }
+        });
+        
+        html += '</div></div>';
+        container.innerHTML = html;
     }
-}
 
-function startMadridVerification() {
-    if (window.madridSystem) {
-        window.madridSystem.startMadridVerification();
+    showFloorAssignments(floorAssignments) {
+        const container = document.getElementById('floorAssignments');
+        if (!container) return;
+        
+        let html = '<div class="floor-assignments">';
+        html += '<h6><i class="fas fa-building text-secondary"></i> Asignación por Plantas</h6>';
+        html += '<div class="accordion" id="floorAccordion">';
+        
+        Object.entries(floorAssignments).forEach(([floor, documents], index) => {
+            html += `<div class="accordion-item">`;
+            html += `<h2 class="accordion-header" id="heading${index}">`;
+            html += `<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">`;
+            html += `Planta ${floor} (${documents.length} documentos)`;
+            html += `</button></h2>`;
+            html += `<div id="collapse${index}" class="accordion-collapse collapse" data-bs-parent="#floorAccordion">`;
+            html += `<div class="accordion-body">`;
+            html += '<ul class="list-group list-group-flush">';
+            
+            documents.forEach(doc => {
+                html += `<li class="list-group-item">${doc}</li>`;
+            });
+            
+            html += '</ul></div></div></div>';
+        });
+        
+        html += '</div></div>';
+        container.innerHTML = html;
     }
-}
 
-function scrollToSection(sectionId) {
-    document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+    showComplianceRequirements(requirements) {
+        const container = document.getElementById('complianceRequirements');
+        if (!container) return;
+        
+        let html = '<div class="compliance-requirements">';
+        html += '<h6><i class="fas fa-check-circle text-success"></i> Requisitos de Cumplimiento</h6>';
+        html += '<div class="row">';
+        
+        Object.entries(requirements).forEach(([docName, reqs]) => {
+            html += '<div class="col-md-6 mb-3">';
+            html += `<div class="card">`;
+            html += `<div class="card-header">${docName}</div>`;
+            html += `<div class="card-body">`;
+            html += '<ul class="list-group list-group-flush">';
+            
+            reqs.forEach(req => {
+                const severityClass = {
+                    'critical': 'danger',
+                    'high': 'warning',
+                    'medium': 'info',
+                    'low': 'secondary'
+                }[req.severity] || 'secondary';
+                
+                html += `<li class="list-group-item d-flex justify-content-between align-items-center">`;
+                html += `<span>${req.title}</span>`;
+                html += `<span class="badge bg-${severityClass}">${req.severity}</span>`;
+                html += `</li>`;
+            });
+            
+            html += '</ul></div></div></div>';
+        });
+        
+        html += '</div></div>';
+        container.innerHTML = html;
+    }
+
+    // =============================================================================
+    // FINAL CHECKLIST FUNCTIONS
+    // =============================================================================
+
+    async generateFinalChecklist() {
+        console.log('Generando checklist final...');
+        
+        try {
+            this.showSpinner();
+            
+            // Preparar datos para generación de checklist
+            const checklistData = {
+                project_data: {
+                    project_id: this.projectData.jobId || 'temp_project',
+                    project_name: 'Proyecto de Verificación',
+                    primary_use: this.projectData.primary_use,
+                    secondary_uses: this.projectData.secondary_uses,
+                    is_existing_building: this.projectData.is_existing_building,
+                    memoria_files: this.projectData.memoria_files.map(f => f.name),
+                    planos_files: this.projectData.planos_files.map(f => f.name)
+                },
+                normative_application: this.projectData.normative_application || {},
+                compliance_results: this.projectData.compliance_results || {}
+            };
+
+            const response = await fetch('/api/madrid/final-checklist/generate-checklist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(checklistData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('Checklist final generado:', result);
+            
+            // Guardar checklist en projectData
+            this.projectData.final_checklist = result;
+            
+            // Mostrar checklist en la interfaz
+            this.displayFinalChecklist(result);
+            
+            this.hideSpinner();
+            this.showAlert('Checklist final generado correctamente', 'success');
+            
+        } catch (error) {
+            console.error('Error generando checklist final:', error);
+            this.hideSpinner();
+            this.showAlert('Error generando checklist: ' + error.message, 'danger');
+        }
+    }
+
+    displayFinalChecklist(checklist) {
+        // Mostrar checklist en el paso 6 (Verificación Final)
+        const container = document.getElementById('finalChecklistContainer');
+        if (!container) return;
+        
+        let html = '<div class="final-checklist">';
+        html += '<h4><i class="fas fa-clipboard-check text-primary"></i> Checklist Final de Verificación</h4>';
+        
+        // Resumen general
+        html += '<div class="checklist-summary mb-4">';
+        html += '<div class="row">';
+        html += '<div class="col-md-3">';
+        html += `<div class="card text-center">`;
+        html += `<div class="card-body">`;
+        html += `<h5 class="card-title text-primary">${checklist.overall_completion.toFixed(1)}%</h5>`;
+        html += '<p class="card-text">Completado</p>';
+        html += '</div></div></div>';
+        
+        html += '<div class="col-md-3">';
+        html += `<div class="card text-center">`;
+        html += `<div class="card-body">`;
+        html += `<h5 class="card-title text-success">${checklist.completed_items}</h5>`;
+        html += '<p class="card-text">Completados</p>';
+        html += '</div></div></div>';
+        
+        html += '<div class="col-md-3">';
+        html += `<div class="card text-center">`;
+        html += `<div class="card-body">`;
+        html += `<h5 class="card-title text-warning">${checklist.total_items - checklist.completed_items}</h5>`;
+        html += '<p class="card-text">Pendientes</p>';
+        html += '</div></div></div>';
+        
+        html += '<div class="col-md-3">';
+        html += `<div class="card text-center">`;
+        html += `<div class="card-body">`;
+        html += `<h5 class="card-title text-danger">${checklist.critical_items}</h5>`;
+        html += '<p class="card-text">Críticos</p>';
+        html += '</div></div></div>';
+        
+        html += '</div></div>';
+        
+        // Categorías del checklist
+        html += '<div class="checklist-categories">';
+        html += '<h5>Categorías de Verificación</h5>';
+        html += '<div class="accordion" id="checklistAccordion">';
+        
+        checklist.categories.forEach((category, index) => {
+            const statusClass = category.completion_percentage >= 100 ? 'success' : 
+                               category.completion_percentage >= 70 ? 'warning' : 'danger';
+            
+            html += `<div class="accordion-item">`;
+            html += `<h2 class="accordion-header" id="heading${index}">`;
+            html += `<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">`;
+            html += `<i class="${category.icon} text-${category.color} me-2"></i>`;
+            html += `${category.name} `;
+            html += `<span class="badge bg-${statusClass} ms-2">${category.completion_percentage.toFixed(1)}%</span>`;
+            html += `</button></h2>`;
+            html += `<div id="collapse${index}" class="accordion-collapse collapse" data-bs-parent="#checklistAccordion">`;
+            html += `<div class="accordion-body">`;
+            html += `<p class="text-muted">${category.description}</p>`;
+            html += '<div class="progress mb-3">';
+            html += `<div class="progress-bar bg-${statusClass}" style="width: ${category.completion_percentage}%"></div>`;
+            html += '</div>';
+            html += '<div class="row">';
+            html += '<div class="col-md-6">';
+            html += `<small class="text-muted">Completados: ${category.completed_items}/${category.total_items}</small>`;
+            html += '</div>';
+            html += '<div class="col-md-6 text-end">';
+            html += `<small class="text-muted">Críticos: ${category.items.filter(item => item.priority === 'critical').length}</small>`;
+            html += '</div></div>';
+            
+            // Items del checklist
+            html += '<div class="checklist-items mt-3">';
+            category.items.forEach(item => {
+                const itemStatusClass = {
+                    'completed': 'success',
+                    'failed': 'danger',
+                    'in_progress': 'warning',
+                    'pending': 'secondary',
+                    'requires_attention': 'warning'
+                }[item.status] || 'secondary';
+                
+                const priorityClass = {
+                    'critical': 'danger',
+                    'high': 'warning',
+                    'medium': 'info',
+                    'low': 'secondary'
+                }[item.priority] || 'secondary';
+                
+                html += `<div class="checklist-item card mb-2">`;
+                html += `<div class="card-body">`;
+                html += '<div class="row align-items-center">';
+                html += '<div class="col-md-8">';
+                html += `<h6 class="mb-1">${item.title}</h6>`;
+                html += `<p class="text-muted small mb-1">${item.description}</p>`;
+                html += `<small class="text-muted">Referencia: ${item.normative_reference}</small>`;
+                html += '</div>';
+                html += '<div class="col-md-4 text-end">';
+                html += `<span class="badge bg-${itemStatusClass} me-1">${item.status}</span>`;
+                html += `<span class="badge bg-${priorityClass}">${item.priority}</span>`;
+                html += '</div></div>';
+                
+                // Evidencia requerida
+                if (item.evidence_required && item.evidence_required.length > 0) {
+                    html += '<div class="mt-2">';
+                    html += '<small class="text-muted">Evidencia requerida:</small>';
+                    html += '<ul class="list-unstyled small">';
+                    item.evidence_required.forEach(evidence => {
+                        html += `<li><i class="fas fa-file-pdf text-danger me-1"></i>${evidence}</li>`;
+                    });
+                    html += '</ul></div>';
+                }
+                
+                html += '</div></div>';
+            });
+            
+            html += '</div></div></div></div>';
+        });
+        
+        html += '</div></div></div>';
+        
+        // Botones de acción
+        html += '<div class="checklist-actions mt-4">';
+        html += '<div class="row">';
+        html += '<div class="col-md-6">';
+        html += '<button id="generateReportBtn" class="btn btn-primary">';
+        html += '<i class="fas fa-file-alt"></i> Generar Reporte Final';
+        html += '</button>';
+        html += '</div>';
+        html += '<div class="col-md-6 text-end">';
+        html += '<button id="exportChecklistBtn" class="btn btn-outline-secondary">';
+        html += '<i class="fas fa-download"></i> Exportar Checklist';
+        html += '</button>';
+        html += '</div></div></div>';
+        
+        html += '</div>';
+        container.innerHTML = html;
+        
+        // Agregar event listeners
+        this.addChecklistEventListeners();
+    }
+
+    addChecklistEventListeners() {
+        // Botón de generar reporte
+        const generateReportBtn = document.getElementById('generateReportBtn');
+        if (generateReportBtn) {
+            generateReportBtn.addEventListener('click', () => {
+                this.generateFinalReport();
+            });
+        }
+
+        // Botón de exportar checklist
+        const exportChecklistBtn = document.getElementById('exportChecklistBtn');
+        if (exportChecklistBtn) {
+            exportChecklistBtn.addEventListener('click', () => {
+                this.exportChecklist();
+            });
+        }
+    }
+
+    async generateFinalReport() {
+        console.log('Generando reporte final...');
+        
+        try {
+            this.showSpinner();
+            
+            if (!this.projectData.final_checklist) {
+                throw new Error('No hay checklist final disponible');
+            }
+            
+            const reportData = {
+                project_data: {
+                    project_id: this.projectData.jobId || 'temp_project',
+                    project_name: 'Proyecto de Verificación',
+                    primary_use: this.projectData.primary_use,
+                    secondary_uses: this.projectData.secondary_uses,
+                    is_existing_building: this.projectData.is_existing_building
+                },
+                normative_application: this.projectData.normative_application || {},
+                compliance_results: this.projectData.compliance_results || {},
+                checklist_data: this.projectData.final_checklist
+            };
+
+            const response = await fetch('/api/madrid/final-checklist/generate-report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(reportData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('Reporte final generado:', result);
+            
+            // Mostrar reporte en modal
+            this.displayFinalReport(result);
+            
+            this.hideSpinner();
+            this.showAlert('Reporte final generado correctamente', 'success');
+            
+        } catch (error) {
+            console.error('Error generando reporte final:', error);
+            this.hideSpinner();
+            this.showAlert('Error generando reporte: ' + error.message, 'danger');
+        }
+    }
+
+    displayFinalReport(report) {
+        // Crear modal para mostrar reporte
+        const modalHtml = `
+            <div class="modal fade" id="finalReportModal" tabindex="-1">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-file-alt text-primary"></i> Reporte Final de Verificación
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="report-content">
+                                <!-- Resumen ejecutivo -->
+                                <div class="executive-summary mb-4">
+                                    <h6>Resumen Ejecutivo</h6>
+                                    <div class="alert alert-${report.executive_summary.status_color}">
+                                        <h6>Estado General: ${report.executive_summary.overall_status}</h6>
+                                        <p>${report.executive_summary.summary_text}</p>
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <small>Cumplimiento: ${report.executive_summary.completion_percentage.toFixed(1)}%</small>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <small>Total verificaciones: ${report.executive_summary.total_checks}</small>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <small>Completadas: ${report.executive_summary.completed_checks}</small>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <small>Problemas críticos: ${report.executive_summary.critical_issues}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Recomendaciones -->
+                                <div class="recommendations mb-4">
+                                    <h6>Recomendaciones</h6>
+                                    ${report.recommendations.map(rec => `
+                                        <div class="alert alert-${rec.priority === 'critical' ? 'danger' : rec.priority === 'high' ? 'warning' : 'info'}">
+                                            <h6>${rec.title}</h6>
+                                            <p>${rec.description}</p>
+                                            <small>Acción: ${rec.action}</small>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                
+                                <!-- Próximos pasos -->
+                                <div class="next-steps mb-4">
+                                    <h6>Próximos Pasos</h6>
+                                    <ol>
+                                        ${report.next_steps.map(step => `
+                                            <li>
+                                                <strong>${step.title}</strong><br>
+                                                <small class="text-muted">${step.description}</small><br>
+                                                <small class="text-muted">Tiempo estimado: ${step.estimated_time}</small>
+                                            </li>
+                                        `).join('')}
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            <button type="button" class="btn btn-primary" onclick="downloadReport()">
+                                <i class="fas fa-download"></i> Descargar Reporte
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Agregar modal al DOM
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('finalReportModal'));
+        modal.show();
+        
+        // Guardar reporte para descarga
+        window.currentReport = report;
+    }
+
+    async exportChecklist() {
+        console.log('Exportando checklist...');
+        
+        try {
+            if (!this.projectData.final_checklist) {
+                throw new Error('No hay checklist final disponible');
+            }
+            
+            const response = await fetch(`/api/madrid/final-checklist/${this.projectData.jobId}/export-json`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            // Descargar archivo JSON
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `checklist_${this.projectData.jobId}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            this.showAlert('Checklist exportado correctamente', 'success');
+            
+        } catch (error) {
+            console.error('Error exportando checklist:', error);
+            this.showAlert('Error exportando checklist: ' + error.message, 'danger');
+        }
+    }
 }
 
 // Initialize the system when the page loads
-let madridSystem;
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing Madrid system...');
-    madridSystem = new MadridVerificationSystem();
-    window.madridSystem = madridSystem; // Make it globally available
-    console.log('Madrid system initialized');
-});
+const madridSystem = new MadridVerificationSystem();
