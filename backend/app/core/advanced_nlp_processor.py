@@ -130,13 +130,13 @@ class AdvancedNLPProcessor:
                 return_all_scores=True
             )
             
-            # Load spaCy Spanish model
+            # Load spaCy Spanish model (optional)
             try:
                 self.nlp = spacy.load("es_core_news_sm")
+                logger.info("Spanish spaCy model loaded successfully")
             except OSError:
-                logger.warning("Spanish spaCy model not found. Installing...")
-                os.system("python -m spacy download es_core_news_sm")
-                self.nlp = spacy.load("es_core_news_sm")
+                logger.warning("Spanish spaCy model not found. Continuing without advanced NLP features...")
+                self.nlp = None
             
             logger.info("All NLP models loaded successfully")
             
