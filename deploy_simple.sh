@@ -46,6 +46,35 @@ create_directories() {
     success "Directorios creados"
 }
 
+# Configurar normativa Madrid
+setup_normativa() {
+    info "Configurando normativa Madrid..."
+    
+    # Verificar que existe la carpeta Normativa
+    if [ ! -d "Normativa" ]; then
+        error "Carpeta Normativa no encontrada. Creando estructura básica..."
+        mkdir -p Normativa/{DOCUMENTOS_BASICOS/{DBHE,DBHR,DBHS,DBSE,DBSI,DBSUA},DOCUMENTOS_DE_APOYO/{DBHE,DBHR,DBSI,DBSUA},PGOUM}
+        warning "Estructura de normativa creada. Debe subir los archivos PDF correspondientes."
+    else
+        success "Carpeta Normativa encontrada"
+        
+        # Verificar estructura básica
+        if [ ! -d "Normativa/PGOUM" ] || [ ! -d "Normativa/DOCUMENTOS_BASICOS" ]; then
+            warning "Estructura de normativa incompleta. Verificando..."
+        fi
+        
+        # Contar archivos PDF
+        pdf_count=$(find Normativa -name "*.pdf" | wc -l)
+        info "Encontrados $pdf_count archivos PDF de normativa"
+        
+        if [ $pdf_count -eq 0 ]; then
+            warning "No se encontraron archivos PDF de normativa. El sistema funcionará con datos simulados."
+        else
+            success "Normativa configurada correctamente"
+        fi
+    fi
+}
+
 # Verificar archivo .env
 check_env_file() {
     info "Verificando archivo .env..."
@@ -173,6 +202,7 @@ show_access_info() {
     echo "  • Resolución de ambigüedades con chatbot"
     echo "  • Checklist final con trazabilidad completa"
     echo "  • Limpieza automática de Neo4j cada 24h"
+    echo "  • Sistema de subida de normativa Madrid"
     echo ""
     echo "📋 Comandos útiles:"
     echo "  Ver logs: docker-compose -f docker-compose.oracle_arm64.yml logs -f"
@@ -180,6 +210,8 @@ show_access_info() {
     echo "  Reiniciar: docker-compose -f docker-compose.oracle_arm64.yml restart"
     echo "  Limpieza Neo4j: curl -X POST http://localhost:5000/neo4j/cleanup/manual"
     echo "  Estado Neo4j: curl http://localhost:5000/neo4j/cleanup/status"
+    echo "  Estado Normativa: curl http://localhost:5000/api/madrid/normativa/status"
+    echo "  Subir Normativa: curl -X POST -F 'zip_file=@normativa.zip' http://localhost:5000/api/madrid/normativa/upload-zip"
 }
 
 # Función principal
@@ -189,6 +221,7 @@ main() {
     
     check_dependencies
     create_directories
+    setup_normativa
     check_env_file
     configure_rasa_simple
     clean_dependencies

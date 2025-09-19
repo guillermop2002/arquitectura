@@ -35,6 +35,7 @@ services:
       - ./reports:/app/reports
       - ./analysis_results:/app/analysis_results
       - ./context_storage:/app/context_storage
+      - ./Normativa:/app/Normativa
     networks:
       - verificacion-network
     restart: unless-stopped

@@ -269,61 +269,50 @@ class MadridNormativeApplicator:
         """Asignar documentos normativos a plantas específicas."""
         floor_assignments = {}
         
-        # Obtener todas las plantas del proyecto
-        all_floors = set()
-        
-        # Plantas con uso principal (todas excepto las de usos secundarios)
-        primary_floors = set()
-        secondary_floors = set()
-        
+        # Obtener plantas de usos secundarios
+        secondary_floors = {}
         for secondary_use in secondary_uses:
+            use_type = secondary_use.get('use_type', '')
             floors = secondary_use.get('floors', [])
-            secondary_floors.update(floors)
+            for floor in floors:
+                if floor not in secondary_floors:
+                    secondary_floors[floor] = []
+                secondary_floors[floor].append(use_type)
         
-        # Asumir que hay plantas desde -5 hasta 20 (esto se podría hacer más dinámico)
-        for floor in range(-5, 21):
-            floor_str = str(floor)
-            all_floors.add(floor_str)
-            
-            if floor_str not in secondary_floors:
-                primary_floors.add(floor_str)
+        # Obtener documentos por tipo
+        basic_docs = [d for d in applicable_documents if d.type == "basic"]
+        pgoum_general = [d for d in applicable_documents if "pgoum_general universal" in d.name]
+        pgoum_primary = [d for d in applicable_documents if d.type == "pgoum" and d.name != "pgoum_general universal"]
+        support_docs = [d for d in applicable_documents if d.type == "support"]
         
-        # Asignar documentos a plantas
-        for floor in all_floors:
+        # Asignar documentos a cada planta
+        # Asumir rango de plantas desde -5 hasta 20
+        for floor_num in range(-5, 21):
+            floor_str = str(floor_num)
             floor_docs = []
             
-            # Documentos básicos y PGOUM general (todas las plantas)
-            for doc in applicable_documents:
-                if doc.type in ["basic", "pgoum"] and "general universal" in doc.name:
-                    floor_docs.append(doc.name)
+            # 1. Documentos básicos (siempre aplicables a todas las plantas)
+            floor_docs.extend([d.name for d in basic_docs])
             
-            # PGOUM específico para uso principal (plantas principales)
-            if floor in primary_floors:
-                for doc in applicable_documents:
-                    if (doc.type == "pgoum" and 
-                        doc.name != "pgoum_general universal" and 
-                        primary_use in doc.building_types):
-                        floor_docs.append(doc.name)
+            # 2. PGOUM general universal (siempre aplicable)
+            floor_docs.extend([d.name for d in pgoum_general])
             
-            # PGOUM específico para usos secundarios (plantas específicas)
-            for secondary_use in secondary_uses:
-                use_type = secondary_use.get('use_type', '')
-                floors = secondary_use.get('floors', [])
-                
-                if floor in floors:
-                    for doc in applicable_documents:
-                        if (doc.type == "pgoum" and 
-                            doc.name != "pgoum_general universal" and 
-                            use_type in doc.building_types):
-                            floor_docs.append(doc.name)
+            # 3. PGOUM específico según uso de la planta
+            if floor_str in secondary_floors:
+                # Planta con uso secundario - aplicar normativa del uso secundario
+                for use_type in secondary_floors[floor_str]:
+                    use_docs = [d for d in pgoum_primary if use_type in d.name]
+                    floor_docs.extend([d.name for d in use_docs])
+            else:
+                # Planta con uso principal - aplicar normativa del uso principal
+                primary_docs = [d for d in pgoum_primary if primary_use in d.name]
+                floor_docs.extend([d.name for d in primary_docs])
             
-            # Documentos de apoyo (todas las plantas si es edificio existente)
-            for doc in applicable_documents:
-                if doc.type == "support":
-                    floor_docs.append(doc.name)
+            # 4. Documentos de apoyo (solo para edificios existentes)
+            # Nota: is_existing_building se pasa desde apply_normative
+            # floor_docs.extend([d.name for d in support_docs])
             
-            if floor_docs:
-                floor_assignments[floor] = list(set(floor_docs))  # Eliminar duplicados
+            floor_assignments[floor_str] = list(set(floor_docs))  # Eliminar duplicados
         
         return floor_assignments
     

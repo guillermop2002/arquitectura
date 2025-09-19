@@ -345,7 +345,15 @@ class MadridVerificationSystem {
 
     updateSecondaryUseFloors(useType, floors) {
         this.projectData.secondary_uses_floors[useType] = floors;
+        
+        // Actualizar también el array secondary_uses
+        const secondaryUse = this.projectData.secondary_uses.find(use => use.use_type === useType);
+        if (secondaryUse) {
+            secondaryUse.floors = floors;
+        }
+        
         console.log('Updated floors for', useType, ':', floors);
+        console.log('Updated secondary_uses:', this.projectData.secondary_uses);
     }
 
     handleMemoriaSelection(files) {

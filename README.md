@@ -146,6 +146,14 @@ El sistema verifica automáticamente proyectos de edificación en Madrid:
 - **Análisis Avanzado**: Patrones y dependencias entre elementos
 - **Limpieza Automática**: Limpieza diaria a las 2:00 AM (30 días de retención)
 
+## 📚 Gestión de Normativa Madrid
+
+- **Subida Automática**: Sistema para subir normativa en formato ZIP
+- **Estructura Validada**: Verificación automática de estructura de normativa
+- **Documentos PGOUM**: Normativa específica de Madrid incluida
+- **Documentos CTE**: DB-HE, DB-HR, DB-SI, DB-SU y documentos de apoyo
+- **Validación Completa**: Verificación de archivos faltantes y estructura correcta
+
 ## 📊 Monitoreo
 
 - **Grafana Dashboards**: Métricas en tiempo real
@@ -158,6 +166,12 @@ El sistema verifica automáticamente proyectos de edificación en Madrid:
 - `GET /neo4j/cleanup/status` - Estado del programador de limpieza
 - `POST /neo4j/cleanup/manual` - Limpieza manual de datos antiguos
 - `POST /neo4j/cleanup/config` - Configuración de limpieza
+
+### Endpoints Normativa:
+- `GET /api/madrid/normativa/status` - Estado de la normativa
+- `POST /api/madrid/normativa/upload-zip` - Subir normativa en ZIP
+- `GET /api/madrid/normativa/validate` - Validar estructura de normativa
+- `POST /api/madrid/normativa/reset` - Resetear estructura de normativa
 
 ## 🚨 Solución de Problemas
 
