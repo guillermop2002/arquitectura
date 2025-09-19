@@ -299,3 +299,16 @@ class StateManager:
         except Exception as e:
             self.logger.error(f"Error obteniendo estadísticas: {e}")
             return {"error": str(e)}
+    
+    def close(self) -> None:
+        """
+        Cerrar el StateManager y guardar el estado final.
+        """
+        try:
+            with self._lock:
+                self._state["last_updated"] = datetime.now().isoformat()
+                self._state["system_status"]["last_health_check"] = datetime.now().isoformat()
+                self._save_state()
+                self.logger.info("StateManager cerrado correctamente")
+        except Exception as e:
+            self.logger.error(f"Error cerrando StateManager: {e}")

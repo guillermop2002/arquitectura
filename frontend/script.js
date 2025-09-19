@@ -502,7 +502,7 @@ class MadridVerificationSystem {
         
         this.currentStep = newStep;
         console.log('Cambiando a paso:', this.currentStep);
-        
+
         this.updateStepVisibility();
         this.updateNavigationButtons();
         
