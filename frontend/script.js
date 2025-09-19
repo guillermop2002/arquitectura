@@ -2,7 +2,7 @@
 
 class MadridVerificationSystem {
     constructor() {
-        this.currentStep = 1;
+        this.currentStep = 0; // 0 = mostrar todos los pasos
         this.maxSteps = 7; // 7 pasos: Info → Subida → Clasificación → Normativa → Análisis → Chatbot → Checklist
         this.projectData = {
             is_existing_building: false,
@@ -560,40 +560,66 @@ class MadridVerificationSystem {
                 }
 
     updateStepVisibility() {
-        // Hide all steps
-        for (let i = 1; i <= this.maxSteps; i++) {
-            const step = document.getElementById(`step${i}`);
-            if (step) {
-                step.classList.add('d-none');
+        // Si currentStep es 0, mostrar todos los pasos
+        if (this.currentStep === 0) {
+            // Mostrar todos los pasos
+            for (let i = 1; i <= this.maxSteps; i++) {
+                const step = document.getElementById(`step${i}`);
+                if (step) {
+                    step.classList.remove('d-none');
+                }
             }
-        }
-
-        // Show current step
-        const currentStep = document.getElementById(`step${this.currentStep}`);
-        if (currentStep) {
-            currentStep.classList.remove('d-none');
-        }
-
-        // Update progress bar
-        const progressBar = document.getElementById('progressBar');
-        if (progressBar) {
-            const progress = ((this.currentStep - 1) / (this.maxSteps - 1)) * 100;
-            progressBar.style.width = `${progress}%`;
-        }
-
-        // Update step indicators
-        for (let i = 1; i <= this.maxSteps; i++) {
-            const indicator = document.getElementById(`stepIndicator${i}`);
-            if (indicator) {
-                if (i < this.currentStep) {
+            
+            // Actualizar barra de progreso al 100%
+            const progressBar = document.getElementById('progressBar');
+            if (progressBar) {
+                progressBar.style.width = '100%';
+            }
+            
+            // Marcar todos los indicadores como completados
+            for (let i = 1; i <= this.maxSteps; i++) {
+                const indicator = document.getElementById(`stepIndicator${i}`);
+                if (indicator) {
                     indicator.classList.remove('bg-primary', 'bg-secondary');
                     indicator.classList.add('bg-success');
-                } else if (i === this.currentStep) {
-                    indicator.classList.remove('bg-success', 'bg-secondary');
-                    indicator.classList.add('bg-primary');
-                } else {
-                    indicator.classList.remove('bg-primary', 'bg-success');
-                    indicator.classList.add('bg-secondary');
+                }
+            }
+        } else {
+            // Lógica original: mostrar solo el paso actual
+            for (let i = 1; i <= this.maxSteps; i++) {
+                const step = document.getElementById(`step${i}`);
+                if (step) {
+                    step.classList.add('d-none');
+                }
+            }
+
+            // Show current step
+            const currentStep = document.getElementById(`step${this.currentStep}`);
+            if (currentStep) {
+                currentStep.classList.remove('d-none');
+            }
+
+            // Update progress bar
+            const progressBar = document.getElementById('progressBar');
+            if (progressBar) {
+                const progress = ((this.currentStep - 1) / (this.maxSteps - 1)) * 100;
+                progressBar.style.width = `${progress}%`;
+            }
+
+            // Update step indicators
+            for (let i = 1; i <= this.maxSteps; i++) {
+                const indicator = document.getElementById(`stepIndicator${i}`);
+                if (indicator) {
+                    if (i < this.currentStep) {
+                        indicator.classList.remove('bg-primary', 'bg-secondary');
+                        indicator.classList.add('bg-success');
+                    } else if (i === this.currentStep) {
+                        indicator.classList.remove('bg-success', 'bg-secondary');
+                        indicator.classList.add('bg-primary');
+                    } else {
+                        indicator.classList.remove('bg-primary', 'bg-success');
+                        indicator.classList.add('bg-secondary');
+                    }
                 }
             }
         }
@@ -603,7 +629,20 @@ class MadridVerificationSystem {
         const prevButton = document.getElementById('prevButton');
         const nextButton = document.getElementById('nextButton');
 
+        // Si currentStep es 0 (mostrar todos los pasos), ocultar botones de navegación
+        if (this.currentStep === 0) {
+            if (prevButton) {
+                prevButton.style.display = 'none';
+            }
+            if (nextButton) {
+                nextButton.style.display = 'none';
+            }
+            return;
+        }
+
+        // Lógica original para navegación paso a paso
         if (prevButton) {
+            prevButton.style.display = 'inline-block';
             prevButton.disabled = this.currentStep === 1;
         }
 
