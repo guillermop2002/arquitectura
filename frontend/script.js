@@ -24,11 +24,13 @@ class MadridVerificationSystem {
         // Esperar a que el DOM esté listo
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
+                console.log('DOM cargado, inicializando sistema...');
                 this.setupEventListeners();
                 this.updateStepVisibility();
                 this.updateNavigationButtons();
             });
         } else {
+            console.log('DOM ya cargado, inicializando sistema...');
             this.setupEventListeners();
             this.updateStepVisibility();
             this.updateNavigationButtons();
@@ -157,17 +159,23 @@ class MadridVerificationSystem {
         }
 
         // Navigation buttons
-        const prevButton = document.getElementById('prevButton');
-        if (prevButton) {
-            prevButton.addEventListener('click', () => {
-                this.previousStep();
+        const prevBtn = document.getElementById('prevBtn');
+        if (prevBtn) {
+            console.log('Configurando botón anterior...');
+            prevBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Botón anterior clickeado');
+                this.changeStep(-1);
             });
         }
 
-        const nextButton = document.getElementById('nextButton');
-        if (nextButton) {
-            nextButton.addEventListener('click', () => {
-                this.nextStep();
+        const nextBtn = document.getElementById('nextBtn');
+        if (nextBtn) {
+            console.log('Configurando botón siguiente...');
+            nextBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Botón siguiente clickeado');
+                this.changeStep(1);
             });
         }
 
@@ -473,6 +481,35 @@ class MadridVerificationSystem {
             this.currentStep--;
         this.updateStepVisibility();
         this.updateNavigationButtons();
+        }
+    }
+
+    changeStep(direction) {
+        console.log('changeStep llamado con dirección:', direction);
+        const newStep = this.currentStep + direction;
+        
+        if (newStep < 1 || newStep > this.maxSteps) {
+            console.log('Paso fuera de rango:', newStep);
+            return;
+        }
+        
+        // Verificar si el paso actual está completo antes de avanzar
+        if (direction > 0 && !this.isCurrentStepComplete()) {
+            console.log('Paso actual no está completo, no se puede avanzar');
+            this.showAlert('Por favor completa todos los campos requeridos antes de continuar', 'warning');
+            return;
+        }
+        
+        this.currentStep = newStep;
+        console.log('Cambiando a paso:', this.currentStep);
+        
+        this.updateStepVisibility();
+        this.updateNavigationButtons();
+        
+        // Scroll to top of verification section
+        const verificationSection = document.getElementById('verification');
+        if (verificationSection) {
+            verificationSection.scrollIntoView({ behavior: 'smooth' });
         }
     }
 
@@ -1844,3 +1881,30 @@ class MadridVerificationSystem {
 
 // Initialize the system when the page loads
 const madridSystem = new MadridVerificationSystem();
+
+// Global functions for HTML onclick handlers
+function changeStep(direction) {
+    console.log('changeStep llamado con dirección:', direction);
+    if (madridSystem) {
+        madridSystem.changeStep(direction);
+    } else {
+        console.error('MadridSystem no está inicializado');
+    }
+}
+
+function startMadridVerification() {
+    console.log('startMadridVerification llamado');
+    if (madridSystem) {
+        madridSystem.startMadridVerification();
+    } else {
+        console.error('MadridSystem no está inicializado');
+    }
+}
+
+function scrollToSection(sectionId) {
+    console.log('scrollToSection llamado con:', sectionId);
+    const element = document.getElementById(sectionId);
+    if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+    }
+}
