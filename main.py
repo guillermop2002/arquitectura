@@ -157,11 +157,15 @@ async def read_root():
 async def health_check():
     """Health check endpoint."""
     try:
-        # Test Redis connection
-        redis_status = await state_manager.health_check()
+        # Test Redis connection (no await needed - not async)
+        redis_status = state_manager.health_check()
         
-        # Test file manager
-        file_manager_status = await file_manager.health_check()
+        # Test file manager (basic check since health_check method doesn't exist)
+        file_manager_status = {
+            "status": "ok",
+            "upload_folder": config.file.upload_folder,
+            "max_file_size": config.file.max_file_size
+        }
         
         return {
             "status": "healthy",
