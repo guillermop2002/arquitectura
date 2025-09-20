@@ -323,32 +323,20 @@ class MadridVerificationSystem {
         const floors = this.generateFloorOptions();
         floorSelector.innerHTML = `
             <label class="form-label fw-bold">Plantas para ${useType}:</label>
-            <div class="row" id="floors_${useType.replace('-', '_')}">
-                ${floors.map(floor => `
-                    <div class="col-md-3 col-sm-4 col-6 mb-2">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="${floor}" id="floor_${useType.replace('-', '_')}_${floor.replace(/\s+/g, '_')}">
-                            <label class="form-check-label" for="floor_${useType.replace('-', '_')}_${floor.replace(/\s+/g, '_')}">
-                                ${floor}
-                            </label>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-            <small class="form-text text-muted">Selecciona las plantas donde se encuentra este uso secundario</small>
+            <select class="form-select" id="floors_${useType.replace('-', '_')}" multiple>
+                ${floors.map(floor => `<option value="${floor}">${floor}</option>`).join('')}
+            </select>
+            <small class="form-text text-muted">Selecciona las plantas donde se encuentra este uso secundario (mantén Ctrl para seleccionar múltiples)</small>
         `;
         
         container.appendChild(floorSelector);
         
-        // Add event listener for floor selection (checkboxes)
-        const floorContainer = document.getElementById(`floors_${useType.replace('-', '_')}`);
-        if (floorContainer) {
-            floorContainer.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const selectedFloors = Array.from(floorContainer.querySelectorAll('input[type="checkbox"]:checked'))
-                        .map(checkbox => checkbox.value);
-                    this.updateSecondaryUseFloors(useType, selectedFloors);
-                }
+        // Add event listener for floor selection
+        const floorSelect = document.getElementById(`floors_${useType.replace('-', '_')}`);
+        if (floorSelect) {
+            floorSelect.addEventListener('change', () => {
+                const selectedFloors = Array.from(floorSelect.selectedOptions).map(option => option.value);
+                this.updateSecondaryUseFloors(useType, selectedFloors);
             });
         }
     }
@@ -1459,7 +1447,7 @@ class MadridVerificationSystem {
         console.log('Analizando documentos...');
         
         try {
-            this.showSpinner();
+            this.showSpinner('analysisResults', 'Analizando documentos...');
             
             // Preparar datos para análisis
             const analysisData = {
@@ -1477,7 +1465,7 @@ class MadridVerificationSystem {
                 }
             };
 
-            const response = await fetch('/api/madrid/analyze-documents', {
+            const response = await fetch('/api/madrid/analysis/analyze-documents', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1498,12 +1486,12 @@ class MadridVerificationSystem {
             // Mostrar resultados en la interfaz
             this.displayAnalysisResults(result);
             
-            this.hideSpinner();
+            this.hideSpinner('analysisResults');
             this.showAlert('Análisis de documentos completado', 'success');
             
         } catch (error) {
             console.error('Error analizando documentos:', error);
-            this.hideSpinner();
+            this.hideSpinner('analysisResults');
             this.showAlert('Error en el análisis: ' + error.message, 'danger');
         }
     }
