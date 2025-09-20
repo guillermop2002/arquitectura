@@ -323,20 +323,34 @@ class MadridVerificationSystem {
         const floors = this.generateFloorOptions();
         floorSelector.innerHTML = `
             <label class="form-label fw-bold">Plantas para ${useType}:</label>
-            <select class="form-select" id="floors_${useType.replace('-', '_')}" multiple>
-                ${floors.map(floor => `<option value="${floor}">${floor}</option>`).join('')}
-            </select>
+            <div class="row" id="floors_${useType.replace('-', '_')}">
+                ${floors.map(floor => `
+                    <div class="col-md-3 col-sm-4 col-6 mb-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="${floor}" id="floor_${useType.replace('-', '_')}_${floor.replace(/\s+/g, '_')}">
+                            <label class="form-check-label" for="floor_${useType.replace('-', '_')}_${floor.replace(/\s+/g, '_')}">
+                                ${floor}
+                            </label>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
             <small class="form-text text-muted">Selecciona las plantas donde se encuentra este uso secundario</small>
         `;
         
         container.appendChild(floorSelector);
         
-        // Add event listener for floor selection
-        const floorSelect = document.getElementById(`floors_${useType.replace('-', '_')}`);
-        floorSelect.addEventListener('change', () => {
-            const selectedFloors = Array.from(floorSelect.selectedOptions).map(option => option.value);
-            this.updateSecondaryUseFloors(useType, selectedFloors);
-        });
+        // Add event listener for floor selection (checkboxes)
+        const floorContainer = document.getElementById(`floors_${useType.replace('-', '_')}`);
+        if (floorContainer) {
+            floorContainer.addEventListener('change', (e) => {
+                if (e.target.type === 'checkbox') {
+                    const selectedFloors = Array.from(floorContainer.querySelectorAll('input[type="checkbox"]:checked'))
+                        .map(checkbox => checkbox.value);
+                    this.updateSecondaryUseFloors(useType, selectedFloors);
+                }
+            });
+        }
     }
 
     removeFloorSelector(useType) {
@@ -477,6 +491,42 @@ class MadridVerificationSystem {
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // =============================================================================
+    // SPINNER FUNCTIONS
+    // =============================================================================
+
+    showSpinner(elementId, message = 'Cargando...') {
+        console.log('🔄 Mostrando spinner para:', elementId);
+        const element = document.getElementById(elementId);
+        if (element) {
+            // Crear spinner si no existe
+            let spinner = element.querySelector('.loading-spinner');
+            if (!spinner) {
+                spinner = document.createElement('div');
+                spinner.className = 'loading-spinner text-center p-4';
+                spinner.innerHTML = `
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <div class="mt-2">${message}</div>
+                `;
+                element.appendChild(spinner);
+            }
+            spinner.style.display = 'block';
+        }
+    }
+
+    hideSpinner(elementId) {
+        console.log('✅ Ocultando spinner para:', elementId);
+        const element = document.getElementById(elementId);
+        if (element) {
+            const spinner = element.querySelector('.loading-spinner');
+            if (spinner) {
+                spinner.style.display = 'none';
+            }
+        }
     }
 
     nextStep() {
