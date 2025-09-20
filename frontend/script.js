@@ -573,13 +573,19 @@ class MadridVerificationSystem {
                 }
 
     updateStepVisibility() {
+        console.log('🔄 updateStepVisibility llamado con currentStep:', this.currentStep);
+        
         // Si currentStep es 0, mostrar todos los pasos
         if (this.currentStep === 0) {
-            // Mostrar todos los pasos
+            console.log('📋 Mostrando todos los pasos...');
+            // Mostrar todos los pasos añadiendo clase 'active'
             for (let i = 1; i <= this.maxSteps; i++) {
                 const step = document.getElementById(`step${i}`);
                 if (step) {
-                    step.classList.remove('d-none');
+                    step.classList.add('active');
+                    console.log(`✅ Paso ${i} mostrado`);
+                } else {
+                    console.log(`❌ Paso ${i} no encontrado`);
                 }
             }
             
@@ -599,17 +605,21 @@ class MadridVerificationSystem {
             }
         } else {
             // Lógica original: mostrar solo el paso actual
+            console.log('📋 Mostrando solo paso:', this.currentStep);
             for (let i = 1; i <= this.maxSteps; i++) {
                 const step = document.getElementById(`step${i}`);
                 if (step) {
-                    step.classList.add('d-none');
+                    step.classList.remove('active');
                 }
             }
 
             // Show current step
             const currentStep = document.getElementById(`step${this.currentStep}`);
             if (currentStep) {
-                currentStep.classList.remove('d-none');
+                currentStep.classList.add('active');
+                console.log(`✅ Paso ${this.currentStep} mostrado`);
+            } else {
+                console.log(`❌ Paso ${this.currentStep} no encontrado`);
             }
 
             // Update progress bar
