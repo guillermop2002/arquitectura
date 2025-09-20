@@ -21,30 +21,38 @@ class MadridVerificationSystem {
     }
 
     init() {
+        console.log('🚀 Inicializando MadridVerificationSystem...');
+        console.log('📊 currentStep:', this.currentStep);
+        console.log('📊 maxSteps:', this.maxSteps);
+        
         // Esperar a que el DOM esté listo
         if (document.readyState === 'loading') {
+            console.log('⏳ Esperando que el DOM se cargue...');
             document.addEventListener('DOMContentLoaded', () => {
-                console.log('DOM cargado, inicializando sistema...');
+                console.log('✅ DOM cargado, inicializando sistema...');
                 this.setupEventListeners();
                 this.updateStepVisibility();
                 this.updateNavigationButtons();
+                console.log('🎯 Sistema inicializado completamente');
             });
         } else {
-            console.log('DOM ya cargado, inicializando sistema...');
+            console.log('✅ DOM ya cargado, inicializando sistema...');
             this.setupEventListeners();
             this.updateStepVisibility();
             this.updateNavigationButtons();
+            console.log('🎯 Sistema inicializado completamente');
         }
     }
 
     setupEventListeners() {
-        console.log('Configurando event listeners...');
+        console.log('🔧 Configurando event listeners...');
 
         // Building type toggle
         const buildingToggle = document.getElementById('isExistingBuilding');
+        console.log('🏗️ Building toggle encontrado:', !!buildingToggle);
         if (buildingToggle) {
             buildingToggle.addEventListener('change', () => {
-                console.log('Building type changed:', buildingToggle.checked);
+                console.log('🏗️ Building type changed:', buildingToggle.checked);
                 this.toggleBuildingType();
             });
         }
@@ -78,24 +86,27 @@ class MadridVerificationSystem {
 
         // Memoria input change
         const memoriaInput = document.getElementById('memoriaInput');
+        console.log('📄 Memoria input encontrado:', !!memoriaInput);
         if (memoriaInput) {
             memoriaInput.addEventListener('change', (e) => {
-                console.log('Memoria seleccionada:', e.target.files);
+                console.log('📄 Memoria seleccionada:', e.target.files);
                 this.handleMemoriaSelection(e.target.files);
             });
         }
 
         // Planos input change
         const planosInput = document.getElementById('planosInput');
+        console.log('📐 Planos input encontrado:', !!planosInput);
         if (planosInput) {
             planosInput.addEventListener('change', (e) => {
-                console.log('Planos seleccionados:', e.target.files);
+                console.log('📐 Planos seleccionados:', e.target.files);
                 this.handlePlanosSelection(e.target.files);
             });
         }
 
         // Drag and drop for Memoria
         const memoriaUploadArea = document.getElementById('memoriaUploadArea');
+        console.log('📄 Memoria upload area encontrada:', !!memoriaUploadArea);
         if (memoriaUploadArea) {
             memoriaUploadArea.addEventListener('dragover', (e) => {
                 e.preventDefault();
@@ -186,6 +197,8 @@ class MadridVerificationSystem {
                 this.startMadridVerification();
             });
         }
+        
+        console.log('✅ Todos los event listeners configurados correctamente');
 
         // New verification button
         const newVerificationButton = document.getElementById('newVerification');
