@@ -338,76 +338,77 @@ async def get_checklist_templates():
         logger.error(f"Error obteniendo plantillas: {e}")
         raise HTTPException(status_code=500, detail=f"Error obteniendo plantillas: {str(e)}")
 
-@final_checklist_router.post("/simulate-checklist")
-async def simulate_checklist_generation(simulation_data: Dict[str, Any]):
-    """
-    Simular generación de checklist para testing.
-    
-    Args:
-        simulation_data: Datos para simulación
-        
-    Returns:
-        Checklist simulado
-    """
-    try:
-        logger.info("Simulando generación de checklist")
-        
-        # Datos de simulación
-        project_data = {
-            "project_id": simulation_data.get('project_id', 'sim_project_001'),
-            "project_name": simulation_data.get('project_name', 'Proyecto de Simulación'),
-            "primary_use": simulation_data.get('primary_use', 'residencial'),
-            "is_existing_building": simulation_data.get('is_existing_building', False)
-        }
-        
-        # Simular aplicación de normativa
-        normative_application = {
-            "primary_use": project_data['primary_use'],
-            "secondary_uses": [],
-            "is_existing_building": project_data['is_existing_building'],
-            "applicable_documents": [
-                {"name": "DB-HE", "type": "basic"},
-                {"name": "DB-SI", "type": "basic"},
-                {"name": "pgoum_residencial", "type": "pgoum"}
-            ]
-        }
-        
-        # Simular resultados de cumplimiento
-        compliance_results = {
-            "compliance_score": 75.0,
-            "total_checks": 20,
-            "passed_checks": 15,
-            "failed_checks": 5,
-            "critical_issues": 1,
-            "high_issues": 2,
-            "medium_issues": 2,
-            "low_issues": 0
-        }
-        
-        # Generar checklist simulado
-        checklist = checklist_system.generate_final_checklist(
-            project_data=project_data,
-            normative_application=normative_application,
-            compliance_results=compliance_results
-        )
-        
-        # Convertir a diccionario
-        checklist_dict = {
-            "project_id": checklist.project_id,
-            "project_name": checklist.project_name,
-            "building_type": checklist.building_type,
-            "is_existing_building": checklist.is_existing_building,
-            "overall_completion": checklist.overall_completion,
-            "total_items": checklist.total_items,
-            "completed_items": checklist.completed_items,
-            "critical_items": checklist.critical_items,
-            "high_priority_items": checklist.high_priority_items,
-            "status": checklist.status,
-            "simulation": True
-        }
-        
-        return JSONResponse(content=checklist_dict)
-        
-    except Exception as e:
-        logger.error(f"Error simulando checklist: {e}")
-        raise HTTPException(status_code=500, detail=f"Error en simulación: {str(e)}")
+# Endpoint de simulación eliminado - usar endpoint real /generate-checklist
+# @final_checklist_router.post("/simulate-checklist")
+# async def simulate_checklist_generation(simulation_data: Dict[str, Any]):
+#     """
+#     Simular generación de checklist para testing.
+#     
+#     Args:
+#         simulation_data: Datos para simulación
+#         
+#     Returns:
+#         Checklist simulado
+#     """
+#     try:
+#         logger.info("Simulando generación de checklist")
+#         
+#         # Datos de simulación
+#         project_data = {
+#             "project_id": simulation_data.get('project_id', 'sim_project_001'),
+#             "project_name": simulation_data.get('project_name', 'Proyecto de Simulación'),
+#             "primary_use": simulation_data.get('primary_use', 'residencial'),
+#             "is_existing_building": simulation_data.get('is_existing_building', False)
+#         }
+#         
+#         # Simular aplicación de normativa
+#         normative_application = {
+#             "primary_use": project_data['primary_use'],
+#             "secondary_uses": [],
+#             "is_existing_building": project_data['is_existing_building'],
+#             "applicable_documents": [
+#                 {"name": "DB-HE", "type": "basic"},
+#                 {"name": "DB-SI", "type": "basic"},
+#                 {"name": "pgoum_residencial", "type": "pgoum"}
+#             ]
+#         }
+#         
+#         # Simular resultados de cumplimiento
+#         compliance_results = {
+#             "compliance_score": 75.0,
+#             "total_checks": 20,
+#             "passed_checks": 15,
+#             "failed_checks": 5,
+#             "critical_issues": 1,
+#             "high_issues": 2,
+#             "medium_issues": 2,
+#             "low_issues": 0
+#         }
+#         
+#         # Generar checklist simulado
+#         checklist = checklist_system.generate_final_checklist(
+#             project_data=project_data,
+#             normative_application=normative_application,
+#             compliance_results=compliance_results
+#         )
+#         
+#         # Convertir a diccionario
+#         checklist_dict = {
+#             "project_id": checklist.project_id,
+#             "project_name": checklist.project_name,
+#             "building_type": checklist.building_type,
+#             "is_existing_building": checklist.is_existing_building,
+#             "overall_completion": checklist.overall_completion,
+#             "total_items": checklist.total_items,
+#             "completed_items": checklist.completed_items,
+#             "critical_items": checklist.critical_items,
+#             "high_priority_items": checklist.high_priority_items,
+#             "status": checklist.status,
+#             "simulation": True
+#         }
+#         
+#         return JSONResponse(content=checklist_dict)
+#         
+#     except Exception as e:
+#         logger.error(f"Error simulando checklist: {e}")
+#         raise HTTPException(status_code=500, detail=f"Error en simulación: {str(e)}")
