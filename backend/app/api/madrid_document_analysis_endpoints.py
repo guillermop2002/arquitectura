@@ -21,6 +21,7 @@ from backend.app.core.config import AIConfig
 from backend.app.core.file_cleanup_manager import file_cleanup_manager
 from backend.app.core.detailed_logger import detailed_logger
 from backend.app.core.usage_applicator import UsageApplicator
+from backend.app.core.madrid_normative_applicator import MadridNormativeApplicator
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,8 @@ class DocumentAnalysisResponse(BaseModel):
     usage_logic_applied: Optional[bool] = False
     usage_summary: Optional[Dict[str, Any]] = None
     usage_validation: Optional[Dict[str, Any]] = None
+    normative_application: Optional[Dict[str, Any]] = None
+    normative_summary: Optional[Dict[str, Any]] = None
     session_log_file: Optional[str] = None
     log_summary: Optional[Dict[str, Any]] = None
 
@@ -275,6 +278,13 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
         usage_summary = usage_applicator.get_usage_summary(project_data_with_uses)
         logger.info(f"Resumen de usos: {usage_summary}")
         
+        # Aplicar normativa específica de Madrid
+        logger.info("Aplicando normativa específica de Madrid")
+        normative_applicator = MadridNormativeApplicator()
+        normative_application = normative_applicator.apply_normative(request.project_data)
+        normative_summary = normative_applicator.get_normative_summary(normative_application)
+        logger.info(f"Normativa aplicada: {normative_summary}")
+        
         # Detectar ambigüedades usando IA
         logger.info("Iniciando detección de ambigüedades")
         ambiguities = await detect_ambiguities_with_ai(
@@ -316,7 +326,29 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
             analysis_details=analysis_results['analysis_details'],
             ambiguities=analysis_results['ambiguities'],
             processing_time=processing_time,
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
+            usage_logic_applied=usage_validation.get('is_valid', False),
+            usage_summary=usage_summary,
+            usage_validation=usage_validation,
+            normative_application={
+                "project_id": normative_application.project_id,
+                "primary_use": normative_application.primary_use,
+                "secondary_uses": normative_application.secondary_uses,
+                "is_existing_building": normative_application.is_existing_building,
+                "applicable_documents": [
+                    {
+                        "name": doc.name,
+                        "type": doc.type,
+                        "description": doc.description,
+                        "priority": doc.priority,
+                        "path": doc.path
+                    }
+                    for doc in normative_application.applicable_documents
+                ],
+                "floor_assignments": normative_application.floor_assignments,
+                "compliance_requirements": normative_application.compliance_requirements
+            },
+            normative_summary=normative_summary
         )
         
         logger.info(f"Análisis completado: {analysis_results['documents_analyzed']} documentos, "

@@ -1,6 +1,16 @@
 """
 Aplicador de normativa específica de Madrid.
-Aplica la normativa correcta según el tipo de edificio, uso secundario y plantas.
+Implementa la lógica correcta según las especificaciones:
+
+1. NORMATIVA GENERAL (siempre aplica):
+   - Todos los PDFs de Normativa/DOCUMENTOS BASICOS
+   - Normativa/PGOUM/pgoum_general universal.pdf
+
+2. NORMATIVA POR USO (aplicada según uso principal/secundario):
+   - Normativa/PGOUM/pgoum_[tipo_de_edificio].pdf
+
+3. NORMATIVA DE APOYO (solo edificios existentes):
+   - Todos los PDFs de Normativa/DOCUMENTOS DE APOYO
 """
 
 import os
@@ -17,25 +27,26 @@ class NormativeDocument:
     """Documento normativo aplicable."""
     name: str
     path: str
-    type: str  # 'basic', 'pgoum', 'support'
+    type: str  # 'basic', 'pgoum_general', 'pgoum_specific', 'support'
     building_types: List[str]
     floors: List[str]
     description: str
     priority: int
+    is_existing_building_only: bool = False
 
 @dataclass
 class NormativeApplication:
     """Aplicación de normativa específica."""
     project_id: str
     primary_use: str
-    secondary_uses: List[Dict[str, Any]]
+    secondary_uses: Dict[str, List[str]]  # use_type -> [floors]
     is_existing_building: bool
     applicable_documents: List[NormativeDocument]
     floor_assignments: Dict[str, List[str]]  # floor -> [document_names]
     compliance_requirements: Dict[str, List[Dict[str, Any]]]
 
 class MadridNormativeApplicator:
-    """Aplicador de normativa específica de Madrid."""
+    """Aplicador de normativa específica de Madrid con lógica correcta."""
     
     def __init__(self, normative_path: str = "Normativa"):
         """
@@ -48,14 +59,14 @@ class MadridNormativeApplicator:
         self.documents = self._load_normative_documents()
         self.building_type_mapping = self._initialize_building_type_mapping()
         
-        logger.info("MadridNormativeApplicator initialized")
+        logger.info("MadridNormativeApplicator initialized with correct logic")
     
     def _load_normative_documents(self) -> Dict[str, NormativeDocument]:
         """Cargar todos los documentos normativos disponibles."""
         documents = {}
         
         try:
-            # Documentos básicos (siempre aplicables)
+            # 1. DOCUMENTOS BÁSICOS (siempre aplicables)
             basic_path = self.normative_path / "DOCUMENTOS BASICOS"
             if basic_path.exists():
                 for category in basic_path.iterdir():
@@ -69,27 +80,46 @@ class MadridNormativeApplicator:
                                 building_types=["all"],
                                 floors=["all"],
                                 description=f"Documento básico {category.name}",
-                                priority=1
+                                priority=1,
+                                is_existing_building_only=False
                             )
             
-            # Documentos PGOUM (específicos por tipo de edificio)
+            # 2. PGOUM GENERAL UNIVERSAL (siempre aplicable)
+            pgoum_general_path = self.normative_path / "PGOUM" / "pgoum_general universal.pdf"
+            if pgoum_general_path.exists():
+                documents["pgoum_general_universal"] = NormativeDocument(
+                    name="pgoum_general_universal",
+                    path=str(pgoum_general_path),
+                    type="pgoum_general",
+                    building_types=["all"],
+                    floors=["all"],
+                    description="PGOUM General Universal",
+                    priority=1,
+                    is_existing_building_only=False
+                )
+            
+            # 3. PGOUM ESPECÍFICOS POR TIPO DE EDIFICIO
             pgoum_path = self.normative_path / "PGOUM"
             if pgoum_path.exists():
-                for doc_file in pgoum_path.glob("*.pdf"):
+                for doc_file in pgoum_path.glob("pgoum_*.pdf"):
+                    if doc_file.name == "pgoum_general universal.pdf":
+                        continue  # Ya procesado arriba
+                    
                     doc_name = doc_file.stem
                     building_type = self._extract_building_type_from_filename(doc_name)
                     
                     documents[doc_name] = NormativeDocument(
                         name=doc_name,
                         path=str(doc_file),
-                        type="pgoum",
+                        type="pgoum_specific",
                         building_types=[building_type],
                         floors=["all"],
-                        description=f"PGOUM para {building_type}",
-                        priority=2
+                        description=f"PGOUM específico para {building_type}",
+                        priority=2,
+                        is_existing_building_only=False
                     )
             
-            # Documentos de apoyo (solo para edificios existentes)
+            # 4. DOCUMENTOS DE APOYO (solo edificios existentes)
             support_path = self.normative_path / "DOCUMENTOS DE APOYO"
             if support_path.exists():
                 for category in support_path.iterdir():
@@ -103,110 +133,137 @@ class MadridNormativeApplicator:
                                 building_types=["all"],
                                 floors=["all"],
                                 description=f"Documento de apoyo {category.name}",
-                                priority=3
+                                priority=3,
+                                is_existing_building_only=True
                             )
             
             logger.info(f"Cargados {len(documents)} documentos normativos")
+            return documents
             
         except Exception as e:
             logger.error(f"Error cargando documentos normativos: {e}")
-        
-        return documents
+            return {}
     
     def _extract_building_type_from_filename(self, filename: str) -> str:
-        """Extraer tipo de edificio del nombre del archivo PGOUM."""
-        filename_lower = filename.lower()
-        
-        if "residencial" in filename_lower:
-            return "residencial"
-        elif "industrial" in filename_lower:
-            return "industrial"
-        elif "servicios terciarios" in filename_lower:
-            return "servicios_terciarios"
-        elif "garaje-aparcamiento" in filename_lower:
-            return "garaje_aparcamiento"
-        elif "dotacional" in filename_lower:
-            if "administracion publica" in filename_lower:
-                return "dotacional_administracion_publica"
-            elif "deportivo" in filename_lower:
-                return "dotacional_deportivo"
-            elif "equipamiento" in filename_lower:
-                return "dotacional_equipamiento"
-            elif "infraestructural" in filename_lower:
-                return "dotacional_infraestructural"
-            elif "servicios publicos" in filename_lower:
-                return "dotacional_servicios_publicos"
-            elif "transporte" in filename_lower:
-                return "dotacional_transporte"
-            elif "via publica" in filename_lower:
-                return "dotacional_via_publica"
-            elif "zona verde" in filename_lower:
-                return "dotacional_zona_verde"
-            else:
-                return "dotacional"
-        elif "general universal" in filename_lower:
-            return "general_universal"
+        """Extraer el tipo de edificio del nombre del archivo."""
+        # Remover prefijo "pgoum_"
+        if filename.startswith("pgoum_"):
+            building_type = filename[6:]  # Remover "pgoum_"
         else:
-            return "unknown"
+            building_type = filename
+        
+        # Mapear nombres a tipos estándar
+        type_mapping = {
+            "residencial": "residencial",
+            "industrial": "industrial",
+            "servicios terciarios": "terciario",
+            "garaje-aparcamiento": "garaje",
+            "dotacional administracion publica": "administracion_publica",
+            "dotacional deportivo": "deportivo",
+            "dotacional equipamiento": "equipamiento",
+            "dotacional infraestructural": "infraestructural",
+            "dotacional servicios publicos": "servicios_publicos",
+            "dotacional transporte": "transporte",
+            "dotacional via publica": "via_publica",
+            "dotacional zona verde": "zona_verde"
+        }
+        
+        return type_mapping.get(building_type, building_type)
     
-    def _initialize_building_type_mapping(self) -> Dict[str, List[str]]:
-        """Inicializar mapeo de tipos de edificio a documentos PGOUM."""
+    def _initialize_building_type_mapping(self) -> Dict[str, str]:
+        """Inicializar mapeo de tipos de edificio."""
         return {
-            "residencial": ["pgoum_residencial", "pgoum_general universal"],
-            "industrial": ["pgoum_industrial", "pgoum_general universal"],
-            "servicios_terciarios": ["pgoum_servicios terciarios", "pgoum_general universal"],
-            "garaje_aparcamiento": ["pgoum_garaje-aparcamiento", "pgoum_general universal"],
-            "dotacional_administracion_publica": ["pgoum_dotacional administracion publica", "pgoum_general universal"],
-            "dotacional_deportivo": ["pgoum_dotacional deportivo", "pgoum_general universal"],
-            "dotacional_equipamiento": ["pgoum_dotacional equipamiento", "pgoum_general universal"],
-            "dotacional_infraestructural": ["pgoum_dotacional infraestructural", "pgoum_general universal"],
-            "dotacional_servicios_publicos": ["pgoum_dotacional servicios publicos", "pgoum_general universal"],
-            "dotacional_transporte": ["pgoum_dotacional transporte", "pgoum_general universal"],
-            "dotacional_via_publica": ["pgoum_dotacional via publica", "pgoum_general universal"],
-            "dotacional_zona_verde": ["pgoum_dotacional zona verde", "pgoum_general universal"],
-            "dotacional": ["pgoum_general universal"]
+            "residencial": "residencial",
+            "terciario": "servicios terciarios",
+            "industrial": "industrial",
+            "garaje": "garaje-aparcamiento",
+            "administracion_publica": "dotacional administracion publica",
+            "deportivo": "dotacional deportivo",
+            "equipamiento": "dotacional equipamiento",
+            "infraestructural": "dotacional infraestructural",
+            "servicios_publicos": "dotacional servicios publicos",
+            "transporte": "dotacional transporte",
+            "via_publica": "dotacional via publica",
+            "zona_verde": "dotacional zona verde"
         }
     
-    def apply_normative(self, 
-                       project_data: Dict[str, Any], 
-                       primary_use: str, 
-                       secondary_uses: List[Dict[str, Any]], 
-                       is_existing_building: bool) -> NormativeApplication:
+    def apply_normative(self, project_data: Dict[str, Any]) -> NormativeApplication:
         """
-        Aplicar normativa específica según el tipo de edificio y usos.
+        Aplicar normativa según la lógica correcta.
         
         Args:
-            project_data: Datos del proyecto
-            primary_use: Uso principal del edificio
-            secondary_uses: Usos secundarios con sus plantas
-            is_existing_building: Si es edificio existente
+            project_data: Datos del proyecto con primary_use, secondary_uses, is_existing_building
             
         Returns:
             Aplicación de normativa específica
         """
         try:
-            logger.info(f"Aplicando normativa para uso principal: {primary_use}, "
-                       f"usos secundarios: {len(secondary_uses)}, "
-                       f"edificio existente: {is_existing_building}")
+            logger.info("Aplicando normativa con lógica correcta")
             
-            # Determinar documentos aplicables
-            applicable_documents = self._determine_applicable_documents(
-                primary_use, secondary_uses, is_existing_building
-            )
+            project_id = project_data.get('project_id', 'unknown')
+            primary_use = project_data.get('primary_use', 'residencial')
+            secondary_uses = project_data.get('secondary_uses', {})
+            is_existing_building = project_data.get('is_existing_building', False)
             
-            # Asignar documentos por plantas
+            logger.info(f"Proyecto: {project_id}, Uso principal: {primary_use}, "
+                       f"Usos secundarios: {secondary_uses}, Edificio existente: {is_existing_building}")
+            
+            applicable_documents = []
+            
+            # 1. APLICAR DOCUMENTOS BÁSICOS (siempre)
+            basic_docs = [doc for doc in self.documents.values() 
+                         if doc.type == "basic"]
+            applicable_documents.extend(basic_docs)
+            logger.info(f"Aplicando {len(basic_docs)} documentos básicos")
+            
+            # 2. APLICAR PGOUM GENERAL UNIVERSAL (siempre)
+            pgoum_general = [doc for doc in self.documents.values() 
+                           if doc.type == "pgoum_general"]
+            applicable_documents.extend(pgoum_general)
+            logger.info(f"Aplicando {len(pgoum_general)} documentos PGOUM general")
+            
+            # 3. APLICAR PGOUM ESPECÍFICO POR USO PRINCIPAL
+            primary_use_normalized = self._normalize_building_type(primary_use)
+            primary_pgoum = [doc for doc in self.documents.values() 
+                           if doc.type == "pgoum_specific" and 
+                           primary_use_normalized in doc.building_types]
+            applicable_documents.extend(primary_pgoum)
+            logger.info(f"Aplicando {len(primary_pgoum)} documentos PGOUM para uso principal: {primary_use}")
+            
+            # 4. APLICAR PGOUM ESPECÍFICO POR USOS SECUNDARIOS
+            secondary_pgoum_docs = []
+            for use_type, floors in secondary_uses.items():
+                use_type_normalized = self._normalize_building_type(use_type)
+                secondary_pgoum = [doc for doc in self.documents.values() 
+                                 if doc.type == "pgoum_specific" and 
+                                 use_type_normalized in doc.building_types]
+                secondary_pgoum_docs.extend(secondary_pgoum)
+                logger.info(f"Aplicando {len(secondary_pgoum)} documentos PGOUM para uso secundario: {use_type}")
+            
+            applicable_documents.extend(secondary_pgoum_docs)
+            
+            # 5. APLICAR DOCUMENTOS DE APOYO (solo edificios existentes)
+            support_docs = []
+            if is_existing_building:
+                support_docs = [doc for doc in self.documents.values() 
+                              if doc.type == "support"]
+                applicable_documents.extend(support_docs)
+                logger.info(f"Aplicando {len(support_docs)} documentos de apoyo (edificio existente)")
+            else:
+                logger.info("No aplicando documentos de apoyo (edificio nuevo)")
+            
+            # 6. ASIGNAR DOCUMENTOS A PLANTAS
             floor_assignments = self._assign_documents_to_floors(
-                primary_use, secondary_uses, applicable_documents
+                applicable_documents, primary_use, secondary_uses
             )
             
-            # Generar requisitos de cumplimiento
+            # 7. GENERAR REQUISITOS DE CUMPLIMIENTO
             compliance_requirements = self._generate_compliance_requirements(
-                applicable_documents, floor_assignments
+                applicable_documents, primary_use, secondary_uses, is_existing_building
             )
             
-            # Crear aplicación de normativa
             application = NormativeApplication(
-                project_id=project_data.get('project_id', 'unknown'),
+                project_id=project_id,
                 primary_use=primary_use,
                 secondary_uses=secondary_uses,
                 is_existing_building=is_existing_building,
@@ -216,7 +273,7 @@ class MadridNormativeApplicator:
             )
             
             logger.info(f"Normativa aplicada: {len(applicable_documents)} documentos, "
-                       f"{len(floor_assignments)} plantas asignadas")
+                       f"{len(floor_assignments)} asignaciones de plantas")
             
             return application
             
@@ -224,274 +281,151 @@ class MadridNormativeApplicator:
             logger.error(f"Error aplicando normativa: {e}")
             raise
     
-    def _determine_applicable_documents(self, 
-                                      primary_use: str, 
-                                      secondary_uses: List[Dict[str, Any]], 
-                                      is_existing_building: bool) -> List[NormativeDocument]:
-        """Determinar documentos normativos aplicables."""
-        applicable = []
+    def _normalize_building_type(self, building_type: str) -> str:
+        """Normalizar tipo de edificio para búsqueda."""
+        normalized = building_type.lower().strip()
         
-        # 1. Documentos básicos (siempre aplicables)
-        for doc_name, doc in self.documents.items():
-            if doc.type == "basic":
-                applicable.append(doc)
+        # Mapeo de tipos comunes
+        type_mapping = {
+            "residencial": "residencial",
+            "terciario": "servicios terciarios",
+            "comercial": "servicios terciarios",
+            "industrial": "industrial",
+            "garaje": "garaje-aparcamiento",
+            "aparcamiento": "garaje-aparcamiento",
+            "oficina": "servicios terciarios",
+            "administracion": "dotacional administracion publica",
+            "deportivo": "dotacional deportivo",
+            "equipamiento": "dotacional equipamiento",
+            "infraestructural": "dotacional infraestructural",
+            "servicios publicos": "dotacional servicios publicos",
+            "transporte": "dotacional transporte",
+            "via publica": "dotacional via publica",
+            "zona verde": "dotacional zona verde"
+        }
         
-        # 2. PGOUM general universal (siempre aplicable)
-        if "pgoum_general universal" in self.documents:
-            applicable.append(self.documents["pgoum_general universal"])
-        
-        # 3. PGOUM específico para uso principal
-        if primary_use in self.building_type_mapping:
-            for doc_name in self.building_type_mapping[primary_use]:
-                if doc_name in self.documents:
-                    applicable.append(self.documents[doc_name])
-        
-        # 4. PGOUM específico para usos secundarios
-        for secondary_use in secondary_uses:
-            use_type = secondary_use.get('use_type', '')
-            if use_type in self.building_type_mapping:
-                for doc_name in self.building_type_mapping[use_type]:
-                    if doc_name in self.documents and doc_name not in [d.name for d in applicable]:
-                        applicable.append(self.documents[doc_name])
-        
-        # 5. Documentos de apoyo (solo para edificios existentes)
-        if is_existing_building:
-            for doc_name, doc in self.documents.items():
-                if doc.type == "support":
-                    applicable.append(doc)
-        
-        return applicable
+        return type_mapping.get(normalized, normalized)
     
-    def _assign_documents_to_floors(self, 
-                                   primary_use: str, 
-                                   secondary_uses: List[Dict[str, Any]], 
-                                   applicable_documents: List[NormativeDocument]) -> Dict[str, List[str]]:
-        """Asignar documentos normativos a plantas específicas."""
+    def _assign_documents_to_floors(self, documents: List[NormativeDocument], 
+                                  primary_use: str, secondary_uses: Dict[str, List[str]]) -> Dict[str, List[str]]:
+        """Asignar documentos a plantas según la lógica correcta."""
         floor_assignments = {}
         
-        # Obtener plantas de usos secundarios
-        secondary_floors = {}
-        for secondary_use in secondary_uses:
-            use_type = secondary_use.get('use_type', '')
-            floors = secondary_use.get('floors', [])
-            for floor in floors:
-                if floor not in secondary_floors:
-                    secondary_floors[floor] = []
-                secondary_floors[floor].append(use_type)
+        # Obtener todas las plantas mencionadas en usos secundarios
+        secondary_floors = set()
+        for floors in secondary_uses.values():
+            if isinstance(floors, list):
+                secondary_floors.update(floors)
         
-        # Obtener documentos por tipo
-        basic_docs = [d for d in applicable_documents if d.type == "basic"]
-        pgoum_general = [d for d in applicable_documents if "pgoum_general universal" in d.name]
-        pgoum_primary = [d for d in applicable_documents if d.type == "pgoum" and d.name != "pgoum_general universal"]
-        support_docs = [d for d in applicable_documents if d.type == "support"]
-        
-        # Asignar documentos a cada planta
-        # Asumir rango de plantas desde -5 hasta 20
-        for floor_num in range(-5, 21):
-            floor_str = str(floor_num)
-            floor_docs = []
+        # Para cada documento, determinar a qué plantas se aplica
+        for doc in documents:
+            doc_floors = []
             
-            # 1. Documentos básicos (siempre aplicables a todas las plantas)
-            floor_docs.extend([d.name for d in basic_docs])
+            if doc.type in ["basic", "pgoum_general"]:
+                # Documentos básicos y PGOUM general se aplican a todas las plantas
+                doc_floors = ["all_floors"]
+            elif doc.type == "pgoum_specific":
+                # PGOUM específico se aplica según el uso
+                building_type = doc.building_types[0] if doc.building_types else ""
+                
+                # Si es el tipo de uso principal
+                if self._normalize_building_type(primary_use) == building_type:
+                    # Se aplica a todas las plantas EXCEPTO las que tienen uso secundario
+                    if secondary_floors:
+                        doc_floors = ["primary_use_floors"]  # Planteas sin uso secundario
+                    else:
+                        doc_floors = ["all_floors"]
+                else:
+                    # Si es un tipo de uso secundario, se aplica solo a esas plantas
+                    for use_type, floors in secondary_uses.items():
+                        if self._normalize_building_type(use_type) == building_type:
+                            doc_floors = floors if isinstance(floors, list) else []
+                            break
+            elif doc.type == "support":
+                # Documentos de apoyo se aplican a todas las plantas
+                doc_floors = ["all_floors"]
             
-            # 2. PGOUM general universal (siempre aplicable)
-            floor_docs.extend([d.name for d in pgoum_general])
-            
-            # 3. PGOUM específico según uso de la planta
-            if floor_str in secondary_floors:
-                # Planta con uso secundario - aplicar normativa del uso secundario
-                for use_type in secondary_floors[floor_str]:
-                    use_docs = [d for d in pgoum_primary if use_type in d.name]
-                    floor_docs.extend([d.name for d in use_docs])
-            else:
-                # Planta con uso principal - aplicar normativa del uso principal
-                primary_docs = [d for d in pgoum_primary if primary_use in d.name]
-                floor_docs.extend([d.name for d in primary_docs])
-            
-            # 4. Documentos de apoyo (solo para edificios existentes)
-            # Nota: is_existing_building se pasa desde apply_normative
-            # floor_docs.extend([d.name for d in support_docs])
-            
-            floor_assignments[floor_str] = list(set(floor_docs))  # Eliminar duplicados
+            # Asignar el documento a las plantas correspondientes
+            for floor in doc_floors:
+                if floor not in floor_assignments:
+                    floor_assignments[floor] = []
+                floor_assignments[floor].append(doc.name)
         
         return floor_assignments
     
-    def _generate_compliance_requirements(self, 
-                                        applicable_documents: List[NormativeDocument], 
-                                        floor_assignments: Dict[str, List[str]]) -> Dict[str, List[Dict[str, Any]]]:
+    def _generate_compliance_requirements(self, documents: List[NormativeDocument], 
+                                        primary_use: str, secondary_uses: Dict[str, List[str]], 
+                                        is_existing_building: bool) -> Dict[str, List[Dict[str, Any]]]:
         """Generar requisitos de cumplimiento específicos."""
         requirements = {}
         
-        for doc in applicable_documents:
+        for doc in documents:
             doc_requirements = []
             
+            # Generar requisitos específicos según el tipo de documento
             if doc.type == "basic":
-                # Requisitos básicos del CTE
-                doc_requirements.extend(self._get_basic_requirements(doc.name))
-            elif doc.type == "pgoum":
-                # Requisitos específicos del PGOUM
-                doc_requirements.extend(self._get_pgoum_requirements(doc.name))
+                doc_requirements = [
+                    {
+                        "requirement": f"Cumplimiento de {doc.description}",
+                        "description": f"Aplicar normativa básica de {doc.description}",
+                        "priority": "high",
+                        "floors": ["all"],
+                        "document_path": doc.path
+                    }
+                ]
+            elif doc.type == "pgoum_general":
+                doc_requirements = [
+                    {
+                        "requirement": "Cumplimiento PGOUM General Universal",
+                        "description": "Aplicar normativa general del PGOUM",
+                        "priority": "high",
+                        "floors": ["all"],
+                        "document_path": doc.path
+                    }
+                ]
+            elif doc.type == "pgoum_specific":
+                building_type = doc.building_types[0] if doc.building_types else ""
+                doc_requirements = [
+                    {
+                        "requirement": f"Cumplimiento PGOUM {building_type}",
+                        "description": f"Aplicar normativa específica para {building_type}",
+                        "priority": "high",
+                        "floors": ["specific"],
+                        "document_path": doc.path
+                    }
+                ]
             elif doc.type == "support":
-                # Requisitos de documentos de apoyo
-                doc_requirements.extend(self._get_support_requirements(doc.name))
+                doc_requirements = [
+                    {
+                        "requirement": f"Cumplimiento documento de apoyo",
+                        "description": f"Aplicar normativa de apoyo {doc.description}",
+                        "priority": "medium",
+                        "floors": ["all"],
+                        "document_path": doc.path,
+                        "existing_building_only": True
+                    }
+                ]
             
             requirements[doc.name] = doc_requirements
         
         return requirements
     
-    def _get_basic_requirements(self, doc_name: str) -> List[Dict[str, Any]]:
-        """Obtener requisitos de documentos básicos."""
-        requirements = []
-        
-        if "DBHE" in doc_name:
-            requirements.extend([
-                {
-                    "id": "dbhe_01",
-                    "title": "Limitación de demanda energética",
-                    "description": "Verificar cumplimiento de la limitación de demanda energética",
-                    "severity": "high",
-                    "category": "energy"
-                },
-                {
-                    "id": "dbhe_02",
-                    "title": "Eficiencia energética de las instalaciones",
-                    "description": "Verificar eficiencia de instalaciones térmicas",
-                    "severity": "high",
-                    "category": "energy"
-                }
-            ])
-        elif "DBHR" in doc_name:
-            requirements.extend([
-                {
-                    "id": "dbhr_01",
-                    "title": "Protección contra el ruido",
-                    "description": "Verificar aislamiento acústico",
-                    "severity": "medium",
-                    "category": "acoustic"
-                }
-            ])
-        elif "DBSI" in doc_name:
-            requirements.extend([
-                {
-                    "id": "dbsi_01",
-                    "title": "Seguridad contra incendios",
-                    "description": "Verificar medidas de protección contra incendios",
-                    "severity": "critical",
-                    "category": "fire_safety"
-                }
-            ])
-        elif "DBSUA" in doc_name:
-            requirements.extend([
-                {
-                    "id": "dbsua_01",
-                    "title": "Seguridad de utilización",
-                    "description": "Verificar accesibilidad y seguridad de uso",
-                    "severity": "high",
-                    "category": "safety"
-                }
-            ])
-        
-        return requirements
-    
-    def _get_pgoum_requirements(self, doc_name: str) -> List[Dict[str, Any]]:
-        """Obtener requisitos específicos del PGOUM."""
-        requirements = []
-        
-        if "residencial" in doc_name:
-            requirements.extend([
-                {
-                    "id": "pgoum_res_01",
-                    "title": "Superficie mínima de viviendas",
-                    "description": "Verificar superficie mínima según PGOUM residencial",
-                    "severity": "high",
-                    "category": "residential"
-                },
-                {
-                    "id": "pgoum_res_02",
-                    "title": "Iluminación natural",
-                    "description": "Verificar iluminación natural en viviendas",
-                    "severity": "medium",
-                    "category": "residential"
-                }
-            ])
-        elif "industrial" in doc_name:
-            requirements.extend([
-                {
-                    "id": "pgoum_ind_01",
-                    "title": "Distancia a viviendas",
-                    "description": "Verificar distancia mínima a viviendas",
-                    "severity": "critical",
-                    "category": "industrial"
-                },
-                {
-                    "id": "pgoum_ind_02",
-                    "title": "Accesos y circulaciones",
-                    "description": "Verificar accesos para vehículos industriales",
-                    "severity": "high",
-                    "category": "industrial"
-                }
-            ])
-        elif "garaje-aparcamiento" in doc_name:
-            requirements.extend([
-                {
-                    "id": "pgoum_gar_01",
-                    "title": "Dimensiones de plazas",
-                    "description": "Verificar dimensiones mínimas de plazas de aparcamiento",
-                    "severity": "high",
-                    "category": "parking"
-                },
-                {
-                    "id": "pgoum_gar_02",
-                    "title": "Ventilación",
-                    "description": "Verificar sistema de ventilación del garaje",
-                    "severity": "critical",
-                    "category": "parking"
-                }
-            ])
-        
-        return requirements
-    
-    def _get_support_requirements(self, doc_name: str) -> List[Dict[str, Any]]:
-        """Obtener requisitos de documentos de apoyo."""
-        requirements = []
-        
-        # Requisitos específicos para edificios existentes
-        requirements.extend([
-            {
-                "id": "support_01",
-                "title": "Adaptación a normativa vigente",
-                "description": "Verificar adaptación a normativa actual",
-                "severity": "medium",
-                "category": "adaptation"
-            },
-            {
-                "id": "support_02",
-                "title": "Mejoras de accesibilidad",
-                "description": "Verificar mejoras de accesibilidad en edificios existentes",
-                "severity": "high",
-                "category": "accessibility"
-            }
-        ])
-        
-        return requirements
-    
     def get_normative_summary(self, application: NormativeApplication) -> Dict[str, Any]:
-        """Obtener resumen de la aplicación de normativa."""
-        return {
+        """Generar resumen de la aplicación de normativa."""
+        summary = {
             "project_id": application.project_id,
             "primary_use": application.primary_use,
             "secondary_uses": application.secondary_uses,
             "is_existing_building": application.is_existing_building,
             "total_documents": len(application.applicable_documents),
-            "documents_by_type": {
+            "document_types": {
                 "basic": len([d for d in application.applicable_documents if d.type == "basic"]),
-                "pgoum": len([d for d in application.applicable_documents if d.type == "pgoum"]),
+                "pgoum_general": len([d for d in application.applicable_documents if d.type == "pgoum_general"]),
+                "pgoum_specific": len([d for d in application.applicable_documents if d.type == "pgoum_specific"]),
                 "support": len([d for d in application.applicable_documents if d.type == "support"])
             },
-            "floors_covered": len(application.floor_assignments),
-            "total_requirements": sum(len(reqs) for reqs in application.compliance_requirements.values()),
-            "critical_requirements": sum(
-                len([r for r in reqs if r.get("severity") == "critical"])
-                for reqs in application.compliance_requirements.values()
-            )
+            "floor_assignments": len(application.floor_assignments),
+            "compliance_requirements": sum(len(reqs) for reqs in application.compliance_requirements.values())
         }
+        
+        return summary
