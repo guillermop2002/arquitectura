@@ -14,6 +14,7 @@ from backend.app.core.document_classifier import DocumentClassifier
 from backend.app.core.pdf_processor import PDFProcessor
 from backend.app.core.groq_client import GroqClient
 from backend.app.core.neo4j_manager import Neo4jManager
+from backend.app.core.config import AIConfig
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,11 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
         pdf_processor = PDFProcessor()
         document_classifier = DocumentClassifier()
         document_analyzer = DocumentAnalyzer()
-        groq_client = GroqClient()
+        
+        # Inicializar configuración AI y cliente Groq
+        ai_config = AIConfig()
+        groq_client = GroqClient(ai_config)
+        
         neo4j_manager = Neo4jManager()
         
         analysis_results = {

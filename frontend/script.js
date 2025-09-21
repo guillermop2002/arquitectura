@@ -389,11 +389,7 @@ class MadridVerificationSystem {
             return;
         }
         
-        // Solo permitir un archivo de memoria
-        if (fileArray.length > 1) {
-            this.showAlert('Solo se permite un archivo de memoria descriptiva.', 'warning');
-            return;
-        }
+        // Permitir múltiples archivos de memoria
         
         this.projectData.memoria_files = fileArray;
         this.displayMemoriaFileList();
