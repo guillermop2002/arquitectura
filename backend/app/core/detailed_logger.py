@@ -14,15 +14,19 @@ class DetailedLogger:
     
     def __init__(self, log_dir: str = "logs"):
         self.log_dir = Path(log_dir)
-        self.log_dir.mkdir(exist_ok=True)
+        self.log_dir.mkdir(exist_ok=True, mode=0o755)
         
         # Configurar logger principal
         self.logger = logging.getLogger("detailed_analysis")
         self.logger.setLevel(logging.DEBUG)
         
-        # Handler para archivo
-        file_handler = logging.FileHandler(self.log_dir / "detailed_analysis.log")
-        file_handler.setLevel(logging.DEBUG)
+        # Handler para archivo (con manejo de errores)
+        try:
+            file_handler = logging.FileHandler(self.log_dir / "detailed_analysis.log")
+            file_handler.setLevel(logging.DEBUG)
+        except PermissionError:
+            # Si no se puede escribir al archivo, usar solo consola
+            file_handler = None
         
         # Handler para consola
         console_handler = logging.StreamHandler()
@@ -32,10 +36,12 @@ class DetailedLogger:
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )
-        file_handler.setFormatter(formatter)
-        console_handler.setFormatter(formatter)
         
-        self.logger.addHandler(file_handler)
+        if file_handler:
+            file_handler.setFormatter(formatter)
+            self.logger.addHandler(file_handler)
+        
+        console_handler.setFormatter(formatter)
         self.logger.addHandler(console_handler)
         
         # Almacén de eventos
