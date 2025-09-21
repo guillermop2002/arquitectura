@@ -1450,7 +1450,7 @@ class MadridVerificationSystem {
                 project_data: {
                     project_id: this.projectData.jobId || 'temp_project',
                     primary_use: this.projectData.primary_use,
-                    secondary_uses: this.projectData.secondary_uses,
+                    secondary_uses: this.projectData.secondary_uses_floors || {},
                     is_existing_building: this.projectData.is_existing_building,
                     memoria_files: this.projectData.memoria_files.map(f => f.name),
                     planos_files: this.projectData.planos_files.map(f => f.name)

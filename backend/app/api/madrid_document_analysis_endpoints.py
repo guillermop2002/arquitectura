@@ -110,10 +110,13 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     # Registrar archivo para limpieza automática
                     file_path = file_cleanup_manager.register_file(document_name)
                     
-                    # Extraer texto del PDF
+                    # Extraer texto del PDF (método correcto)
                     logger.info(f"Procesando memoria: {document_name}")
-                    pdf_content = await pdf_processor.extract_text_from_pdf(file_data)
-                    pages_count = pdf_processor.get_page_count(file_data)
+                    pdf_content = pdf_processor.extract_text_only(str(file_path))
+                    
+                    # Obtener información del documento
+                    doc_info = pdf_processor.get_document_info(str(file_path))
+                    pages_count = doc_info.get('page_count', 1)
                     
                     # Clasificar el documento
                     classification_result = await document_classifier.classify_document(
@@ -190,10 +193,13 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     # Registrar archivo para limpieza automática
                     file_path = file_cleanup_manager.register_file(document_name)
                     
-                    # Extraer texto del PDF
+                    # Extraer texto del PDF (método correcto)
                     logger.info(f"Procesando plano: {document_name}")
-                    pdf_content = await pdf_processor.extract_text_from_pdf(file_data)
-                    pages_count = pdf_processor.get_page_count(file_data)
+                    pdf_content = pdf_processor.extract_text_only(str(file_path))
+                    
+                    # Obtener información del documento
+                    doc_info = pdf_processor.get_document_info(str(file_path))
+                    pages_count = doc_info.get('page_count', 1)
                     
                     # Clasificar el documento
                     classification_result = await document_classifier.classify_document(
