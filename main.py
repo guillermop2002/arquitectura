@@ -39,7 +39,7 @@ from backend.app.core.cleanup_manager import CleanupManager
 from backend.app.core.neo4j_cleanup_scheduler import cleanup_scheduler
 from backend.app.api.madrid_endpoints import madrid_router
 from backend.app.api.madrid_verification_endpoints import verification_router
-from backend.app.api.madrid_chatbot_endpoints import chatbot_router
+# from backend.app.api.madrid_chatbot_endpoints import chatbot_router  # Temporalmente deshabilitado
 from backend.app.api.madrid_document_classification_endpoints import classification_router
 from backend.app.api.madrid_document_analysis_endpoints import analysis_router
 from backend.app.api.madrid_normative_endpoints import normative_router
@@ -140,7 +140,7 @@ async def shutdown_event():
 # Include Madrid routers
 app.include_router(madrid_router)
 app.include_router(verification_router)
-app.include_router(chatbot_router)
+# app.include_router(chatbot_router)  # Temporalmente deshabilitado por conflicto OpenAPI
 app.include_router(classification_router)
 app.include_router(analysis_router)
 app.include_router(normative_router)
