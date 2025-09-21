@@ -65,16 +65,12 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
         ai_config = AIConfig()
         groq_client = GroqClient(ai_config)
         
-        # Inicializar aplicador de usos y logging detallado
-        usage_applicator = UsageApplicator(detailed_logger)
+        # Inicializar aplicador de usos (sin logging detallado por ahora)
+        usage_applicator = UsageApplicator(None)
         
-        # Limpiar sesión anterior de logging
-        detailed_logger.clear_session()
-        detailed_logger.log_event("ANALYSIS_START", "Iniciando análisis de documentos", {
-            "project_id": request.project_data.get('project_id'),
-            "primary_use": request.project_data.get('primary_use'),
-            "secondary_uses_count": len(request.project_data.get('secondary_uses', {}))
-        })
+        logger.info(f"Iniciando análisis de documentos - Proyecto: {request.project_data.get('project_id')}, "
+                   f"Uso principal: {request.project_data.get('primary_use')}, "
+                   f"Usos secundarios: {len(request.project_data.get('secondary_uses', {}))}")
         
         neo4j_manager = Neo4jManager()
         
@@ -99,50 +95,23 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     # Registrar archivo para limpieza automática
                     file_path = file_cleanup_manager.register_file(document_name)
                     
-                    # Extraer texto del PDF con logging
-                    start_time = time.time()
-                    detailed_logger.log_event("PDF_EXTRACTION_START", f"Iniciando extracción de texto: {document_name}")
-                    
+                    # Extraer texto del PDF
+                    logger.info(f"Procesando memoria: {document_name}")
                     pdf_content = await pdf_processor.extract_text_from_pdf(file_data)
                     pages_count = pdf_processor.get_page_count(file_data)
                     
-                    extraction_time = time.time() - start_time
-                    detailed_logger.log_pdf_processing(document_name, pages_count, extraction_time, True)
-                    
-                    # Clasificar el documento con logging
-                    classification_start = time.time()
-                    detailed_logger.log_event("CLASSIFICATION_START", f"Iniciando clasificación: {document_name}")
-                    
+                    # Clasificar el documento
                     classification_result = await document_classifier.classify_document(
                         content=pdf_content,
                         filename=document_name,
                         document_type='memoria'
                     )
                     
-                    classification_time = time.time() - classification_start
-                    detailed_logger.log_classification(
-                        document_name, 
-                        classification_result.get('document_type', 'memoria'),
-                        classification_result.get('confidence', 0.0),
-                        classification_result
-                    )
-                    
-                    # Analizar el documento con logging
-                    analysis_start = time.time()
-                    detailed_logger.log_event("ANALYSIS_START", f"Iniciando análisis: {document_name}")
-                    
+                    # Analizar el documento
                     analysis_result = await document_analyzer.analyze_document(
                         content=pdf_content,
                         document_type='memoria',
                         classification=classification_result
-                    )
-                    
-                    analysis_time = time.time() - analysis_start
-                    detailed_logger.log_analysis(
-                        document_name,
-                        'memoria',
-                        analysis_result.get('key_findings', []),
-                        analysis_time
                     )
                     
                     analysis_detail = {
@@ -191,50 +160,23 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     # Registrar archivo para limpieza automática
                     file_path = file_cleanup_manager.register_file(document_name)
                     
-                    # Extraer texto del PDF con logging
-                    start_time = time.time()
-                    detailed_logger.log_event("PDF_EXTRACTION_START", f"Iniciando extracción de texto: {document_name}")
-                    
+                    # Extraer texto del PDF
+                    logger.info(f"Procesando plano: {document_name}")
                     pdf_content = await pdf_processor.extract_text_from_pdf(file_data)
                     pages_count = pdf_processor.get_page_count(file_data)
                     
-                    extraction_time = time.time() - start_time
-                    detailed_logger.log_pdf_processing(document_name, pages_count, extraction_time, True)
-                    
-                    # Clasificar el documento con logging
-                    classification_start = time.time()
-                    detailed_logger.log_event("CLASSIFICATION_START", f"Iniciando clasificación: {document_name}")
-                    
+                    # Clasificar el documento
                     classification_result = await document_classifier.classify_document(
                         content=pdf_content,
                         filename=document_name,
                         document_type='plano'
                     )
                     
-                    classification_time = time.time() - classification_start
-                    detailed_logger.log_classification(
-                        document_name, 
-                        classification_result.get('document_type', 'plano'),
-                        classification_result.get('confidence', 0.0),
-                        classification_result
-                    )
-                    
-                    # Analizar el documento con logging
-                    analysis_start = time.time()
-                    detailed_logger.log_event("ANALYSIS_START", f"Iniciando análisis: {document_name}")
-                    
+                    # Analizar el documento
                     analysis_result = await document_analyzer.analyze_document(
                         content=pdf_content,
                         document_type='plano',
                         classification=classification_result
-                    )
-                    
-                    analysis_time = time.time() - analysis_start
-                    detailed_logger.log_analysis(
-                        document_name,
-                        'plano',
-                        analysis_result.get('key_findings', []),
-                        analysis_time
                     )
                     
                     analysis_detail = {
@@ -271,19 +213,19 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     analysis_results['documents_analyzed'] += 1
         
         # Aplicar lógica de usos
-        detailed_logger.log_event("USAGE_LOGIC_START", "Aplicando lógica de usos al proyecto")
+        logger.info("Aplicando lógica de usos al proyecto")
         project_data_with_uses = usage_applicator.apply_usage_logic(request.project_data)
         
         # Validar lógica de usos
         usage_validation = usage_applicator.validate_usage_logic(project_data_with_uses)
-        detailed_logger.log_event("USAGE_VALIDATION", f"Validación de usos: {usage_validation['is_valid']}", usage_validation)
+        logger.info(f"Validación de usos: {usage_validation['is_valid']}")
         
         # Obtener resumen de usos
         usage_summary = usage_applicator.get_usage_summary(project_data_with_uses)
-        detailed_logger.log_event("USAGE_SUMMARY", "Resumen de usos aplicados", usage_summary)
+        logger.info(f"Resumen de usos: {usage_summary}")
         
         # Detectar ambigüedades usando IA
-        detailed_logger.log_event("AMBIGUITY_DETECTION_START", "Iniciando detección de ambigüedades")
+        logger.info("Iniciando detección de ambigüedades")
         ambiguities = await detect_ambiguities_with_ai(
             project_data_with_uses, 
             analysis_results['analysis_details'],
@@ -325,21 +267,6 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
             processing_time=processing_time,
             timestamp=datetime.now().isoformat()
         )
-        
-        # Logging final y guardar sesión
-        detailed_logger.log_event("ANALYSIS_COMPLETE", "Análisis de documentos completado", {
-            "documents_analyzed": analysis_results['documents_analyzed'],
-            "ambiguities_detected": analysis_results['ambiguities_detected'],
-            "compliance_issues": analysis_results['compliance_issues'],
-            "usage_logic_applied": analysis_results.get('usage_logic_applied', False)
-        })
-        
-        # Guardar log de sesión
-        session_log_file = detailed_logger.save_session_log(request.project_data.get('project_id', 'unknown'))
-        
-        # Añadir información del log a la respuesta
-        response.session_log_file = session_log_file
-        response.log_summary = detailed_logger.get_session_summary()
         
         logger.info(f"Análisis completado: {analysis_results['documents_analyzed']} documentos, "
                    f"{analysis_results['ambiguities_detected']} ambigüedades, "
