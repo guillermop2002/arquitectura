@@ -133,12 +133,11 @@ async def update_checklist_item(update_data: Dict[str, Any]):
         if not project_id or not item_id:
             raise HTTPException(status_code=400, detail="project_id e item_id son requeridos")
         
-        # En una implementación real, esto cargaría el checklist desde la base de datos
-        # Por ahora, simular actualización exitosa
+        # Actualización real del checklist en la base de datos
         logger.info(f"Actualizando elemento {item_id} del proyecto {project_id}")
         
-        # Simular actualización
-        success = True  # En implementación real, esto actualizaría la base de datos
+        # Actualización real
+        success = checklist_system.update_checklist_item(project_id, item_id, updated_data)
         
         if success:
             return JSONResponse(content={

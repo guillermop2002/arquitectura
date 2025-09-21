@@ -165,13 +165,18 @@ async def get_verification_status(verification_id: str):
         Estado actual de la verificación
     """
     try:
-        # Por ahora, simular estado (en implementación real, consultar base de datos)
+        # Consultar estado real desde la base de datos
+        verification_status = await engine.get_verification_status(verification_id)
+        
+        if not verification_status:
+            raise HTTPException(status_code=404, detail="Verificación no encontrada")
+        
         return VerificationStatusResponse(
             verification_id=verification_id,
-            status="completed",
-            progress_percentage=100.0,
-            current_step="Verificación completada",
-            estimated_completion=datetime.now().isoformat()
+            status=verification_status.get('status', 'pending'),
+            progress_percentage=verification_status.get('progress', 0.0),
+            current_step=verification_status.get('current_step', 'Iniciando verificación'),
+            estimated_completion=verification_status.get('estimated_completion', datetime.now().isoformat())
         )
         
     except Exception as e:

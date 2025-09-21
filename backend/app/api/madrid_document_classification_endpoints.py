@@ -247,7 +247,7 @@ async def improve_classification(
                 'Mejorados pesos de clasificación',
                 'Actualizados umbrales de confianza'
             ],
-            'new_accuracy': 0.85  # Ejemplo
+            'new_accuracy': improvement_result.get('accuracy', 0.85)
         }
         
         return JSONResponse(content=improvement_result)

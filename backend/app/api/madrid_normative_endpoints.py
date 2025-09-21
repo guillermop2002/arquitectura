@@ -190,59 +190,60 @@ async def get_building_types():
         logger.error(f"Error obteniendo tipos de edificio: {e}")
         raise HTTPException(status_code=500, detail=f"Error obteniendo tipos: {str(e)}")
 
-@normative_router.post("/simulate-normative-application")
-async def simulate_normative_application(simulation_data: Dict[str, Any]):
-    """
-    Simular aplicación de normativa sin procesar documentos reales.
-    
-    Args:
-        simulation_data: Datos para simulación
-        
-    Returns:
-        Simulación de aplicación de normativa
-    """
-    try:
-        logger.info("Simulando aplicación de normativa")
-        
-        # Datos de simulación
-        primary_use = simulation_data.get('primary_use', 'residencial')
-        secondary_uses = simulation_data.get('secondary_uses', [])
-        is_existing_building = simulation_data.get('is_existing_building', False)
-        
-        # Simular aplicación
-        simulated_application = normative_applicator.apply_normative(
-            project_data=simulation_data,
-            primary_use=primary_use,
-            secondary_uses=secondary_uses,
-            is_existing_building=is_existing_building
-        )
-        
-        # Crear respuesta simulada
-        response = {
-            "simulation": True,
-            "project_id": simulated_application.project_id,
-            "primary_use": simulated_application.primary_use,
-            "secondary_uses": simulated_application.secondary_uses,
-            "is_existing_building": simulated_application.is_existing_building,
-            "applicable_documents": [
-                {
-                    "name": doc.name,
-                    "type": doc.type,
-                    "description": doc.description,
-                    "priority": doc.priority
-                }
-                for doc in simulated_application.applicable_documents
-            ],
-            "floor_assignments": simulated_application.floor_assignments,
-            "compliance_requirements": simulated_application.compliance_requirements,
-            "summary": normative_applicator.get_normative_summary(simulated_application)
-        }
-        
-        return JSONResponse(content=response)
-        
-    except Exception as e:
-        logger.error(f"Error simulando aplicación de normativa: {e}")
-        raise HTTPException(status_code=500, detail=f"Error en simulación: {str(e)}")
+# Endpoint de simulación eliminado - usar endpoint real /apply-normative
+# @normative_router.post("/simulate-normative-application")
+# async def simulate_normative_application(simulation_data: Dict[str, Any]):
+#     """
+#     Simular aplicación de normativa sin procesar documentos reales.
+#     
+#     Args:
+#         simulation_data: Datos para simulación
+#         
+#     Returns:
+#         Simulación de aplicación de normativa
+#     """
+#     try:
+#         logger.info("Simulando aplicación de normativa")
+#         
+#         # Datos de simulación
+#         primary_use = simulation_data.get('primary_use', 'residencial')
+#         secondary_uses = simulation_data.get('secondary_uses', [])
+#         is_existing_building = simulation_data.get('is_existing_building', False)
+#         
+#         # Simular aplicación
+#         simulated_application = normative_applicator.apply_normative(
+#             project_data=simulation_data,
+#             primary_use=primary_use,
+#             secondary_uses=secondary_uses,
+#             is_existing_building=is_existing_building
+#         )
+#         
+#         # Crear respuesta simulada
+#         response = {
+#             "simulation": True,
+#             "project_id": simulated_application.project_id,
+#             "primary_use": simulated_application.primary_use,
+#             "secondary_uses": simulated_application.secondary_uses,
+#             "is_existing_building": simulated_application.is_existing_building,
+#             "applicable_documents": [
+#                 {
+#                     "name": doc.name,
+#                     "type": doc.type,
+#                     "description": doc.description,
+#                     "priority": doc.priority
+#                 }
+#                 for doc in simulated_application.applicable_documents
+#             ],
+#             "floor_assignments": simulated_application.floor_assignments,
+#             "compliance_requirements": simulated_application.compliance_requirements,
+#             "summary": normative_applicator.get_normative_summary(simulated_application)
+#         }
+#         
+#         return JSONResponse(content=response)
+#         
+#     except Exception as e:
+#         logger.error(f"Error simulando aplicación de normativa: {e}")
+#         raise HTTPException(status_code=500, detail=f"Error en simulación: {str(e)}")
 
 @normative_router.get("/compliance-status/{project_id}")
 async def get_compliance_status(project_id: str):
