@@ -4,6 +4,7 @@ class MadridVerificationSystem {
     constructor() {
         this.currentStep = 0; // 0 = mostrar todos los pasos
         this.maxSteps = 7; // 7 pasos: Info → Subida → Clasificación → Normativa → Análisis → Chatbot → Checklist
+        this.sessionId = null;
         this.projectData = {
             is_existing_building: false,
             primary_use: null,
@@ -1439,10 +1440,39 @@ class MadridVerificationSystem {
     // DOCUMENT ANALYSIS FUNCTIONS
     // =============================================================================
 
+    async createSession() {
+        console.log('Creando sesión...');
+        
+        try {
+            const response = await fetch('/api/madrid/upload/create-session', {
+                method: 'POST'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Error creando sesión: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            this.sessionId = result.session_id;
+            console.log('Sesión creada:', this.sessionId);
+            
+            return this.sessionId;
+            
+        } catch (error) {
+            console.error('Error creando sesión:', error);
+            throw error;
+        }
+    }
+
     async uploadDocuments(projectId) {
         console.log('Subiendo documentos...');
         
         try {
+            // Crear sesión si no existe
+            if (!this.sessionId) {
+                await this.createSession();
+            }
+            
             const formData = new FormData();
             
             // Agregar archivos de memoria
@@ -1455,8 +1485,9 @@ class MadridVerificationSystem {
                 formData.append('plano_files', file);
             });
             
-            // Agregar project_id
+            // Agregar project_id y session_id
             formData.append('project_id', projectId);
+            formData.append('session_id', this.sessionId);
             
             const response = await fetch('/api/madrid/upload/documents', {
                 method: 'POST',
@@ -1499,7 +1530,8 @@ class MadridVerificationSystem {
                 files: {
                     memoria: this.projectData.memoria_files,
                     planos: this.projectData.planos_files
-                }
+                },
+                session_id: this.sessionId
             };
 
             const response = await fetch('/api/madrid/analysis/analyze-documents', {

@@ -22,6 +22,7 @@ from backend.app.core.file_cleanup_manager import file_cleanup_manager
 from backend.app.core.detailed_logger import detailed_logger
 from backend.app.core.usage_applicator import UsageApplicator
 from backend.app.core.madrid_normative_applicator import MadridNormativeApplicator
+from backend.app.core.session_file_manager import session_file_manager
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ analysis_router = APIRouter(prefix="/api/madrid/analysis", tags=["Document Analy
 class DocumentAnalysisRequest(BaseModel):
     project_data: Dict[str, Any]
     files: Dict[str, List[Dict[str, Any]]]
+    session_id: Optional[str] = None
 
 class DocumentAnalysisResponse(BaseModel):
     status: str
@@ -110,10 +112,18 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     document_name = file_data.get('name', 'memoria.pdf')
                     logger.info(f"Procesando memoria: {document_name}")
                     
-                    # Buscar archivo en el directorio de uploads del proyecto
-                    project_id = request.project_data.get('project_id', 'temp_project')
-                    project_dir = Path("uploads") / project_id
-                    file_path = project_dir / f"memoria_{document_name}"
+                    # Buscar archivo en el directorio de la sesión
+                    session_id = request.session_id
+                    if not session_id:
+                        logger.error("No se proporcionó session_id")
+                        continue
+                    
+                    session_path = session_file_manager.get_session_path(session_id)
+                    if not session_path:
+                        logger.error(f"Sesión no encontrada: {session_id}")
+                        continue
+                    
+                    file_path = session_path / f"memoria_{document_name}"
                     
                     if not file_path.exists():
                         logger.error(f"Archivo no encontrado: {file_path}")
@@ -200,10 +210,18 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     document_name = file_data.get('name', 'plano.pdf')
                     logger.info(f"Procesando plano: {document_name}")
                     
-                    # Buscar archivo en el directorio de uploads del proyecto
-                    project_id = request.project_data.get('project_id', 'temp_project')
-                    project_dir = Path("uploads") / project_id
-                    file_path = project_dir / f"plano_{document_name}"
+                    # Buscar archivo en el directorio de la sesión
+                    session_id = request.session_id
+                    if not session_id:
+                        logger.error("No se proporcionó session_id")
+                        continue
+                    
+                    session_path = session_file_manager.get_session_path(session_id)
+                    if not session_path:
+                        logger.error(f"Sesión no encontrada: {session_id}")
+                        continue
+                    
+                    file_path = session_path / f"plano_{document_name}"
                     
                     if not file_path.exists():
                         logger.error(f"Archivo no encontrado: {file_path}")
