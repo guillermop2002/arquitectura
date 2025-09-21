@@ -15,6 +15,7 @@ from backend.app.core.pdf_processor import PDFProcessor
 from backend.app.core.groq_client import GroqClient
 from backend.app.core.neo4j_manager import Neo4jManager
 from backend.app.core.config import AIConfig
+from backend.app.core.file_cleanup_manager import file_cleanup_manager
 
 logger = logging.getLogger(__name__)
 
@@ -70,24 +71,63 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
             
             for file_data in request.files['memoria']:
                 try:
-                    # Simular procesamiento de archivo (en producción sería real)
+                    # Procesamiento real del archivo PDF
+                    document_name = file_data.get('name', 'memoria.pdf')
+                    logger.info(f"Procesando memoria: {document_name}")
+                    
+                    # Registrar archivo para limpieza automática
+                    file_path = file_cleanup_manager.register_file(document_name)
+                    
+                    # Extraer texto del PDF
+                    pdf_content = await pdf_processor.extract_text_from_pdf(file_data)
+                    pages_count = pdf_processor.get_page_count(file_data)
+                    
+                    # Clasificar el documento
+                    classification_result = await document_classifier.classify_document(
+                        content=pdf_content,
+                        filename=document_name,
+                        document_type='memoria'
+                    )
+                    
+                    # Analizar el documento
+                    analysis_result = await document_analyzer.analyze_document(
+                        content=pdf_content,
+                        document_type='memoria',
+                        classification=classification_result
+                    )
+                    
                     analysis_detail = {
-                        'document_name': file_data.get('name', 'memoria.pdf'),
+                        'document_name': document_name,
                         'document_type': 'memoria',
-                        'confidence': 0.95,
-                        'pages_analyzed': 10,
-                        'key_findings': [
+                        'confidence': classification_result.get('confidence', 0.95),
+                        'pages_analyzed': pages_count,
+                        'key_findings': analysis_result.get('key_findings', [
                             'Memoria descriptiva completa',
                             'Cálculos estructurales incluidos',
                             'Especificaciones técnicas detalladas'
-                        ]
+                        ]),
+                        'classification': classification_result,
+                        'analysis': analysis_result
                     }
                     
                     analysis_results['analysis_details'].append(analysis_detail)
                     analysis_results['documents_analyzed'] += 1
                     
+                    logger.info(f"Memoria {document_name} procesada: {pages_count} páginas")
+                    
                 except Exception as e:
                     logger.error(f"Error procesando memoria {file_data.get('name', 'unknown')}: {e}")
+                    # En caso de error, usar datos básicos
+                    analysis_detail = {
+                        'document_name': file_data.get('name', 'memoria.pdf'),
+                        'document_type': 'memoria',
+                        'confidence': 0.5,
+                        'pages_analyzed': 1,
+                        'key_findings': ['Error en el procesamiento del documento'],
+                        'error': str(e)
+                    }
+                    analysis_results['analysis_details'].append(analysis_detail)
+                    analysis_results['documents_analyzed'] += 1
         
         # Procesar archivos de planos
         if 'planos' in request.files and request.files['planos']:
@@ -95,24 +135,63 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
             
             for file_data in request.files['planos']:
                 try:
-                    # Simular procesamiento de archivo (en producción sería real)
+                    # Procesamiento real del archivo PDF
+                    document_name = file_data.get('name', 'plano.pdf')
+                    logger.info(f"Procesando plano: {document_name}")
+                    
+                    # Registrar archivo para limpieza automática
+                    file_path = file_cleanup_manager.register_file(document_name)
+                    
+                    # Extraer texto del PDF
+                    pdf_content = await pdf_processor.extract_text_from_pdf(file_data)
+                    pages_count = pdf_processor.get_page_count(file_data)
+                    
+                    # Clasificar el documento
+                    classification_result = await document_classifier.classify_document(
+                        content=pdf_content,
+                        filename=document_name,
+                        document_type='plano'
+                    )
+                    
+                    # Analizar el documento
+                    analysis_result = await document_analyzer.analyze_document(
+                        content=pdf_content,
+                        document_type='plano',
+                        classification=classification_result
+                    )
+                    
                     analysis_detail = {
-                        'document_name': file_data.get('name', 'plano.pdf'),
+                        'document_name': document_name,
                         'document_type': 'plano',
-                        'confidence': 0.92,
-                        'pages_analyzed': 5,
-                        'key_findings': [
+                        'confidence': classification_result.get('confidence', 0.92),
+                        'pages_analyzed': pages_count,
+                        'key_findings': analysis_result.get('key_findings', [
                             'Planta de distribución clara',
                             'Secciones constructivas incluidas',
                             'Detalles de fachada presentes'
-                        ]
+                        ]),
+                        'classification': classification_result,
+                        'analysis': analysis_result
                     }
                     
                     analysis_results['analysis_details'].append(analysis_detail)
                     analysis_results['documents_analyzed'] += 1
                     
+                    logger.info(f"Plano {document_name} procesado: {pages_count} páginas")
+                    
                 except Exception as e:
                     logger.error(f"Error procesando plano {file_data.get('name', 'unknown')}: {e}")
+                    # En caso de error, usar datos básicos
+                    analysis_detail = {
+                        'document_name': file_data.get('name', 'plano.pdf'),
+                        'document_type': 'plano',
+                        'confidence': 0.5,
+                        'pages_analyzed': 1,
+                        'key_findings': ['Error en el procesamiento del documento'],
+                        'error': str(e)
+                    }
+                    analysis_results['analysis_details'].append(analysis_detail)
+                    analysis_results['documents_analyzed'] += 1
         
         # Detectar ambigüedades usando IA
         ambiguities = await detect_ambiguities_with_ai(
@@ -163,6 +242,35 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
     except Exception as e:
         logger.error(f"Error en análisis de documentos: {e}")
         raise HTTPException(status_code=500, detail=f"Error en análisis: {str(e)}")
+
+@analysis_router.get("/file-info")
+async def get_file_info():
+    """
+    Obtiene información sobre archivos registrados y espacio utilizado.
+    """
+    try:
+        return {
+            "status": "success",
+            "file_info": file_cleanup_manager.get_file_info()
+        }
+    except Exception as e:
+        logger.error(f"Error obteniendo información de archivos: {e}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo información: {str(e)}")
+
+@analysis_router.post("/cleanup-files")
+async def manual_cleanup():
+    """
+    Ejecuta limpieza manual de archivos expirados.
+    """
+    try:
+        file_cleanup_manager.cleanup_expired_files()
+        return {
+            "status": "success",
+            "message": "Limpieza de archivos completada"
+        }
+    except Exception as e:
+        logger.error(f"Error en limpieza manual: {e}")
+        raise HTTPException(status_code=500, detail=f"Error en limpieza: {str(e)}")
 
 async def detect_ambiguities_with_ai(project_data: Dict[str, Any], 
                                    analysis_details: List[Dict[str, Any]], 

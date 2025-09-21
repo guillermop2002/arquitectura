@@ -17,7 +17,7 @@ from ..core.ai_client import AIClient
 logger = logging.getLogger(__name__)
 
 # Router para endpoints de checklist final
-final_checklist_router = APIRouter(prefix="/madrid/final-checklist", tags=["Madrid Final Checklist"])
+final_checklist_router = APIRouter(prefix="/api/madrid/final-checklist", tags=["Madrid Final Checklist"])
 
 # Inicializar sistemas
 checklist_system = MadridFinalChecklistSystem()
