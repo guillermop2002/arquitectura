@@ -46,6 +46,7 @@ from backend.app.api.madrid_normative_endpoints import normative_router
 from backend.app.api.madrid_final_checklist_endpoints import final_checklist_router
 from backend.app.api.madrid_integration_endpoints import integration_router
 from backend.app.api.madrid_normativa_upload_endpoints import normativa_upload_router
+from backend.app.api.madrid_file_upload_endpoints import file_upload_router
 
 # Initialize logging
 initialize_logging()
@@ -147,6 +148,7 @@ app.include_router(normative_router)
 app.include_router(final_checklist_router)
 app.include_router(integration_router)
 app.include_router(normativa_upload_router)
+app.include_router(file_upload_router)
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():

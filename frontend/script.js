@@ -1439,16 +1439,57 @@ class MadridVerificationSystem {
     // DOCUMENT ANALYSIS FUNCTIONS
     // =============================================================================
 
+    async uploadDocuments(projectId) {
+        console.log('Subiendo documentos...');
+        
+        try {
+            const formData = new FormData();
+            
+            // Agregar archivos de memoria
+            this.projectData.memoria_files.forEach(file => {
+                formData.append('memoria_files', file);
+            });
+            
+            // Agregar archivos de planos
+            this.projectData.planos_files.forEach(file => {
+                formData.append('plano_files', file);
+            });
+            
+            // Agregar project_id
+            formData.append('project_id', projectId);
+            
+            const response = await fetch('/api/madrid/upload/documents', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Error subiendo archivos: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            console.log('Archivos subidos correctamente:', result);
+            
+        } catch (error) {
+            console.error('Error subiendo archivos:', error);
+            throw error;
+        }
+    }
+
     async analyzeDocuments() {
         console.log('Analizando documentos...');
         
         try {
-            this.showSpinner('analysisResults', 'Analizando documentos...');
+            this.showSpinner('analysisResults', 'Subiendo y analizando documentos...');
             
-            // Preparar datos para análisis
+            // Primero subir los archivos
+            const projectId = this.projectData.jobId || 'temp_project';
+            await this.uploadDocuments(projectId);
+            
+            // Preparar datos para análisis (ahora con archivos subidos)
             const analysisData = {
                 project_data: {
-                    project_id: this.projectData.jobId || 'temp_project',
+                    project_id: projectId,
                     primary_use: this.projectData.primary_use,
                     secondary_uses: this.projectData.secondary_uses_floors || {},
                     is_existing_building: this.projectData.is_existing_building,

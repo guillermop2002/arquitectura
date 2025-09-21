@@ -110,8 +110,17 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     document_name = file_data.get('name', 'memoria.pdf')
                     logger.info(f"Procesando memoria: {document_name}")
                     
+                    # Buscar archivo en el directorio de uploads del proyecto
+                    project_id = request.project_data.get('project_id', 'temp_project')
+                    project_dir = Path("uploads") / project_id
+                    file_path = project_dir / f"memoria_{document_name}"
+                    
+                    if not file_path.exists():
+                        logger.error(f"Archivo no encontrado: {file_path}")
+                        continue
+                    
                     # Registrar archivo para limpieza automática
-                    file_path = file_cleanup_manager.register_file(document_name)
+                    file_cleanup_manager.register_file(str(file_path))
                     
                     # Extraer texto del PDF (método correcto)
                     logger.info(f"Procesando memoria: {document_name}")
@@ -123,9 +132,7 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     
                     # Clasificar el documento
                     classification_result = await document_classifier.classify_document(
-                        content=pdf_content,
-                        filename=document_name,
-                        document_type='memoria'
+                        file_path=str(file_path)
                     )
                     
                     # Analizar el documento
@@ -193,8 +200,17 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     document_name = file_data.get('name', 'plano.pdf')
                     logger.info(f"Procesando plano: {document_name}")
                     
+                    # Buscar archivo en el directorio de uploads del proyecto
+                    project_id = request.project_data.get('project_id', 'temp_project')
+                    project_dir = Path("uploads") / project_id
+                    file_path = project_dir / f"plano_{document_name}"
+                    
+                    if not file_path.exists():
+                        logger.error(f"Archivo no encontrado: {file_path}")
+                        continue
+                    
                     # Registrar archivo para limpieza automática
-                    file_path = file_cleanup_manager.register_file(document_name)
+                    file_cleanup_manager.register_file(str(file_path))
                     
                     # Extraer texto del PDF (método correcto)
                     logger.info(f"Procesando plano: {document_name}")
@@ -206,9 +222,7 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     
                     # Clasificar el documento
                     classification_result = await document_classifier.classify_document(
-                        content=pdf_content,
-                        filename=document_name,
-                        document_type='plano'
+                        file_path=str(file_path)
                     )
                     
                     # Analizar el documento
@@ -525,7 +539,7 @@ async def detect_ambiguities_with_ai(project_data: Dict[str, Any],
         
         # Llamar a Groq para detección de ambigüedades
         try:
-            response = await groq_client.generate_response(prompt)
+            response = await groq_client.generate_completion(prompt)
             
             # Parsear respuesta JSON
             import json
@@ -659,10 +673,9 @@ async def detect_compliance_issues(project_data: Dict[str, Any],
         
         # Llamar a Groq para detección de cumplimiento
         try:
-            response = await groq_client.generate_response(prompt)
+            response = await groq_client.generate_completion(prompt)
             
             # Parsear respuesta JSON
-            import json
             issues = json.loads(response)
             
             logger.info(f"Detección de cumplimiento completada: {len(issues)} problemas encontrados")
