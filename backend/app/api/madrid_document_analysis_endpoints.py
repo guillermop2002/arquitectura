@@ -7,7 +7,10 @@ from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import logging
 import asyncio
+import time
+import json
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from backend.app.core.document_analyzer import DocumentAnalyzer
 from backend.app.core.document_classifier import DocumentClassifier
@@ -16,6 +19,8 @@ from backend.app.core.groq_client import GroqClient
 from backend.app.core.neo4j_manager import Neo4jManager
 from backend.app.core.config import AIConfig
 from backend.app.core.file_cleanup_manager import file_cleanup_manager
+from backend.app.core.detailed_logger import detailed_logger
+from backend.app.core.usage_applicator import UsageApplicator
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +40,11 @@ class DocumentAnalysisResponse(BaseModel):
     ambiguities: List[Dict[str, Any]]
     processing_time: float
     timestamp: str
+    usage_logic_applied: Optional[bool] = False
+    usage_summary: Optional[Dict[str, Any]] = None
+    usage_validation: Optional[Dict[str, Any]] = None
+    session_log_file: Optional[str] = None
+    log_summary: Optional[Dict[str, Any]] = None
 
 @analysis_router.post("/analyze-documents", response_model=DocumentAnalysisResponse)
 async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: BackgroundTasks):
@@ -54,6 +64,17 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
         # Inicializar configuración AI y cliente Groq
         ai_config = AIConfig()
         groq_client = GroqClient(ai_config)
+        
+        # Inicializar aplicador de usos y logging detallado
+        usage_applicator = UsageApplicator(detailed_logger)
+        
+        # Limpiar sesión anterior de logging
+        detailed_logger.clear_session()
+        detailed_logger.log_event("ANALYSIS_START", "Iniciando análisis de documentos", {
+            "project_id": request.project_data.get('project_id'),
+            "primary_use": request.project_data.get('primary_use'),
+            "secondary_uses_count": len(request.project_data.get('secondary_uses', {}))
+        })
         
         neo4j_manager = Neo4jManager()
         
@@ -78,22 +99,50 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     # Registrar archivo para limpieza automática
                     file_path = file_cleanup_manager.register_file(document_name)
                     
-                    # Extraer texto del PDF
+                    # Extraer texto del PDF con logging
+                    start_time = time.time()
+                    detailed_logger.log_event("PDF_EXTRACTION_START", f"Iniciando extracción de texto: {document_name}")
+                    
                     pdf_content = await pdf_processor.extract_text_from_pdf(file_data)
                     pages_count = pdf_processor.get_page_count(file_data)
                     
-                    # Clasificar el documento
+                    extraction_time = time.time() - start_time
+                    detailed_logger.log_pdf_processing(document_name, pages_count, extraction_time, True)
+                    
+                    # Clasificar el documento con logging
+                    classification_start = time.time()
+                    detailed_logger.log_event("CLASSIFICATION_START", f"Iniciando clasificación: {document_name}")
+                    
                     classification_result = await document_classifier.classify_document(
                         content=pdf_content,
                         filename=document_name,
                         document_type='memoria'
                     )
                     
-                    # Analizar el documento
+                    classification_time = time.time() - classification_start
+                    detailed_logger.log_classification(
+                        document_name, 
+                        classification_result.get('document_type', 'memoria'),
+                        classification_result.get('confidence', 0.0),
+                        classification_result
+                    )
+                    
+                    # Analizar el documento con logging
+                    analysis_start = time.time()
+                    detailed_logger.log_event("ANALYSIS_START", f"Iniciando análisis: {document_name}")
+                    
                     analysis_result = await document_analyzer.analyze_document(
                         content=pdf_content,
                         document_type='memoria',
                         classification=classification_result
+                    )
+                    
+                    analysis_time = time.time() - analysis_start
+                    detailed_logger.log_analysis(
+                        document_name,
+                        'memoria',
+                        analysis_result.get('key_findings', []),
+                        analysis_time
                     )
                     
                     analysis_detail = {
@@ -142,22 +191,50 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     # Registrar archivo para limpieza automática
                     file_path = file_cleanup_manager.register_file(document_name)
                     
-                    # Extraer texto del PDF
+                    # Extraer texto del PDF con logging
+                    start_time = time.time()
+                    detailed_logger.log_event("PDF_EXTRACTION_START", f"Iniciando extracción de texto: {document_name}")
+                    
                     pdf_content = await pdf_processor.extract_text_from_pdf(file_data)
                     pages_count = pdf_processor.get_page_count(file_data)
                     
-                    # Clasificar el documento
+                    extraction_time = time.time() - start_time
+                    detailed_logger.log_pdf_processing(document_name, pages_count, extraction_time, True)
+                    
+                    # Clasificar el documento con logging
+                    classification_start = time.time()
+                    detailed_logger.log_event("CLASSIFICATION_START", f"Iniciando clasificación: {document_name}")
+                    
                     classification_result = await document_classifier.classify_document(
                         content=pdf_content,
                         filename=document_name,
                         document_type='plano'
                     )
                     
-                    # Analizar el documento
+                    classification_time = time.time() - classification_start
+                    detailed_logger.log_classification(
+                        document_name, 
+                        classification_result.get('document_type', 'plano'),
+                        classification_result.get('confidence', 0.0),
+                        classification_result
+                    )
+                    
+                    # Analizar el documento con logging
+                    analysis_start = time.time()
+                    detailed_logger.log_event("ANALYSIS_START", f"Iniciando análisis: {document_name}")
+                    
                     analysis_result = await document_analyzer.analyze_document(
                         content=pdf_content,
                         document_type='plano',
                         classification=classification_result
+                    )
+                    
+                    analysis_time = time.time() - analysis_start
+                    detailed_logger.log_analysis(
+                        document_name,
+                        'plano',
+                        analysis_result.get('key_findings', []),
+                        analysis_time
                     )
                     
                     analysis_detail = {
@@ -193,15 +270,31 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     analysis_results['analysis_details'].append(analysis_detail)
                     analysis_results['documents_analyzed'] += 1
         
+        # Aplicar lógica de usos
+        detailed_logger.log_event("USAGE_LOGIC_START", "Aplicando lógica de usos al proyecto")
+        project_data_with_uses = usage_applicator.apply_usage_logic(request.project_data)
+        
+        # Validar lógica de usos
+        usage_validation = usage_applicator.validate_usage_logic(project_data_with_uses)
+        detailed_logger.log_event("USAGE_VALIDATION", f"Validación de usos: {usage_validation['is_valid']}", usage_validation)
+        
+        # Obtener resumen de usos
+        usage_summary = usage_applicator.get_usage_summary(project_data_with_uses)
+        detailed_logger.log_event("USAGE_SUMMARY", "Resumen de usos aplicados", usage_summary)
+        
         # Detectar ambigüedades usando IA
+        detailed_logger.log_event("AMBIGUITY_DETECTION_START", "Iniciando detección de ambigüedades")
         ambiguities = await detect_ambiguities_with_ai(
-            request.project_data, 
+            project_data_with_uses, 
             analysis_results['analysis_details'],
             groq_client
         )
         
         analysis_results['ambiguities'] = ambiguities
         analysis_results['ambiguities_detected'] = len(ambiguities)
+        analysis_results['usage_logic_applied'] = True
+        analysis_results['usage_summary'] = usage_summary
+        analysis_results['usage_validation'] = usage_validation
         
         # Detectar problemas de cumplimiento
         compliance_issues = await detect_compliance_issues(
@@ -232,6 +325,21 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
             processing_time=processing_time,
             timestamp=datetime.now().isoformat()
         )
+        
+        # Logging final y guardar sesión
+        detailed_logger.log_event("ANALYSIS_COMPLETE", "Análisis de documentos completado", {
+            "documents_analyzed": analysis_results['documents_analyzed'],
+            "ambiguities_detected": analysis_results['ambiguities_detected'],
+            "compliance_issues": analysis_results['compliance_issues'],
+            "usage_logic_applied": analysis_results.get('usage_logic_applied', False)
+        })
+        
+        # Guardar log de sesión
+        session_log_file = detailed_logger.save_session_log(request.project_data.get('project_id', 'unknown'))
+        
+        # Añadir información del log a la respuesta
+        response.session_log_file = session_log_file
+        response.log_summary = detailed_logger.get_session_summary()
         
         logger.info(f"Análisis completado: {analysis_results['documents_analyzed']} documentos, "
                    f"{analysis_results['ambiguities_detected']} ambigüedades, "
@@ -271,6 +379,77 @@ async def manual_cleanup():
     except Exception as e:
         logger.error(f"Error en limpieza manual: {e}")
         raise HTTPException(status_code=500, detail=f"Error en limpieza: {str(e)}")
+
+@analysis_router.get("/logs/summary")
+async def get_logs_summary():
+    """
+    Obtiene un resumen de los logs de la sesión actual.
+    """
+    try:
+        return {
+            "status": "success",
+            "log_summary": detailed_logger.get_session_summary()
+        }
+    except Exception as e:
+        logger.error(f"Error obteniendo resumen de logs: {e}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo logs: {str(e)}")
+
+@analysis_router.get("/logs/session/{session_id}")
+async def get_session_log(session_id: str):
+    """
+    Obtiene el log completo de una sesión específica.
+    """
+    try:
+        log_file = Path("logs") / f"session_{session_id}.json"
+        if not log_file.exists():
+            raise HTTPException(status_code=404, detail="Log de sesión no encontrado")
+        
+        with open(log_file, 'r', encoding='utf-8') as f:
+            session_data = json.load(f)
+        
+        return {
+            "status": "success",
+            "session_data": session_data
+        }
+    except Exception as e:
+        logger.error(f"Error obteniendo log de sesión {session_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo log: {str(e)}")
+
+@analysis_router.get("/logs/recent")
+async def get_recent_logs():
+    """
+    Obtiene los logs más recientes.
+    """
+    try:
+        logs_dir = Path("logs")
+        if not logs_dir.exists():
+            return {"status": "success", "recent_logs": []}
+        
+        # Obtener archivos de log más recientes
+        log_files = list(logs_dir.glob("session_*.json"))
+        log_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+        
+        recent_logs = []
+        for log_file in log_files[:5]:  # Últimos 5 logs
+            try:
+                with open(log_file, 'r', encoding='utf-8') as f:
+                    session_data = json.load(f)
+                recent_logs.append({
+                    "session_id": session_data.get("session_id"),
+                    "timestamp": session_data.get("summary", {}).get("session_start"),
+                    "total_events": session_data.get("summary", {}).get("total_events", 0),
+                    "processing_time": session_data.get("summary", {}).get("total_processing_time_seconds", 0)
+                })
+            except Exception as e:
+                logger.warning(f"Error leyendo log {log_file}: {e}")
+        
+        return {
+            "status": "success",
+            "recent_logs": recent_logs
+        }
+    except Exception as e:
+        logger.error(f"Error obteniendo logs recientes: {e}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo logs: {str(e)}")
 
 async def detect_ambiguities_with_ai(project_data: Dict[str, Any], 
                                    analysis_details: List[Dict[str, Any]], 
