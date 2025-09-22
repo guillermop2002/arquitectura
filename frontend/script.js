@@ -1528,8 +1528,8 @@ class MadridVerificationSystem {
                     planos_files: this.projectData.planos_files.map(f => f.name)
                 },
                 files: {
-                    memoria: this.projectData.memoria_files,
-                    planos: this.projectData.planos_files
+                    memoria: this.projectData.memoria_files.map(f => ({ name: f.name })),
+                    planos: this.projectData.planos_files.map(f => ({ name: f.name }))
                 },
                 session_id: this.sessionId
             };

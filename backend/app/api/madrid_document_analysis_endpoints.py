@@ -70,6 +70,9 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
         ai_config = AIConfig()
         groq_client = GroqClient(ai_config)
         
+        # Asegurar que el cliente esté inicializado correctamente
+        await groq_client.__aenter__()
+        
         # Inicializar aplicador de usos (sin logging detallado por ahora)
         usage_applicator = UsageApplicator(None)
         
@@ -386,6 +389,12 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
         logger.info(f"Análisis completado: {analysis_results['documents_analyzed']} documentos, "
                    f"{analysis_results['ambiguities_detected']} ambigüedades, "
                    f"{analysis_results['compliance_issues']} problemas de cumplimiento")
+        
+        # Cerrar el cliente Groq
+        try:
+            await groq_client.__aexit__(None, None, None)
+        except Exception as e:
+            logger.warning(f"Error cerrando cliente Groq: {e}")
         
         return response
         
