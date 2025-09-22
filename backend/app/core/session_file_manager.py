@@ -236,6 +236,16 @@ class SessionFileManager:
         session_data['age_minutes'] = (datetime.now() - session_data['created_at']).total_seconds() / 60
         session_data['last_accessed_minutes_ago'] = (datetime.now() - session_data['last_accessed']).total_seconds() / 60
         
+        # Convertir datetime a string para serialización JSON
+        session_data['created_at'] = session_data['created_at'].isoformat()
+        session_data['last_accessed'] = session_data['last_accessed'].isoformat()
+        
+        # Convertir datetime en archivos también
+        if 'files' in session_data:
+            for file_info in session_data['files']:
+                if 'added_at' in file_info and isinstance(file_info['added_at'], datetime):
+                    file_info['added_at'] = file_info['added_at'].isoformat()
+        
         return session_data
     
     def get_all_sessions_info(self) -> Dict[str, Any]:
