@@ -329,6 +329,18 @@ class MadridFinalChecklistSystem:
             logger.info(f"Checklist generado: {len(categories)} categorías, {checklist.total_items} elementos")
             
             return checklist
+            
+        except Exception as e:
+            logger.error(f"Error generando checklist final: {e}")
+            # Retornar checklist vacío en caso de error
+            return FinalChecklist(
+                project_id=project_data.get('project_id', 'unknown'),
+                project_name=project_data.get('project_name', 'Proyecto Sin Nombre'),
+                building_type=project_data.get('primary_use', 'residencial'),
+                is_existing_building=project_data.get('is_existing_building', False),
+                categories=[],
+                metadata={"error": str(e), "generated_at": datetime.now().isoformat()}
+            )
     
     def generate_simple_checklist(self, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
         """
