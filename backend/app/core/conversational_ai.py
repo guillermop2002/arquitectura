@@ -286,7 +286,7 @@ class ConversationalAI:
             elif intent == "question_about_structure":
                 return self._handle_structure_question(session, message)
             elif intent == "request_explanation":
-                return self._handle_explanation_request(session, message)
+                return await self._handle_explanation_request(session, message)
             elif intent == "confirmation":
                 return self._handle_confirmation(session, message)
             elif intent == "negation":
@@ -464,7 +464,7 @@ class ConversationalAI:
             self.logger.error(f"Error manejando pregunta estructural: {e}")
             return "Lo siento, no puedo acceder a la información estructural en este momento."
     
-    def _handle_explanation_request(self, session: ConversationSession, message: str) -> str:
+    async def _handle_explanation_request(self, session: ConversationSession, message: str) -> str:
         """Maneja solicitudes de explicación"""
         try:
             # Usar IA para generar explicación detallada
