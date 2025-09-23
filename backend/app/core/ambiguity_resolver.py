@@ -469,7 +469,7 @@ class AmbiguityResolver:
             self.logger.error(f"Error eliminando duplicados: {e}")
             return ambiguities
     
-    def resolve_ambiguity(self, ambiguity: Ambiguity, context: Dict[str, Any] = None) -> Resolution:
+    async def resolve_ambiguity(self, ambiguity: Ambiguity, context: Dict[str, Any] = None) -> Resolution:
         """Resuelve una ambigüedad específica"""
         try:
             self.logger.info(f"Resolviendo ambigüedad: {ambiguity.ambiguity_id}")
@@ -478,7 +478,7 @@ class AmbiguityResolver:
             strategy = self._select_resolution_strategy(ambiguity, context)
             
             # Aplicar estrategia
-            resolution = self._apply_resolution_strategy(ambiguity, strategy, context)
+            resolution = await self._apply_resolution_strategy(ambiguity, strategy, context)
             
             # Guardar resolución
             self._save_resolution_to_graph(resolution, ambiguity)
@@ -510,7 +510,7 @@ class AmbiguityResolver:
             self.logger.error(f"Error seleccionando estrategia: {e}")
             return ResolutionStrategy.ASK_CLARIFICATION
     
-    def _apply_resolution_strategy(self, ambiguity: Ambiguity, strategy: ResolutionStrategy, 
+    async def _apply_resolution_strategy(self, ambiguity: Ambiguity, strategy: ResolutionStrategy, 
                                  context: Dict[str, Any] = None) -> Resolution:
         """Aplica la estrategia de resolución seleccionada"""
         try:
@@ -519,7 +519,7 @@ class AmbiguityResolver:
             elif strategy == ResolutionStrategy.USE_DEFAULT:
                 return self._resolve_by_default(ambiguity, context)
             elif strategy == ResolutionStrategy.INFER_FROM_CONTEXT:
-                return self._resolve_by_inference(ambiguity, context)
+                return await self._resolve_by_inference(ambiguity, context)
             elif strategy == ResolutionStrategy.REQUEST_DOCUMENTATION:
                 return self._resolve_by_documentation(ambiguity, context)
             elif strategy == ResolutionStrategy.CONSULT_EXPERT:
@@ -590,7 +590,7 @@ class AmbiguityResolver:
             self.logger.error(f"Error resolviendo por defecto: {e}")
             return None
     
-    def _resolve_by_inference(self, ambiguity: Ambiguity, context: Dict[str, Any] = None) -> Resolution:
+    async def _resolve_by_inference(self, ambiguity: Ambiguity, context: Dict[str, Any] = None) -> Resolution:
         """Resuelve inferiendo del contexto"""
         try:
             # Usar IA para inferir resolución

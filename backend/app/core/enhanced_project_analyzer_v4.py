@@ -106,7 +106,7 @@ class EnhancedProjectAnalyzerV4:
             raise
     
     @handle_exception
-    def analyze_project_comprehensive(self, memory_file: str, plans_directory: str, 
+    async def analyze_project_comprehensive(self, memory_file: str, plans_directory: str, 
                                     project_type: str = "residential") -> ComprehensiveAnalysisResult:
         """Realiza análisis integral completo del proyecto"""
         try:
@@ -138,7 +138,7 @@ class EnhancedProjectAnalyzerV4:
             self.logger.info("=== FASE 3: Sistema de Preguntas Inteligentes ===")
             
             # Detectar ambigüedades
-            ambiguities = self._detect_and_resolve_ambiguities(
+            ambiguities = await self._detect_and_resolve_ambiguities(
                 project_id, document_analysis, plan_analysis, dimension_analysis
             )
             
@@ -462,7 +462,7 @@ class EnhancedProjectAnalyzerV4:
             self.logger.error(f"Error en análisis de cumplimiento: {e}")
             return {}
     
-    def _detect_and_resolve_ambiguities(self, project_id: str, document_analysis: Dict[str, Any],
+    async def _detect_and_resolve_ambiguities(self, project_id: str, document_analysis: Dict[str, Any],
                                       plan_analysis: Dict[str, Any], 
                                       dimension_analysis: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Detecta y resuelve ambigüedades (Fase 3)"""
@@ -484,7 +484,7 @@ class EnhancedProjectAnalyzerV4:
             resolved_ambiguities = []
             for ambiguity in ambiguities:
                 try:
-                    resolution = self.ambiguity_resolver.resolve_ambiguity(ambiguity)
+                    resolution = await self.ambiguity_resolver.resolve_ambiguity(ambiguity)
                     if resolution:
                         resolved_ambiguities.append({
                             'ambiguity': ambiguity.__dict__,
