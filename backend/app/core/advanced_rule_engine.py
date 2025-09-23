@@ -15,7 +15,7 @@ from datetime import datetime
 
 from .config import get_config
 from .logging_config import get_logger
-from .error_handling import handle_exception
+from .error_handling import handle_exception_decorator
 from ..models.schemas import Issue, SeverityLevel
 
 logger = get_logger(__name__)
@@ -503,7 +503,7 @@ class AdvancedRuleEngine:
                 if any(use in other_rule.applicable_uses for use in rule.applicable_uses):
                     self.rule_graph.add_edge(rule.rule_id, other_rule_id, relationship="same_use")
     
-    @handle_exception
+    @handle_exception_decorator("advanced_rule_engine")
     def evaluate_rules(self, project_data: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> List[RuleEvaluationResult]:
         """
         Evaluate all applicable rules against project data.

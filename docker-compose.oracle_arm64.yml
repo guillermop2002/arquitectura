@@ -23,6 +23,14 @@ services:
       - DB_NAME=verificacion
       - DB_USER=postgres
       - DB_PASSWORD=verificacion2025
+      - GROQ_API_KEY_1=${GROQ_API_KEY_1}
+      - GROQ_API_KEY_2=${GROQ_API_KEY_2}
+      - GROQ_API_KEY_3=${GROQ_API_KEY_3}
+      - GROQ_API_KEY_4=${GROQ_API_KEY_4}
+      - USE_KEY_ROTATION=${USE_KEY_ROTATION:-true}
+      - GROQ_MODEL=llama-3.3-70b-versatile
+      - AI_MAX_TOKENS=4096
+      - AI_TEMPERATURE=0.1
     depends_on:
       - postgres
       - redis

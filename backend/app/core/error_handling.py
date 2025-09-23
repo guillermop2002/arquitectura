@@ -3,6 +3,8 @@ Sistema de manejo de errores para la aplicación.
 """
 import logging
 import traceback
+import asyncio
+from functools import wraps
 from typing import Dict, Any, Optional, Union
 from enum import Enum
 from datetime import datetime
@@ -133,7 +135,35 @@ class FileProcessingError(Exception):
             "timestamp": self.timestamp
         }
 
-def handle_exception(e: Exception, context: str = "Unknown") -> Dict[str, Any]:
+def handle_exception_decorator(context: str = "Unknown"):
+    """
+    Decorador para manejar excepciones automáticamente.
+    
+    Args:
+        context: Contexto donde se aplica el decorador
+        
+    Returns:
+        Decorador que maneja excepciones
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                return handle_exception_function(e, context)
+        
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            try:
+                return await func(*args, **kwargs)
+            except Exception as e:
+                return handle_exception_function(e, context)
+        
+        return async_wrapper if asyncio.iscoroutinefunction(func) else wrapper
+    return decorator
+
+def handle_exception_function(e: Exception, context: str = "Unknown") -> Dict[str, Any]:
     """
     Manejar excepción y devolver información estructurada.
     

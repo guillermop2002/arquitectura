@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 
 from .ai_client import get_ai_client, AIResponse
-from .error_handling import handle_exception
+from .error_handling import handle_exception_decorator
 from .logging_config import get_logger
 from .enhanced_prompts import (
     get_structured_data_extraction_prompt,
@@ -72,7 +72,7 @@ class EnhancedProjectAnalyzerV2:
         
         logger.info("Enhanced project analyzer V2 initialized")
     
-    @handle_exception
+    @handle_exception_decorator("enhanced_project_analyzer_v2")
     def check_annexe_i_compliance(self, extracted_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Check compliance with Annexe I requirements using advanced NLP.
@@ -254,7 +254,7 @@ class EnhancedProjectAnalyzerV2:
         
         return min(1.0, confidence)
     
-    @handle_exception
+    @handle_exception_decorator("enhanced_project_analyzer_v2")
     async def extract_project_data(self, extracted_data: Dict[str, Any]) -> ProjectData:
         """
         Extract project data using advanced NLP analysis.
@@ -442,7 +442,7 @@ class EnhancedProjectAnalyzerV2:
             logger.error(f"Error enhancing with sections: {e}")
             return project_data
     
-    @handle_exception
+    @handle_exception_decorator("enhanced_project_analyzer_v2")
     async def check_complete_compliance(self, project_data: ProjectData, extracted_data: Dict[str, Any], normative_docs: Dict[str, str]) -> Dict[str, Any]:
         """
         Check complete compliance using advanced rule engine and NLP.
@@ -612,7 +612,7 @@ class EnhancedProjectAnalyzerV2:
         
         return min(1.0, max(0.0, confidence))
     
-    @handle_exception
+    @handle_exception_decorator("enhanced_project_analyzer_v2")
     async def generate_questions(self, extracted_data: Dict[str, Any], issues: List[Issue]) -> List[Question]:
         """
         Generate questions using advanced NLP analysis.

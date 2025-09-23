@@ -33,7 +33,7 @@ from rdflib.namespace import RDF, RDFS, OWL
 
 from .config import get_config
 from .logging_config import get_logger
-from .error_handling import handle_exception
+from .error_handling import handle_exception_decorator
 
 logger = get_logger(__name__)
 
@@ -340,7 +340,7 @@ class AdvancedNLPProcessor:
             ]
         }
     
-    @handle_exception
+    @handle_exception_decorator("extract_architectural_entities")
     def extract_architectural_entities(self, text: str, page_number: int = 0, document_type: str = "unknown") -> List[ArchitecturalEntity]:
         """
         Extract architectural entities from text using BERT and pattern matching.
@@ -458,7 +458,7 @@ class AdvancedNLPProcessor:
         
         return unique_entities
     
-    @handle_exception
+    @handle_exception_decorator("analyze_document_structure")
     def analyze_document_structure(self, pages: List[Dict[str, Any]]) -> List[DocumentSection]:
         """
         Analyze document structure and identify sections.
@@ -567,7 +567,7 @@ class AdvancedNLPProcessor:
         else:
             return 'general'
     
-    @handle_exception
+    @handle_exception_decorator("extract_normative_rules")
     def extract_normative_rules(self, normative_text: str) -> List[NormativeRule]:
         """
         Extract normative rules from regulatory documents.
@@ -688,7 +688,7 @@ class AdvancedNLPProcessor:
         else:
             return 'MEDIUM'
     
-    @handle_exception
+    @handle_exception_decorator("semantic_similarity")
     def semantic_similarity(self, text1: str, text2: str) -> float:
         """
         Calculate semantic similarity between two texts using BERT.

@@ -13,7 +13,7 @@ import asyncio
 
 from .config import get_config
 from .logging_config import get_logger
-from .error_handling import handle_exception
+from .error_handling import handle_exception_decorator
 from .file_manager import FileManager
 from .enhanced_ocr_processor import EnhancedOCRProcessor
 from .computer_vision_analyzer import ComputerVisionAnalyzer
@@ -105,7 +105,7 @@ class EnhancedProjectAnalyzerV4:
             self.logger.error(f"Error inicializando componentes: {e}")
             raise
     
-    @handle_exception
+    @handle_exception_decorator("enhanced_project_analyzer_v4")
     async def analyze_project_comprehensive(self, memory_file: str, plans_directory: str, 
                                     project_type: str = "residential") -> ComprehensiveAnalysisResult:
         """Realiza análisis integral completo del proyecto"""
