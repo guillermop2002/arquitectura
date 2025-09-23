@@ -186,7 +186,7 @@ class ReportGenerator:
             sections.append(question_analysis)
             
             # 8. Recomendaciones
-            recommendations = self._generate_recommendations_section(analysis_results)
+            recommendations = await self._generate_recommendations_section(analysis_results)
             sections.append(recommendations)
             
             # 9. Conclusiones
@@ -631,7 +631,7 @@ class ReportGenerator:
                 priority="MEDIUM"
             )
     
-    def _generate_recommendations_section(self, analysis_results: Dict[str, Any]) -> ReportSection:
+    async def _generate_recommendations_section(self, analysis_results: Dict[str, Any]) -> ReportSection:
         """Genera la sección de recomendaciones"""
         try:
             # Generar recomendaciones con IA
