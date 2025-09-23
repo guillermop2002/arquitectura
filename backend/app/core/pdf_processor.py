@@ -29,15 +29,21 @@ class PDFPage:
 class PDFDocument:
     """Información completa de un documento PDF."""
     filename: str
-    file_path: str
-    file_size: int
-    page_count: int
-    pages: List[PDFPage]
-    metadata: Dict[str, Any]
     text_content: str
-    images: List[Dict[str, Any]]
+    page_count: int
+    file_size: int
     processing_time: float
-    file_hash: str
+    images: List[Dict[str, Any]]
+    file_path: str = ""
+    pages: List[PDFPage] = None
+    metadata: Dict[str, Any] = None
+    file_hash: str = ""
+    
+    def __post_init__(self):
+        if self.pages is None:
+            self.pages = []
+        if self.metadata is None:
+            self.metadata = {}
 
 class PDFProcessor:
     """Procesador de documentos PDF."""

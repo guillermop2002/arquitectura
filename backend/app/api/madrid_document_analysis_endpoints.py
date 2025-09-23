@@ -175,47 +175,52 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                         processing_time=0.0
                     )
                     
-                    # Usar el PDFDocument ya procesado o crear uno básico si falló
-                    if 'pdf_document' in locals():
-                        pdf_doc = pdf_document
-                    else:
-                        # Si falló el procesamiento completo, crear uno básico
-                        from backend.app.core.pdf_processor import PDFDocument, PDFPage
-                        pdf_doc = PDFDocument(
-                            filename=document_name,
-                            file_path=str(file_path),
-                            file_size=file_path.stat().st_size if file_path.exists() else 0,
-                            page_count=pages_count,
-                            pages=[],  # Sin páginas detalladas
-                            metadata={},
-                            text_content=pdf_content,
-                            images=[],
-                            processing_time=0.0,
-                            file_hash=""
-                        )
-                    
-                    # Analizar el documento
-                    analysis_result = document_analyzer.analyze_document(
-                        pdf_doc=pdf_doc,
-                        classification=classification
+                    # Crear objeto PDFDocument para el analizador
+                    from backend.app.core.pdf_processor import PDFDocument
+                    pdf_doc = PDFDocument(
+                        filename=document_name,
+                        text_content=pdf_content,
+                        page_count=pages_count,
+                        file_size=0,  # Tamaño estimado
+                        processing_time=0.0,
+                        images=[]  # Por ahora sin imágenes
                     )
+                    
+                    # Analizar el documento con mejor manejo de errores
+                    try:
+                        analysis_result = document_analyzer.analyze_document(
+                            pdf_doc=pdf_doc,
+                            classification=classification
+                        )
+                        
+                        # Extraer hallazgos clave del análisis
+                        if hasattr(analysis_result, 'sections') and analysis_result.sections:
+                            key_findings = [f"Secciones identificadas: {len(analysis_result.sections)}"]
+                        else:
+                            key_findings = ['Documento procesado exitosamente']
+                            
+                        if hasattr(analysis_result, 'technical_data') and analysis_result.technical_data:
+                            key_findings.append(f"Datos técnicos extraídos: {len(analysis_result.technical_data)}")
+                            
+                    except Exception as analysis_error:
+                        logger.warning(f"Error en análisis detallado de {document_name}: {analysis_error}")
+                        analysis_result = None
+                        key_findings = ['Análisis básico completado', f'Contenido extraído: {len(pdf_content)} caracteres']
                     
                     analysis_detail = {
                         'document_name': document_name,
                         'document_type': 'memoria',
                         'confidence': classification.confidence,
                         'pages_analyzed': pages_count,
-                        'key_findings': getattr(analysis_result, 'key_findings', [
-                            'Memoria descriptiva completa',
-                            'Cálculos estructurales incluidos',
-                            'Especificaciones técnicas detalladas'
-                        ]),
+                        'key_findings': key_findings,
                         'classification': {
                             'document_type': classification.document_type,
                             'confidence': classification.confidence,
                             'reasoning': classification.reasoning
                         },
-                        'analysis': analysis_result
+                        'analysis': analysis_result,
+                        'text_length': len(pdf_content),
+                        'processing_successful': analysis_result is not None
                     }
                     
                     analysis_results['analysis_details'].append(analysis_detail)
@@ -310,41 +315,44 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                         processing_time=0.0
                     )
                     
-                    # Usar el PDFDocument ya procesado o crear uno básico si falló
-                    if 'pdf_document' in locals():
-                        pdf_doc = pdf_document
-                    else:
-                        # Si falló el procesamiento completo, crear uno básico
-                        from backend.app.core.pdf_processor import PDFDocument, PDFPage
-                        pdf_doc = PDFDocument(
-                            filename=document_name,
-                            file_path=str(file_path),
-                            file_size=file_path.stat().st_size if file_path.exists() else 0,
-                            page_count=pages_count,
-                            pages=[],  # Sin páginas detalladas
-                            metadata={},
-                            text_content=pdf_content,
-                            images=[],
-                            processing_time=0.0,
-                            file_hash=""
-                        )
-                    
-                    # Analizar el documento
-                    analysis_result = document_analyzer.analyze_document(
-                        pdf_doc=pdf_doc,
-                        classification=classification
+                    # Crear objeto PDFDocument para el analizador
+                    from backend.app.core.pdf_processor import PDFDocument
+                    pdf_doc = PDFDocument(
+                        filename=document_name,
+                        text_content=pdf_content,
+                        page_count=pages_count,
+                        file_size=0,  # Tamaño estimado
+                        processing_time=0.0,
+                        images=[]  # Por ahora sin imágenes
                     )
+                    
+                    # Analizar el documento con mejor manejo de errores
+                    try:
+                        analysis_result = document_analyzer.analyze_document(
+                            pdf_doc=pdf_doc,
+                            classification=classification
+                        )
+                        
+                        # Extraer hallazgos clave del análisis
+                        if hasattr(analysis_result, 'architectural_elements') and analysis_result.architectural_elements:
+                            key_findings = [f"Elementos arquitectónicos identificados: {len(analysis_result.architectural_elements)}"]
+                        else:
+                            key_findings = ['Plano procesado exitosamente']
+                            
+                        if hasattr(analysis_result, 'technical_annotations') and analysis_result.technical_annotations:
+                            key_findings.append(f"Anotaciones técnicas: {len(analysis_result.technical_annotations)}")
+                            
+                    except Exception as analysis_error:
+                        logger.warning(f"Error en análisis detallado de {document_name}: {analysis_error}")
+                        analysis_result = None
+                        key_findings = ['Análisis básico completado', f'Contenido extraído: {len(pdf_content)} caracteres']
                     
                     analysis_detail = {
                         'document_name': document_name,
                         'document_type': 'plano',
                         'confidence': classification.confidence,
                         'pages_analyzed': pages_count,
-                        'key_findings': getattr(analysis_result, 'key_findings', [
-                            'Planta de distribución clara',
-                            'Secciones constructivas incluidas',
-                            'Detalles de fachada presentes'
-                        ]),
+                        'key_findings': key_findings,
                         'classification': {
                             'document_type': classification.document_type,
                             'confidence': classification.confidence,

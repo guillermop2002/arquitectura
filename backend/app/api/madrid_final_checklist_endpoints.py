@@ -48,28 +48,25 @@ async def generate_final_checklist(checklist_data: Dict[str, Any]):
         if not project_data:
             raise HTTPException(status_code=400, detail="Datos del proyecto son requeridos")
         
-        # Generar checklist final
-        checklist = checklist_system.generate_final_checklist(
-            project_data=project_data,
-            normative_application=normative_application,
-            compliance_results=compliance_results
-        )
+        # Generar checklist SIMPLIFICADO - solo incumplimientos
+        checklist_dict = checklist_system.generate_simple_checklist(checklist_data)
         
-        # Convertir a diccionario para respuesta
-        checklist_dict = {
-            "project_id": checklist.project_id,
-            "project_name": checklist.project_name,
-            "building_type": checklist.building_type,
-            "is_existing_building": checklist.is_existing_building,
-            "overall_completion": checklist.overall_completion,
-            "total_items": checklist.total_items,
-            "completed_items": checklist.completed_items,
-            "critical_items": checklist.critical_items,
-            "high_priority_items": checklist.high_priority_items,
-            "status": checklist.status,
-            "created_at": checklist.created_at.isoformat(),
-            "updated_at": checklist.updated_at.isoformat(),
-            "categories": [
+        logger.info(f"Checklist simplificado generado: {checklist_dict.get('total_incumplimientos', 0)} incumplimientos")
+        
+        return JSONResponse(content=checklist_dict)
+        
+    except Exception as e:
+        logger.error(f"Error generando checklist final: {e}")
+        raise HTTPException(status_code=500, detail=f"Error generando checklist: {str(e)}")
+
+
+# Mantener el resto del código pero no se usará
+def _old_generate_checklist_code():
+    """
+    Código anterior del checklist complejo - mantenido por referencia
+    """
+    return {
+        "categories": [
                 {
                     "id": category.id,
                     "name": category.name,

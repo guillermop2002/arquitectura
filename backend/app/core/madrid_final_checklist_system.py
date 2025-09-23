@@ -277,7 +277,7 @@ class MadridFinalChecklistSystem:
                                normative_application: Dict[str, Any], 
                                compliance_results: Dict[str, Any]) -> FinalChecklist:
         """
-        Generar checklist final SIMPLIFICADO que muestra solo incumplimientos específicos.
+        Generar checklist final basado en los datos del proyecto y normativa aplicada.
         
         Args:
             project_data: Datos del proyecto
@@ -285,7 +285,7 @@ class MadridFinalChecklistSystem:
             compliance_results: Resultados de verificación de cumplimiento
             
         Returns:
-            Checklist final con solo incumplimientos
+            Checklist final completo
         """
         try:
             logger.info(f"Generando checklist final para proyecto {project_data.get('project_id', 'unknown')}")
@@ -296,11 +296,18 @@ class MadridFinalChecklistSystem:
             building_type = project_data.get('primary_use', 'residencial')
             is_existing_building = project_data.get('is_existing_building', False)
             
-            # NUEVO ENFOQUE: Crear checklist basado en incumplimientos detectados
-            categories = self._create_compliance_based_checklist(
-                normative_application, 
-                compliance_results
-            )
+            # Obtener plantilla de checklist
+            template = self.checklist_templates.get(building_type, self.checklist_templates['residencial'])
+            
+            # Generar categorías del checklist
+            categories = []
+            for category_template in template:
+                category = self._create_checklist_category(
+                    category_template, 
+                    normative_application, 
+                    compliance_results
+                )
+                categories.append(category)
             
             # Crear checklist final
             checklist = FinalChecklist(
@@ -322,109 +329,69 @@ class MadridFinalChecklistSystem:
             logger.info(f"Checklist generado: {len(categories)} categorías, {checklist.total_items} elementos")
             
             return checklist
+    
+    def generate_simple_checklist(self, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generar checklist SIMPLIFICADO - solo lista de incumplimientos.
+        
+        Args:
+            analysis_data: Datos completos del análisis
+            
+        Returns:
+            Lista simple de incumplimientos en formato: INCUMPLIMIENTO DE "normativa.pdf página X" EN "documento_usuario.pdf página Y"
+        """
+        try:
+            logger.info("Generando checklist simplificado")
+            
+            incumplimientos = []
+            
+            # Extraer incumplimientos de compliance_results
+            compliance_results = analysis_data.get('compliance_results', {})
+            if isinstance(compliance_results, dict):
+                for category, results in compliance_results.items():
+                    if isinstance(results, dict) and 'violations' in results:
+                        for violation in results['violations']:
+                            incumplimiento = f"INCUMPLIMIENTO DE \"{violation.get('normative_reference', 'normativa desconocida')}\" EN \"{violation.get('document_source', 'documento desconocido')}\""
+                            incumplimientos.append(incumplimiento)
+            
+            # Buscar en verification_results
+            verification_results = analysis_data.get('verification_results', {})
+            if isinstance(verification_results, dict) and 'violations' in verification_results:
+                for violation in verification_results['violations']:
+                    incumplimiento = f"INCUMPLIMIENTO DE \"{violation.get('normative_reference', 'normativa desconocida')}\" EN \"{violation.get('document_source', 'documento desconocido')}\""
+                    incumplimientos.append(incumplimiento)
+            
+            # Si no hay incumplimientos específicos, crear algunos genéricos basados en ambigüedades
+            if not incumplimientos:
+                ambiguities = analysis_data.get('ambiguities', [])
+                for ambiguity in ambiguities[:5]:  # Máximo 5 para no saturar
+                    document_name = ambiguity.get('document_name', 'documento desconocido')
+                    page = ambiguity.get('page', 1)
+                    description = ambiguity.get('description', 'Verificación requerida')
+                    incumplimiento = f"VERIFICACIÓN REQUERIDA: {description} EN \"{document_name} página {page}\""
+                    incumplimientos.append(incumplimiento)
+            
+            return {
+                'project_id': analysis_data.get('project_id', 'unknown'),
+                'analysis_date': datetime.now().isoformat(),
+                'total_incumplimientos': len(incumplimientos),
+                'incumplimientos': incumplimientos,
+                'status': 'completed' if len(incumplimientos) == 0 else 'violations_found'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generando checklist simplificado: {e}")
+            return {
+                'project_id': analysis_data.get('project_id', 'unknown'),
+                'analysis_date': datetime.now().isoformat(),
+                'total_incumplimientos': 0,
+                'incumplimientos': ['Error generando checklist: ' + str(e)],
+                'status': 'error'
+            }
             
         except Exception as e:
             logger.error(f"Error generando checklist final: {e}")
             raise
-    
-    def _create_compliance_based_checklist(self, 
-                                         normative_application: Dict[str, Any], 
-                                         compliance_results: Dict[str, Any]) -> List[ChecklistCategory]:
-        """
-        Crear checklist basado únicamente en incumplimientos detectados.
-        
-        Format: INCUMPLIMIENTO DE "NORMATIVA.pdf | Página X" EN "DOCUMENTO_USUARIO.pdf | Página Y"
-        """
-        categories = []
-        
-        # Mapeo de categorías estándar
-        category_mapping = {
-            'documentacion': {'name': 'Documentación Básica', 'icon': '📋'},
-            'estructural': {'name': 'Seguridad Estructural', 'icon': '🏗️'},
-            'incendio': {'name': 'Seguridad Contra Incendios', 'icon': '🔥'},
-            'accesibilidad': {'name': 'Accesibilidad', 'icon': '♿'},
-            'energia': {'name': 'Eficiencia Energética', 'icon': '⚡'}
-        }
-        
-        # Extraer incumplimientos de compliance_results
-        issues = compliance_results.get('issues', [])
-        if isinstance(issues, dict):
-            # Si 'issues' es un diccionario, extraer las listas de cada categoría
-            all_issues = []
-            for category_issues in issues.values():
-                if isinstance(category_issues, list):
-                    all_issues.extend(category_issues)
-            issues = all_issues
-        
-        # Agrupar incumplimientos por categoría
-        issues_by_category = {}
-        for issue in issues:
-            category = issue.get('category', 'general').lower()
-            
-            # Mapear a categorías estándar
-            if 'document' in category or 'basic' in category:
-                category = 'documentacion'
-            elif 'struct' in category or 'resist' in category:
-                category = 'estructural'
-            elif 'fire' in category or 'incendio' in category:
-                category = 'incendio'
-            elif 'access' in category or 'accesi' in category:
-                category = 'accesibilidad'
-            elif 'energy' in category or 'energia' in category:
-                category = 'energia'
-            else:
-                category = 'documentacion'  # Por defecto
-                
-            if category not in issues_by_category:
-                issues_by_category[category] = []
-            issues_by_category[category].append(issue)
-        
-        # Crear categorías del checklist
-        for category_id, category_info in category_mapping.items():
-            category_issues = issues_by_category.get(category_id, [])
-            
-            # Crear elementos del checklist para esta categoría
-            items = []
-            for issue in category_issues:
-                # Formato específico solicitado:
-                # INCUMPLIMIENTO DE "NORMATIVA.pdf | Página X" EN "DOCUMENTO_USUARIO.pdf | Página Y"
-                normative_ref = issue.get('normative_reference', 'Normativa no especificada')
-                user_doc_ref = issue.get('document_reference', 'Documento no especificado')
-                normative_page = issue.get('normative_page', 'Página no especificada')
-                user_page = issue.get('page_reference', 'Página no especificada')
-                
-                title = f"INCUMPLIMIENTO DE \"{normative_ref} | {normative_page}\" EN \"{user_doc_ref} | {user_page}\""
-                
-                item = ChecklistItem(
-                    id=f"{category_id}_{len(items) + 1}",
-                    title=title,
-                    description=issue.get('description', issue.get('title', 'Sin descripción')),
-                    category=category_id,
-                    priority=ChecklistItemPriority.CRITICAL if issue.get('severity') == 'critical' else ChecklistItemPriority.HIGH,
-                    status=ChecklistItemStatus.FAILED,  # Todos son incumplimientos
-                    normative_reference=normative_ref,
-                    document_requirement=issue.get('requirement', ''),
-                    verification_method='Revisión documental',
-                    evidence_required=[user_doc_ref],
-                    current_evidence=[]
-                )
-                items.append(item)
-            
-            # Crear categoría (incluso si no tiene incumplimientos)
-            category = ChecklistCategory(
-                id=category_id,
-                name=category_info['name'],
-                description=f"Verificación de {category_info['name'].lower()}",
-                icon=category_info['icon'],
-                items=items,
-                completion_percentage=0.0 if items else 100.0,  # 0% si hay incumplimientos, 100% si no hay
-                total_items=len(items),
-                completed_items=0,
-                priority=ChecklistCategoryPriority.HIGH if items else ChecklistCategoryPriority.LOW
-            )
-            categories.append(category)
-        
-        return categories
     
     def _create_checklist_category(self, 
                                  category_template: Dict[str, Any], 
