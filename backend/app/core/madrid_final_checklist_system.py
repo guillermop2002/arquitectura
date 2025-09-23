@@ -388,10 +388,6 @@ class MadridFinalChecklistSystem:
                 'incumplimientos': ['Error generando checklist: ' + str(e)],
                 'status': 'error'
             }
-            
-        except Exception as e:
-            logger.error(f"Error generando checklist final: {e}")
-            raise
     
     def _create_checklist_category(self, 
                                  category_template: Dict[str, Any], 
