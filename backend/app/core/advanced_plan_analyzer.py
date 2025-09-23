@@ -119,7 +119,7 @@ class AdvancedPlanAnalyzer:
             classified_elements = await self._classify_elements_with_groq(all_elements)
             
             # Analyze normative compliance
-            compliance_analysis = self._analyze_normative_compliance(classified_elements, all_rooms)
+            compliance_analysis = await self._analyze_normative_compliance(classified_elements, all_rooms)
             
             # Generate analysis report
             analysis_result = {
@@ -377,7 +377,7 @@ class AdvancedPlanAnalyzer:
         
         return "\n".join(context_parts)
     
-    def _analyze_normative_compliance(self, elements: List[ArchitecturalElement], rooms: List[Room]) -> Dict[str, Any]:
+    async def _analyze_normative_compliance(self, elements: List[ArchitecturalElement], rooms: List[Room]) -> Dict[str, Any]:
         """Analyze normative compliance using Groq AI."""
         if not self.ai_client.is_available():
             return {"error": "AI client not available"}
