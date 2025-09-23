@@ -486,20 +486,21 @@ class MadridVerificationSystem {
         console.log('🔄 Mostrando spinner para:', elementId);
         const element = document.getElementById(elementId);
         if (element) {
-            // Crear spinner si no existe
-            let spinner = element.querySelector('.loading-spinner');
-            if (!spinner) {
-                spinner = document.createElement('div');
-                spinner.className = 'loading-spinner text-center p-4';
-                spinner.innerHTML = `
-                    <div class="spinner-border text-primary" role="status">
+            // Limpiar contenido existente
+            element.innerHTML = '';
+            
+            // Crear spinner simple y centrado
+            const spinner = document.createElement('div');
+            spinner.className = 'text-center p-5';
+            spinner.innerHTML = `
+                <div class="d-flex justify-content-center align-items-center">
+                    <div class="spinner-border text-primary me-3" role="status">
                         <span class="visually-hidden">Cargando...</span>
                     </div>
-                    <div class="mt-2">${message}</div>
-                `;
-                element.appendChild(spinner);
-            }
-            spinner.style.display = 'block';
+                    <span class="h5 mb-0">${message}</span>
+                </div>
+            `;
+            element.appendChild(spinner);
         }
     }
 
@@ -1169,7 +1170,7 @@ class MadridVerificationSystem {
         console.log('Clasificando documentos automáticamente...');
         
         try {
-            this.showSpinner();
+            this.showSpinner('analysisResults', 'Creando sesión...');
             
             // Preparar archivos para clasificación
             const formData = new FormData();
@@ -1283,7 +1284,7 @@ class MadridVerificationSystem {
         console.log('Aplicando normativa específica...');
         
         try {
-            this.showSpinner();
+            this.showSpinner('analysisResults', 'Creando sesión...');
             
             // Preparar datos del proyecto para aplicación de normativa
             const normativeData = {
@@ -1667,7 +1668,7 @@ class MadridVerificationSystem {
         console.log('Generando checklist final...');
         
         try {
-            this.showSpinner();
+            this.showSpinner('analysisResults', 'Creando sesión...');
             
             // Preparar datos para generación de checklist
             const checklistData = {
@@ -1879,7 +1880,7 @@ class MadridVerificationSystem {
         console.log('Generando reporte final...');
         
         try {
-            this.showSpinner();
+            this.showSpinner('analysisResults', 'Creando sesión...');
             
             if (!this.projectData.final_checklist) {
                 throw new Error('No hay checklist final disponible');

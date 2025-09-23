@@ -255,7 +255,7 @@ class ReportGenerator:
             Resumen ejecutivo:
             """
             
-            response = self.ai_client.generate_response(prompt)
+            response = await self.ai_client.generate_completion(prompt)
             content = response.content if response and response.success else "No se pudo generar el resumen ejecutivo."
             
             # Crear gráfico de resumen
@@ -652,7 +652,7 @@ class ReportGenerator:
             Recomendaciones:
             """
             
-            response = self.ai_client.generate_response(prompt)
+            response = await self.ai_client.generate_completion(prompt)
             content = response.content if response and response.success else "No se pudieron generar recomendaciones específicas."
             
             return ReportSection(

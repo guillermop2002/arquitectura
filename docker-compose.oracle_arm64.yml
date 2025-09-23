@@ -36,6 +36,9 @@ services:
       - ./analysis_results:/app/analysis_results
       - ./context_storage:/app/context_storage
       - ./Normativa:/app/Normativa
+      - ./monitor_disk_space.sh:/app/monitor_disk_space.sh:ro
+      - ./docker_cleanup.sh:/app/docker_cleanup.sh:ro
+      - ./setup_cron_monitoring.sh:/app/setup_cron_monitoring.sh:ro
     networks:
       - verificacion-network
     restart: unless-stopped

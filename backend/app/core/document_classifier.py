@@ -343,7 +343,7 @@ class DocumentClassifier:
             }}
             """
             
-            response = await self.ai_client.generate_response(prompt)
+            response = await self.ai_client.generate_completion(prompt)
             
             # Parsear respuesta JSON
             import json

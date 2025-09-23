@@ -113,6 +113,10 @@ RUN mkdir -p /app/.cache/hf /app/.cache/sentence_transformers && chown -R appuse
 # Copiar código de la aplicación
 COPY . .
 
+# Copiar script de limpieza automática
+COPY cleanup_on_startup.sh /usr/local/bin/cleanup_on_startup.sh
+RUN chmod +x /usr/local/bin/cleanup_on_startup.sh
+
 # Crear directorios necesarios
 RUN mkdir -p uploads temp logs reports analysis_results context_storage && \
     chown -R appuser:appuser /app
@@ -127,5 +131,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5000/health || exit 1
 
-# Comando de inicio
-CMD ["python", "main.py"]
+# Comando de inicio con limpieza automática
+CMD ["/bin/bash", "-c", "/usr/local/bin/cleanup_on_startup.sh && python main.py"]

@@ -145,34 +145,58 @@ def handle_exception(e: Exception, context: str = "Unknown") -> Dict[str, Any]:
         Diccionario con información del error
     """
     try:
-        # Log del error
-        logger.error(f"Error en {context}: {str(e)}")
-        logger.error(f"Traceback: {traceback.format_exc()}")
+        # Log detallado del error
+        logger.error(f"🔴 ERROR DETALLADO en {context}:")
+        logger.error(f"   📍 Tipo: {type(e).__name__}")
+        logger.error(f"   📍 Mensaje: {str(e)}")
+        logger.error(f"   📍 Contexto: {context}")
+        logger.error(f"   📍 Timestamp: {datetime.now().isoformat()}")
+        
+        # Log del traceback completo
+        tb_lines = traceback.format_exc().split('\n')
+        logger.error(f"   📍 Traceback completo:")
+        for line in tb_lines:
+            if line.strip():
+                logger.error(f"      {line}")
         
         # Si es un error personalizado, usar su método to_dict
         if hasattr(e, 'to_dict'):
             error_info = e.to_dict()
             error_info["context"] = context
+            logger.error(f"   📍 Error personalizado: {error_info}")
             return error_info
         
-        # Error genérico
-        return {
+        # Error genérico con información detallada
+        error_info = {
             "error_type": type(e).__name__,
             "message": str(e),
             "error_code": ErrorCode.UNKNOWN_ERROR.value,
             "context": context,
             "timestamp": datetime.now().isoformat(),
-            "traceback": traceback.format_exc()
+            "traceback": traceback.format_exc(),
+            "module": getattr(e, '__module__', 'unknown'),
+            "args": getattr(e, 'args', []),
+            "filename": traceback.extract_tb(e.__traceback__)[-1].filename if e.__traceback__ else None,
+            "lineno": traceback.extract_tb(e.__traceback__)[-1].lineno if e.__traceback__ else None,
+            "function": traceback.extract_tb(e.__traceback__)[-1].name if e.__traceback__ else None
         }
         
+        logger.error(f"   📍 Error genérico: {error_info}")
+        return error_info
+        
     except Exception as handling_error:
-        logger.critical(f"Error al manejar excepción: {handling_error}")
+        logger.critical(f"🚨 ERROR CRÍTICO al manejar excepción: {handling_error}")
+        logger.critical(f"   📍 Error original: {str(e)}")
+        logger.critical(f"   📍 Contexto: {context}")
+        logger.critical(f"   📍 Traceback del error de manejo: {traceback.format_exc()}")
+        
         return {
             "error_type": "ErrorHandlingError",
             "message": f"Error al manejar excepción: {str(handling_error)}",
             "original_error": str(e),
             "context": context,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "handling_error_traceback": traceback.format_exc()
         }
 
 def create_error_response(error_info: Dict[str, Any], status_code: int = 500) -> Dict[str, Any]:

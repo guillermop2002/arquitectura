@@ -255,7 +255,7 @@ class ConversationalAI:
             Responde solo con la categoría correspondiente:
             """
             
-            response = self.ai_client.generate_response(prompt)
+            response = await self.ai_client.generate_completion(prompt)
             
             if response and response.success:
                 intent = response.content.strip().lower()
@@ -484,7 +484,7 @@ class ConversationalAI:
             Explicación:
             """
             
-            response = self.ai_client.generate_response(prompt)
+            response = await self.ai_client.generate_completion(prompt)
             
             if response and response.success:
                 return response.content

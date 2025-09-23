@@ -42,13 +42,13 @@ class PDFDocument:
 class PDFProcessor:
     """Procesador de documentos PDF."""
     
-    def __init__(self, max_pages: int = 100, max_file_size: int = 50 * 1024 * 1024):
+    def __init__(self, max_pages: int = 1000, max_file_size: int = 200 * 1024 * 1024):
         """
         Inicializar el procesador PDF.
         
         Args:
-            max_pages: Número máximo de páginas a procesar
-            max_file_size: Tamaño máximo de archivo en bytes (50MB por defecto)
+            max_pages: Número máximo de páginas a procesar (aumentado para análisis completo)
+            max_file_size: Tamaño máximo de archivo en bytes (200MB por defecto)
         """
         self.max_pages = max_pages
         self.max_file_size = max_file_size
@@ -88,20 +88,27 @@ class PDFProcessor:
                 # Obtener metadatos
                 metadata = doc.metadata
                 
-                # Procesar páginas
+                # Procesar páginas con optimización para archivos grandes
                 pages = []
                 all_text = ""
                 all_images = []
                 
                 page_count = min(len(doc), self.max_pages)
+                logger.info(f"Procesando {page_count} páginas del PDF")
                 
-                for page_num in range(page_count):
-                    page = doc[page_num]
-                    page_info = self._process_page(page, page_num)
-                    pages.append(page_info)
+                # Procesar páginas en lotes para optimizar memoria
+                batch_size = 10
+                for batch_start in range(0, page_count, batch_size):
+                    batch_end = min(batch_start + batch_size, page_count)
+                    logger.info(f"Procesando páginas {batch_start + 1}-{batch_end}")
                     
-                    all_text += f"\n--- PÁGINA {page_num + 1} ---\n{page_info.text}\n"
-                    all_images.extend(page_info.images)
+                    for page_num in range(batch_start, batch_end):
+                        page = doc[page_num]
+                        page_info = self._process_page(page, page_num)
+                        pages.append(page_info)
+                        
+                        all_text += f"\n--- PÁGINA {page_num + 1} ---\n{page_info.text}\n"
+                        all_images.extend(page_info.images)
                 
                 processing_time = time.time() - start_time
                 

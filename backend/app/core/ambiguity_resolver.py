@@ -606,7 +606,7 @@ class AmbiguityResolver:
             Resolución:
             """
             
-            response = self.ai_client.generate_response(prompt)
+            response = await self.ai_client.generate_completion(prompt)
             
             if response and response.success:
                 resolution_text = response.content

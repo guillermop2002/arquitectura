@@ -142,7 +142,7 @@ class EnhancedOCRProcessor:
             
             for i in range(len(data['text'])):
                 text = data['text'][i].strip()
-                confidence = int(data['conf'][i])
+                confidence = float(data['conf'][i])
                 
                 if text and confidence > self.min_confidence:
                     texts.append(text)
@@ -240,7 +240,7 @@ class EnhancedOCRProcessor:
             regions = []
             for i in range(len(data['text'])):
                 text = data['text'][i].strip()
-                confidence = int(data['conf'][i])
+                confidence = float(data['conf'][i])
                 
                 if text and confidence > self.min_confidence:
                     region = TextRegion(

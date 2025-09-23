@@ -12,9 +12,9 @@ from dataclasses import dataclass
 from datetime import datetime
 import numpy as np
 from sentence_transformers import SentenceTransformer
-# Alternativa ARM64 para FAISS
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.feature_extraction.text import TfidfVectorizer
+# Alternativa ARM64 para FAISS - Usando implementación simple sin scikit-learn
+# from sklearn.metrics.pairwise import cosine_similarity  # No se usa
+# from sklearn.feature_extraction.text import TfidfVectorizer  # No se usa
 import textstat
 
 from .config import get_config
@@ -50,25 +50,20 @@ class QuestionContext:
     previous_questions: List[IntelligentQuestion]
 
 class ARM64SimilaritySearch:
-    """Alternativa ARM64 para búsqueda de similitud usando scikit-learn"""
+    """Alternativa ARM64 para búsqueda de similitud usando SentenceTransformers"""
     
     def __init__(self, dimension: int = 384):
         """Inicializar búsqueda de similitud ARM64"""
         self.dimension = dimension
-        self.vectorizer = TfidfVectorizer(
-            max_features=10000,
-            stop_words='spanish',
-            ngram_range=(1, 2)
-        )
+        self.model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
         self.embeddings = None
         self.texts = []
         
     def add_texts(self, texts: List[str]):
         """Añadir textos para búsqueda"""
         self.texts.extend(texts)
-        # Crear embeddings usando TF-IDF
-        tfidf_matrix = self.vectorizer.fit_transform(self.texts)
-        self.embeddings = tfidf_matrix.toarray()
+        # Crear embeddings usando SentenceTransformers
+        self.embeddings = self.model.encode(self.texts)
         
     def search(self, query: str, k: int = 5) -> List[Tuple[int, float]]:
         """Buscar textos similares"""
@@ -76,14 +71,14 @@ class ARM64SimilaritySearch:
             return []
             
         # Vectorizar query
-        query_vector = self.vectorizer.transform([query]).toarray()
+        query_embedding = self.model.encode([query])
         
-        # Calcular similitud coseno
-        similarities = cosine_similarity(query_vector, self.embeddings)[0]
+        # Calcular similitud coseno manualmente
+        similarities = np.dot(query_embedding, self.embeddings.T)[0]
         
         # Obtener top-k resultados
         top_indices = np.argsort(similarities)[::-1][:k]
-        results = [(idx, similarities[idx]) for idx in top_indices if similarities[idx] > 0.1]
+        results = [(idx, float(similarities[idx])) for idx in top_indices if similarities[idx] > 0.1]
         
         return results
 

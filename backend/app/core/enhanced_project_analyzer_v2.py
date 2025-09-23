@@ -328,7 +328,7 @@ class EnhancedProjectAnalyzerV2:
         try:
             # Use AI for structured extraction
             prompt = get_structured_data_extraction_prompt(text[:self.max_text_length])
-            ai_response = self.ai_client.generate_response(prompt)
+            ai_response = await self.ai_client.generate_completion(prompt)
             
             # Parse AI response
             project_data_dict = self._parse_ai_response(ai_response.content)
@@ -541,19 +541,19 @@ class EnhancedProjectAnalyzerV2:
             
             # Check fire safety compliance
             fire_prompt = get_fire_safety_compliance_prompt(all_text[:self.max_text_length])
-            fire_response = self.ai_client.generate_response(fire_prompt)
+            fire_response = await self.ai_client.generate_completion(fire_prompt)
             fire_issues = self._parse_ai_issues(fire_response.content, "Seguridad contra incendios")
             issues.extend(fire_issues)
             
             # Check safety of use compliance
             safety_prompt = get_safety_use_compliance_prompt(all_text[:self.max_text_length])
-            safety_response = self.ai_client.generate_response(safety_prompt)
+            safety_response = await self.ai_client.generate_completion(safety_prompt)
             safety_issues = self._parse_ai_issues(safety_response.content, "Seguridad de uso")
             issues.extend(safety_issues)
             
             # Check energy efficiency compliance
             energy_prompt = get_energy_efficiency_compliance_prompt(all_text[:self.max_text_length])
-            energy_response = self.ai_client.generate_response(energy_prompt)
+            energy_response = await self.ai_client.generate_completion(energy_prompt)
             energy_issues = self._parse_ai_issues(energy_response.content, "Eficiencia energética")
             issues.extend(energy_issues)
             
@@ -659,7 +659,7 @@ class EnhancedProjectAnalyzerV2:
         try:
             # Use AI to generate contextual question
             prompt = get_question_generation_prompt(issue.title, issue.description)
-            ai_response = self.ai_client.generate_response(prompt)
+            ai_response = await self.ai_client.generate_completion(prompt)
             
             # Parse AI response
             question_text = ai_response.content.strip()
@@ -734,7 +734,7 @@ class EnhancedProjectAnalyzerV2:
             # Use AI to detect contradictions
             all_text = self._combine_extracted_text(extracted_data)
             prompt = get_contradiction_detection_prompt(all_text[:self.max_text_length])
-            ai_response = self.ai_client.generate_response(prompt)
+            ai_response = await self.ai_client.generate_completion(prompt)
             
             # Parse contradictions from AI response
             contradiction_pattern = r'\\*\\*Contradicción\\*\\*:([^\\n]+)'

@@ -342,7 +342,7 @@ class AdvancedPlanAnalyzerGroq:
             """
             
             # Get AI response
-            response = self.ai_client.generate_response(prompt)
+            response = await self.ai_client.generate_completion(prompt)
             
             if response.success:
                 # Parse AI response
@@ -415,7 +415,7 @@ class AdvancedPlanAnalyzerGroq:
             """
             
             # Get AI response
-            response = self.ai_client.generate_response(prompt)
+            response = await self.ai_client.generate_completion(prompt)
             
             if response.success:
                 return json.loads(response.content)

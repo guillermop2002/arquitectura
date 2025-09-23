@@ -19,6 +19,7 @@ from backend.app.core.groq_client import GroqClient
 from backend.app.core.neo4j_manager import Neo4jManager
 from backend.app.core.config import AIConfig
 from backend.app.core.file_cleanup_manager import file_cleanup_manager
+from backend.app.core.disk_cleanup_manager import DiskCleanupManager
 from backend.app.core.detailed_logger import detailed_logger
 from backend.app.core.usage_applicator import UsageApplicator
 from backend.app.core.madrid_normative_applicator import MadridNormativeApplicator
@@ -60,6 +61,16 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
         start_time = datetime.now()
         
         logger.info(f"Iniciando análisis de documentos para proyecto: {request.project_data.get('project_id', 'unknown')}")
+        
+        # Inicializar gestor de limpieza de disco
+        disk_cleanup = DiskCleanupManager()
+        
+        # Verificar espacio en disco antes del análisis
+        disk_usage = disk_cleanup.get_disk_usage()
+        if disk_usage['is_critical']:
+            logger.warning(f"Uso de disco crítico: {disk_usage['percent']:.1f}%. Ejecutando limpieza forzada.")
+            cleanup_result = disk_cleanup.force_cleanup()
+            logger.info(f"Limpieza forzada completada: {cleanup_result['total_freed_space']} bytes liberados")
         
         # Inicializar componentes
         pdf_processor = PDFProcessor()
@@ -135,37 +146,67 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     # Registrar archivo para limpieza automática
                     file_cleanup_manager.register_file(str(file_path))
                     
-                    # Extraer texto del PDF (método correcto)
+                    # Extraer texto del PDF con optimización para archivos grandes
                     logger.info(f"Procesando memoria: {document_name}")
-                    pdf_content = pdf_processor.extract_text_only(str(file_path))
                     
-                    # Obtener información del documento
-                    doc_info = pdf_processor.get_document_info(str(file_path))
-                    pages_count = doc_info.get('page_count', 1)
+                    # Procesar PDF de manera optimizada
+                    try:
+                        pdf_document = pdf_processor.process_pdf(str(file_path))
+                        pdf_content = pdf_document.text_content
+                        pages_count = pdf_document.page_count
+                        logger.info(f"PDF procesado exitosamente: {pages_count} páginas, {pdf_document.processing_time:.2f}s")
+                    except Exception as pdf_error:
+                        logger.warning(f"Error procesando PDF completo, usando método básico: {pdf_error}")
+                        pdf_content = pdf_processor.extract_text_only(str(file_path))
+                        doc_info = pdf_processor.get_document_info(str(file_path))
+                        pages_count = doc_info.get('page_count', 1)
                     
-                    # Clasificar el documento
-                    classification_result = await document_classifier.classify_document(
-                        file_path=str(file_path)
+                    # Crear clasificación basada en el prefijo del archivo (memoria_)
+                    # NO USAR IA - clasificación directa por prefijo
+                    from backend.app.core.document_classifier import DocumentClassification
+                    classification = DocumentClassification(
+                        document_type='memoria',
+                        confidence=1.0,  # Confianza total ya que viene del usuario
+                        reasoning='Documento identificado como memoria por prefijo en nombre de archivo',
+                        detected_elements=[],
+                        page_count=pages_count,
+                        text_content=pdf_content,
+                        visual_elements=[],
+                        processing_time=0.0
+                    )
+                    
+                    # Crear objeto PDFDocument para el analizador
+                    from backend.app.core.pdf_processor import PDFDocument
+                    pdf_doc = PDFDocument(
+                        filename=document_name,
+                        text_content=pdf_content,
+                        page_count=pages_count,
+                        file_size=0,  # Tamaño estimado
+                        processing_time=0.0,
+                        images=[]  # Por ahora sin imágenes
                     )
                     
                     # Analizar el documento
-                    analysis_result = await document_analyzer.analyze_document(
-                        content=pdf_content,
-                        document_type='memoria',
-                        classification=classification_result
+                    analysis_result = document_analyzer.analyze_document(
+                        pdf_doc=pdf_doc,
+                        classification=classification
                     )
                     
                     analysis_detail = {
                         'document_name': document_name,
                         'document_type': 'memoria',
-                        'confidence': classification_result.get('confidence', 0.95),
+                        'confidence': classification.confidence,
                         'pages_analyzed': pages_count,
-                        'key_findings': analysis_result.get('key_findings', [
+                        'key_findings': getattr(analysis_result, 'key_findings', [
                             'Memoria descriptiva completa',
                             'Cálculos estructurales incluidos',
                             'Especificaciones técnicas detalladas'
                         ]),
-                        'classification': classification_result,
+                        'classification': {
+                            'document_type': classification.document_type,
+                            'confidence': classification.confidence,
+                            'reasoning': classification.reasoning
+                        },
                         'analysis': analysis_result
                     }
                     
@@ -179,8 +220,8 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                             'document_name': document_name,
                             'document_type': 'memoria',
                             'pages_count': pages_count,
-                            'confidence': classification_result.get('confidence', 0.95),
-                            'key_findings': analysis_result.get('key_findings', []),
+                            'confidence': classification.confidence,
+                            'key_findings': getattr(analysis_result, 'key_findings', []),
                             'project_id': project_id
                         })
                         logger.info(f"Documento almacenado en Neo4j: {document_name}")
@@ -233,37 +274,66 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     # Registrar archivo para limpieza automática
                     file_cleanup_manager.register_file(str(file_path))
                     
-                    # Extraer texto del PDF (método correcto)
+                    # Extraer texto del PDF con optimización para archivos grandes
                     logger.info(f"Procesando plano: {document_name}")
-                    pdf_content = pdf_processor.extract_text_only(str(file_path))
                     
-                    # Obtener información del documento
-                    doc_info = pdf_processor.get_document_info(str(file_path))
-                    pages_count = doc_info.get('page_count', 1)
+                    # Procesar PDF de manera optimizada
+                    try:
+                        pdf_document = pdf_processor.process_pdf(str(file_path))
+                        pdf_content = pdf_document.text_content
+                        pages_count = pdf_document.page_count
+                        logger.info(f"PDF procesado exitosamente: {pages_count} páginas, {pdf_document.processing_time:.2f}s")
+                    except Exception as pdf_error:
+                        logger.warning(f"Error procesando PDF completo, usando método básico: {pdf_error}")
+                        pdf_content = pdf_processor.extract_text_only(str(file_path))
+                        doc_info = pdf_processor.get_document_info(str(file_path))
+                        pages_count = doc_info.get('page_count', 1)
                     
-                    # Clasificar el documento
-                    classification_result = await document_classifier.classify_document(
-                        file_path=str(file_path)
+                    # Crear clasificación basada en el nombre del archivo (plano_)
+                    from backend.app.core.document_classifier import DocumentClassification
+                    classification = DocumentClassification(
+                        document_type='plano',
+                        confidence=1.0,  # Confianza total ya que viene del usuario
+                        reasoning='Documento identificado como plano por prefijo en nombre de archivo',
+                        detected_elements=[],
+                        page_count=pages_count,
+                        text_content=pdf_content,
+                        visual_elements=[],
+                        processing_time=0.0
+                    )
+                    
+                    # Crear objeto PDFDocument para el analizador
+                    from backend.app.core.pdf_processor import PDFDocument
+                    pdf_doc = PDFDocument(
+                        filename=document_name,
+                        text_content=pdf_content,
+                        page_count=pages_count,
+                        file_size=0,  # Tamaño estimado
+                        processing_time=0.0,
+                        images=[]  # Por ahora sin imágenes
                     )
                     
                     # Analizar el documento
-                    analysis_result = await document_analyzer.analyze_document(
-                        content=pdf_content,
-                        document_type='plano',
-                        classification=classification_result
+                    analysis_result = document_analyzer.analyze_document(
+                        pdf_doc=pdf_doc,
+                        classification=classification
                     )
                     
                     analysis_detail = {
                         'document_name': document_name,
                         'document_type': 'plano',
-                        'confidence': classification_result.get('confidence', 0.92),
+                        'confidence': classification.confidence,
                         'pages_analyzed': pages_count,
-                        'key_findings': analysis_result.get('key_findings', [
+                        'key_findings': getattr(analysis_result, 'key_findings', [
                             'Planta de distribución clara',
                             'Secciones constructivas incluidas',
                             'Detalles de fachada presentes'
                         ]),
-                        'classification': classification_result,
+                        'classification': {
+                            'document_type': classification.document_type,
+                            'confidence': classification.confidence,
+                            'reasoning': classification.reasoning
+                        },
                         'analysis': analysis_result
                     }
                     
@@ -277,8 +347,8 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                             'document_name': document_name,
                             'document_type': 'plano',
                             'pages_count': pages_count,
-                            'confidence': classification_result.get('confidence', 0.92),
-                            'key_findings': analysis_result.get('key_findings', []),
+                            'confidence': classification.confidence,
+                            'key_findings': getattr(analysis_result, 'key_findings', []),
                             'project_id': project_id
                         })
                         logger.info(f"Documento almacenado en Neo4j: {document_name}")
@@ -343,12 +413,15 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
         
         analysis_results['compliance_issues'] = len(compliance_issues)
         
-        # Guardar en Neo4j
-        await save_analysis_to_neo4j(
-            request.project_data,
-            analysis_results,
-            neo4j_manager
-        )
+        # Guardar en Neo4j usando el nuevo método de grafo arquitectónico
+        try:
+            project_id = neo4j_manager.create_architectural_analysis_graph(
+                request.project_data,
+                analysis_results
+            )
+            logger.info(f"Grafo de análisis arquitectónico creado para proyecto: {project_id}")
+        except Exception as neo4j_error:
+            logger.warning(f"Error creando grafo de análisis en Neo4j: {neo4j_error}")
         
         # Calcular tiempo de procesamiento
         processing_time = (datetime.now() - start_time).total_seconds()
@@ -848,6 +921,40 @@ async def save_analysis_to_neo4j(project_data: Dict[str, Any],
         
     except Exception as e:
         logger.error(f"Error guardando análisis en Neo4j: {e}")
+
+@analysis_router.get("/cleanup-status")
+async def get_cleanup_status():
+    """
+    Obtener estado del sistema de limpieza de disco.
+    """
+    try:
+        disk_cleanup = DiskCleanupManager()
+        status = disk_cleanup.get_cleanup_status()
+        return {
+            "status": "success",
+            "cleanup_status": status,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error obteniendo estado de limpieza: {e}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo estado de limpieza: {str(e)}")
+
+@analysis_router.post("/force-cleanup")
+async def force_cleanup():
+    """
+    Forzar limpieza inmediata del sistema.
+    """
+    try:
+        disk_cleanup = DiskCleanupManager()
+        cleanup_result = disk_cleanup.force_cleanup()
+        return {
+            "status": "success",
+            "cleanup_result": cleanup_result,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error en limpieza forzada: {e}")
+        raise HTTPException(status_code=500, detail=f"Error en limpieza forzada: {str(e)}")
 
 @analysis_router.post("/cleanup-old-data")
 async def cleanup_old_neo4j_data(days_old: int = 30):

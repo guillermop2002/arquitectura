@@ -420,7 +420,7 @@ class MadridComplianceChecker:
             )
             
             # Llamar a IA
-            response = await self.ai_client.generate_response(prompt)
+            response = await self.ai_client.generate_completion(prompt)
             
             # Parsear respuesta
             try:

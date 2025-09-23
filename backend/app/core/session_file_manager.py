@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class SessionFileManager:
     """Gestor de archivos por sesión con limpieza automática."""
     
-    def __init__(self, upload_base_path: str = "uploads", cleanup_interval_minutes: int = 15):
+    def __init__(self, upload_base_path: str = "uploads", cleanup_interval_minutes: int = 5):
         """
         Inicializar el gestor de sesiones.
         
@@ -51,7 +51,12 @@ class SessionFileManager:
         """
         session_id = f"session_{uuid.uuid4().hex[:12]}"
         session_path = self.upload_base_path / session_id
-        session_path.mkdir(exist_ok=True)
+        try:
+            session_path.mkdir(exist_ok=True, mode=0o755)
+        except PermissionError as e:
+            logger.error(f"Error de permisos creando sesión {session_id}: {e}")
+            # Intentar con permisos más permisivos
+            session_path.mkdir(exist_ok=True, mode=0o777)
         
         # Registrar sesión
         self.sessions[session_id] = {
@@ -148,12 +153,32 @@ class SessionFileManager:
             if session_path.exists():
                 for file_path in session_path.glob("*"):
                     if file_path.is_file():
-                        file_path.unlink()
-                        logger.info(f"Archivo eliminado: {file_path}")
+                        try:
+                            file_path.unlink()
+                            logger.info(f"Archivo eliminado: {file_path}")
+                        except PermissionError as e:
+                            logger.warning(f"No se pudo eliminar archivo {file_path}: {e}")
+                            # Intentar cambiar permisos y eliminar
+                            try:
+                                file_path.chmod(0o777)
+                                file_path.unlink()
+                                logger.info(f"Archivo eliminado después de cambiar permisos: {file_path}")
+                            except Exception as e2:
+                                logger.error(f"Error definitivo eliminando archivo {file_path}: {e2}")
                 
                 # Eliminar directorio
-                session_path.rmdir()
-                logger.info(f"Directorio eliminado: {session_path}")
+                try:
+                    session_path.rmdir()
+                    logger.info(f"Directorio eliminado: {session_path}")
+                except PermissionError as e:
+                    logger.warning(f"No se pudo eliminar directorio {session_path}: {e}")
+                    # Intentar cambiar permisos y eliminar
+                    try:
+                        session_path.chmod(0o777)
+                        session_path.rmdir()
+                        logger.info(f"Directorio eliminado después de cambiar permisos: {session_path}")
+                    except Exception as e2:
+                        logger.error(f"Error definitivo eliminando directorio {session_path}: {e2}")
             
             # Remover de sesiones activas
             del self.sessions[session_id]

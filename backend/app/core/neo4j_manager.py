@@ -672,6 +672,369 @@ class Neo4jManager:
         except Exception as e:
             self.logger.error(f"Error en limpieza de Neo4j: {e}")
             return 0
+
+    def create_architectural_analysis_graph(self, project_data: Dict[str, Any], 
+                                         analysis_results: Dict[str, Any]) -> str:
+        """
+        Crea un grafo completo de análisis arquitectónico en Neo4j.
+        
+        Args:
+            project_data: Datos del proyecto
+            analysis_results: Resultados del análisis
+            
+        Returns:
+            ID del nodo del proyecto creado
+        """
+        try:
+            with self.driver.session() as session:
+                # Crear nodo del proyecto
+                project_id = project_data.get('project_id', f'project_{int(datetime.now().timestamp())}')
+                
+                # Crear nodo del proyecto con información completa
+                project_node_id = session.run("""
+                    CREATE (p:Project:ArchitecturalProject {
+                        id: $project_id,
+                        name: $name,
+                        primary_use: $primary_use,
+                        is_existing_building: $is_existing_building,
+                        secondary_uses: $secondary_uses,
+                        analysis_timestamp: $timestamp,
+                        total_documents: $total_docs,
+                        ambiguities_detected: $ambiguities,
+                        compliance_issues: $compliance_issues
+                    })
+                    RETURN id(p) as node_id
+                """, 
+                project_id=project_id,
+                name=f"Proyecto {project_id}",
+                primary_use=project_data.get('primary_use'),
+                is_existing_building=project_data.get('is_existing_building', False),
+                secondary_uses=json.dumps(project_data.get('secondary_uses', {})),
+                timestamp=datetime.now().isoformat(),
+                total_docs=analysis_results.get('documents_analyzed', 0),
+                ambiguities=analysis_results.get('ambiguities_detected', 0),
+                compliance_issues=analysis_results.get('compliance_issues', 0)
+                ).single()["node_id"]
+                
+                # Crear nodos de documentos y sus relaciones
+                for doc_detail in analysis_results.get('analysis_details', []):
+                    doc_node_id = self._create_document_node_with_analysis(session, project_node_id, doc_detail)
+                    
+                    # Crear relaciones específicas según el tipo de documento
+                    if doc_detail.get('document_type') == 'memoria':
+                        self._create_memory_analysis_relationships(session, project_node_id, doc_node_id, doc_detail)
+                    elif doc_detail.get('document_type') == 'plano':
+                        self._create_plan_analysis_relationships(session, project_node_id, doc_node_id, doc_detail)
+                
+                # Crear nodos de ambigüedades y problemas de cumplimiento
+                for ambiguity in analysis_results.get('ambiguities', []):
+                    self._create_ambiguity_node(session, project_node_id, ambiguity)
+                
+                # Crear nodos de normativa aplicable
+                self._create_normative_nodes(session, project_node_id, project_data)
+                
+                self.logger.info(f"Grafo de análisis arquitectónico creado para proyecto {project_id}")
+                return project_id
+                
+        except Exception as e:
+            self.logger.error(f"Error creando grafo de análisis: {e}")
+            return None
+
+    def _create_document_node_with_analysis(self, session, project_node_id: int, doc_detail: Dict[str, Any]) -> int:
+        """Crea un nodo de documento con análisis detallado."""
+        doc_node_id = session.run("""
+            CREATE (d:Document:ArchitecturalDocument {
+                id: $doc_id,
+                name: $name,
+                type: $doc_type,
+                confidence: $confidence,
+                pages_analyzed: $pages,
+                key_findings: $findings,
+                file_path: $file_path,
+                analysis_timestamp: $timestamp
+            })
+            RETURN id(d) as node_id
+        """,
+        doc_id=f"{project_node_id}_{doc_detail.get('document_name', 'unknown')}",
+        name=doc_detail.get('document_name', 'unknown'),
+        doc_type=doc_detail.get('document_type', 'unknown'),
+        confidence=doc_detail.get('confidence', 0.0),
+        pages=doc_detail.get('pages_analyzed', 0),
+        findings=json.dumps(doc_detail.get('key_findings', [])),
+        file_path=f"/uploads/{doc_detail.get('document_name', 'unknown')}",
+        timestamp=datetime.now().isoformat()
+        ).single()["node_id"]
+        
+        # Crear relación proyecto -> documento
+        session.run("""
+            MATCH (p:Project), (d:Document)
+            WHERE id(p) = $project_id AND id(d) = $doc_id
+            CREATE (p)-[:CONTAINS {created_at: $timestamp}]->(d)
+        """, project_id=project_node_id, doc_id=doc_node_id, timestamp=datetime.now().isoformat())
+        
+        return doc_node_id
+
+    def _create_memory_analysis_relationships(self, session, project_node_id: int, doc_node_id: int, doc_detail: Dict[str, Any]):
+        """Crea relaciones específicas para memorias."""
+        # Crear nodos de conceptos arquitectónicos extraídos
+        concepts = self._extract_architectural_concepts(doc_detail.get('key_findings', []))
+        for concept in concepts:
+            concept_node_id = session.run("""
+                CREATE (c:Concept:ArchitecturalConcept {
+                    name: $concept_name,
+                    type: $concept_type,
+                    confidence: $confidence,
+                    source_document: $source_doc
+                })
+                RETURN id(c) as node_id
+            """,
+            concept_name=concept['name'],
+            concept_type=concept['type'],
+            confidence=concept['confidence'],
+            source_doc=doc_detail.get('document_name', 'unknown')
+            ).single()["node_id"]
+            
+            # Relacionar concepto con documento
+            session.run("""
+                MATCH (d:Document), (c:Concept)
+                WHERE id(d) = $doc_id AND id(c) = $concept_id
+                CREATE (d)-[:EXTRACTS {extraction_method: $method}]->(c)
+            """, doc_id=doc_node_id, concept_id=concept_node_id, method="BERT_analysis")
+
+    def _create_plan_analysis_relationships(self, session, project_node_id: int, doc_node_id: int, doc_detail: Dict[str, Any]):
+        """Crea relaciones específicas para planos."""
+        # Crear nodos de elementos arquitectónicos
+        elements = self._extract_architectural_elements(doc_detail.get('key_findings', []))
+        for element in elements:
+            element_node_id = session.run("""
+                CREATE (e:Element:ArchitecturalElement {
+                    name: $element_name,
+                    type: $element_type,
+                    floor: $floor,
+                    dimensions: $dimensions,
+                    source_document: $source_doc
+                })
+                RETURN id(e) as node_id
+            """,
+            element_name=element['name'],
+            element_type=element['type'],
+            floor=element.get('floor', 'unknown'),
+            dimensions=json.dumps(element.get('dimensions', {})),
+            source_doc=doc_detail.get('document_name', 'unknown')
+            ).single()["node_id"]
+            
+            # Relacionar elemento con documento
+            session.run("""
+                MATCH (d:Document), (e:Element)
+                WHERE id(d) = $doc_id AND id(e) = $element_id
+                CREATE (d)-[:CONTAINS_ELEMENT {extraction_method: $method}]->(e)
+            """, doc_id=doc_node_id, element_id=element_node_id, method="OCR_analysis")
+
+    def _create_ambiguity_node(self, session, project_node_id: int, ambiguity: Dict[str, Any]):
+        """Crea nodo de ambigüedad."""
+        ambiguity_node_id = session.run("""
+            CREATE (a:Ambiguity:AnalysisIssue {
+                id: $amb_id,
+                title: $title,
+                description: $description,
+                priority: $priority,
+                document_name: $doc_name,
+                page_number: $page_num,
+                normative_reference: $norm_ref,
+                suggested_question: $question,
+                expected_answer_type: $answer_type
+            })
+            RETURN id(a) as node_id
+        """,
+        amb_id=ambiguity.get('id', 'unknown'),
+        title=ambiguity.get('title', 'Ambigüedad detectada'),
+        description=ambiguity.get('description', ''),
+        priority=ambiguity.get('priority', 'medium'),
+        doc_name=ambiguity.get('document_name', 'unknown'),
+        page_num=ambiguity.get('page_number', 1),
+        norm_ref=ambiguity.get('normative_reference', ''),
+        question=ambiguity.get('suggested_question', ''),
+        answer_type=ambiguity.get('expected_answer_type', 'text')
+        ).single()["node_id"]
+        
+        # Relacionar ambigüedad con proyecto
+        session.run("""
+            MATCH (p:Project), (a:Ambiguity)
+            WHERE id(p) = $project_id AND id(a) = $amb_id
+            CREATE (p)-[:HAS_AMBIGUITY {detected_at: $timestamp}]->(a)
+        """, project_id=project_node_id, amb_id=ambiguity_node_id, timestamp=datetime.now().isoformat())
+
+    def _create_normative_nodes(self, session, project_node_id: int, project_data: Dict[str, Any]):
+        """Crea nodos de normativa aplicable."""
+        primary_use = project_data.get('primary_use', 'residencial')
+        is_existing = project_data.get('is_existing_building', False)
+        
+        # Normativa universal
+        universal_docs = [
+            "DOCUMENTOS BASICOS",
+            "pgoum_general universal.pdf"
+        ]
+        
+        for doc in universal_docs:
+            norm_node_id = session.run("""
+                CREATE (n:Normative:UniversalNormative {
+                    name: $doc_name,
+                    type: 'universal',
+                    priority: 'high',
+                    applicable_to: 'all_projects',
+                    path: $doc_path
+                })
+                RETURN id(n) as node_id
+            """,
+            doc_name=doc,
+            doc_path=f"Normativa/{doc}"
+            ).single()["node_id"]
+            
+            # Relacionar con proyecto
+            session.run("""
+                MATCH (p:Project), (n:Normative)
+                WHERE id(p) = $project_id AND id(n) = $norm_id
+                CREATE (p)-[:APPLIES_TO {normative_type: 'universal'}]->(n)
+            """, project_id=project_node_id, norm_id=norm_node_id)
+        
+        # Normativa específica por uso
+        use_specific_doc = f"pgoum_{primary_use}.pdf"
+        use_norm_node_id = session.run("""
+            CREATE (n:Normative:UseSpecificNormative {
+                name: $doc_name,
+                type: 'use_specific',
+                priority: 'high',
+                applicable_to: $use_type,
+                path: $doc_path
+            })
+            RETURN id(n) as node_id
+        """,
+        doc_name=use_specific_doc,
+        use_type=primary_use,
+        doc_path=f"Normativa/PGOUM/{use_specific_doc}"
+        ).single()["node_id"]
+        
+        # Relacionar con proyecto
+        session.run("""
+            MATCH (p:Project), (n:Normative)
+            WHERE id(p) = $project_id AND id(n) = $norm_id
+            CREATE (p)-[:APPLIES_TO {normative_type: 'use_specific', use_type: $use_type}]->(n)
+        """, project_id=project_node_id, norm_id=use_norm_node_id, use_type=primary_use)
+        
+        # Normativa para edificios existentes
+        if is_existing:
+            support_docs = ["DOCUMENTOS DE APOYO"]
+            for doc in support_docs:
+                support_norm_node_id = session.run("""
+                    CREATE (n:Normative:SupportNormative {
+                        name: $doc_name,
+                        type: 'support',
+                        priority: 'medium',
+                        applicable_to: 'existing_buildings',
+                        path: $doc_path
+                    })
+                    RETURN id(n) as node_id
+                """,
+                doc_name=doc,
+                doc_path=f"Normativa/{doc}"
+                ).single()["node_id"]
+                
+                # Relacionar con proyecto
+                session.run("""
+                    MATCH (p:Project), (n:Normative)
+                    WHERE id(p) = $project_id AND id(n) = $norm_id
+                    CREATE (p)-[:APPLIES_TO {normative_type: 'support', building_type: 'existing'}]->(n)
+                """, project_id=project_node_id, norm_id=support_norm_node_id)
+
+    def _extract_architectural_concepts(self, key_findings: List[str]) -> List[Dict[str, Any]]:
+        """Extrae conceptos arquitectónicos de los hallazgos clave."""
+        concepts = []
+        for finding in key_findings:
+            if 'cálculo' in finding.lower():
+                concepts.append({
+                    'name': 'Cálculos estructurales',
+                    'type': 'structural_calculation',
+                    'confidence': 0.9
+                })
+            if 'especificación' in finding.lower():
+                concepts.append({
+                    'name': 'Especificaciones técnicas',
+                    'type': 'technical_specification',
+                    'confidence': 0.8
+                })
+            if 'memoria' in finding.lower():
+                concepts.append({
+                    'name': 'Memoria descriptiva',
+                    'type': 'descriptive_memory',
+                    'confidence': 0.95
+                })
+        return concepts
+
+    def _extract_architectural_elements(self, key_findings: List[str]) -> List[Dict[str, Any]]:
+        """Extrae elementos arquitectónicos de los hallazgos clave."""
+        elements = []
+        for finding in key_findings:
+            if 'planta' in finding.lower():
+                elements.append({
+                    'name': 'Planta de distribución',
+                    'type': 'floor_plan',
+                    'floor': 'unknown',
+                    'dimensions': {}
+                })
+            if 'sección' in finding.lower():
+                elements.append({
+                    'name': 'Sección constructiva',
+                    'type': 'section',
+                    'floor': 'unknown',
+                    'dimensions': {}
+                })
+            if 'fachada' in finding.lower():
+                elements.append({
+                    'name': 'Detalle de fachada',
+                    'type': 'facade_detail',
+                    'floor': 'unknown',
+                    'dimensions': {}
+                })
+        return elements
+
+    def get_analysis_graph_summary(self, project_id: str) -> Dict[str, Any]:
+        """Obtiene un resumen del grafo de análisis para un proyecto."""
+        try:
+            with self.driver.session() as session:
+                result = session.run("""
+                    MATCH (p:Project {id: $project_id})
+                    OPTIONAL MATCH (p)-[:CONTAINS]->(d:Document)
+                    OPTIONAL MATCH (p)-[:HAS_AMBIGUITY]->(a:Ambiguity)
+                    OPTIONAL MATCH (p)-[:APPLIES_TO]->(n:Normative)
+                    OPTIONAL MATCH (d)-[:EXTRACTS]->(c:Concept)
+                    OPTIONAL MATCH (d)-[:CONTAINS_ELEMENT]->(e:Element)
+                    RETURN 
+                        p,
+                        collect(DISTINCT d) as documents,
+                        collect(DISTINCT a) as ambiguities,
+                        collect(DISTINCT n) as normative_docs,
+                        collect(DISTINCT c) as concepts,
+                        collect(DISTINCT e) as elements
+                """, project_id=project_id)
+                
+                record = result.single()
+                if not record:
+                    return {"error": "Proyecto no encontrado"}
+                
+                return {
+                    "project": dict(record["p"]),
+                    "documents_count": len(record["documents"]),
+                    "ambiguities_count": len(record["ambiguities"]),
+                    "normative_docs_count": len(record["normative_docs"]),
+                    "concepts_count": len(record["concepts"]),
+                    "elements_count": len(record["elements"]),
+                    "total_nodes": 1 + len(record["documents"]) + len(record["ambiguities"]) + 
+                                 len(record["normative_docs"]) + len(record["concepts"]) + len(record["elements"])
+                }
+                
+        except Exception as e:
+            self.logger.error(f"Error obteniendo resumen del grafo: {e}")
+            return {"error": str(e)}
     
     def get_project_statistics(self) -> Dict[str, Any]:
         """Obtiene estadísticas del grafo de conocimiento"""

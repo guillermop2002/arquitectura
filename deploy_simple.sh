@@ -118,12 +118,28 @@ clean_dependencies() {
     # Parar servicios existentes
     docker-compose -f docker-compose.oracle_arm64.yml down --remove-orphans 2>/dev/null || true
     
-    # Limpiar imágenes Docker existentes
-    docker rmi arquitectura-app arquitectura-rasa 2>/dev/null || true
-    docker system prune -f
+    # Ejecutar limpieza completa de Docker
+    info "Ejecutando limpieza completa de Docker..."
+    if [ -f "docker_cleanup.sh" ]; then
+        chmod +x docker_cleanup.sh
+        ./docker_cleanup.sh
+    else
+        # Limpieza manual si no existe el script
+        docker container prune -f 2>/dev/null || true
+        docker image prune -a -f 2>/dev/null || true
+        docker volume prune -f 2>/dev/null || true
+        docker network prune -f 2>/dev/null || true
+        docker builder prune -a -f 2>/dev/null || true
+        docker system prune -a -f --volumes 2>/dev/null || true
+    fi
     
     # Limpiar cache de pip
     pip cache purge 2>/dev/null || true
+    
+    # Limpiar archivos temporales del sistema
+    info "Limpiando archivos temporales del sistema..."
+    find /tmp -type f -mtime +0 -delete 2>/dev/null || true
+    find /var/tmp -type f -mtime +0 -delete 2>/dev/null || true
     
     success "Dependencias limpiadas"
 }
