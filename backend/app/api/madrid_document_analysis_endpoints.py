@@ -19,7 +19,7 @@ from backend.app.core.groq_client import GroqClient
 from backend.app.core.neo4j_manager import Neo4jManager
 from backend.app.core.config import AIConfig
 from backend.app.core.file_cleanup_manager import file_cleanup_manager
-from backend.app.core.disk_cleanup_manager import DiskCleanupManager
+# from backend.app.core.disk_cleanup_manager import DiskCleanupManager  # Temporalmente deshabilitado
 from backend.app.core.detailed_logger import detailed_logger
 from backend.app.core.usage_applicator import UsageApplicator
 from backend.app.core.madrid_normative_applicator import MadridNormativeApplicator
@@ -62,15 +62,15 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
         
         logger.info(f"Iniciando análisis de documentos para proyecto: {request.project_data.get('project_id', 'unknown')}")
         
-        # Inicializar gestor de limpieza de disco
-        disk_cleanup = DiskCleanupManager()
+        # Inicializar gestor de limpieza de disco - TEMPORALMENTE DESHABILITADO
+        # disk_cleanup = DiskCleanupManager()
         
-        # Verificar espacio en disco antes del análisis
-        disk_usage = disk_cleanup.get_disk_usage()
-        if disk_usage['is_critical']:
-            logger.warning(f"Uso de disco crítico: {disk_usage['percent']:.1f}%. Ejecutando limpieza forzada.")
-            cleanup_result = disk_cleanup.force_cleanup()
-            logger.info(f"Limpieza forzada completada: {cleanup_result['total_freed_space']} bytes liberados")
+        # Verificar espacio en disco antes del análisis - TEMPORALMENTE DESHABILITADO
+        # disk_usage = disk_cleanup.get_disk_usage()
+        # if disk_usage['is_critical']:
+        #     logger.warning(f"Uso de disco crítico: {disk_usage['percent']:.1f}%. Ejecutando limpieza forzada.")
+        #     cleanup_result = disk_cleanup.force_cleanup()
+        #     logger.info(f"Limpieza forzada completada: {cleanup_result['total_freed_space']} bytes liberados")
         
         # Inicializar componentes
         pdf_processor = PDFProcessor()
@@ -928,8 +928,9 @@ async def get_cleanup_status():
     Obtener estado del sistema de limpieza de disco.
     """
     try:
-        disk_cleanup = DiskCleanupManager()
-        status = disk_cleanup.get_cleanup_status()
+        # disk_cleanup = DiskCleanupManager()  # Temporalmente deshabilitado
+        # status = disk_cleanup.get_cleanup_status()
+        status = {"message": "Disk cleanup temporarily disabled"}
         return {
             "status": "success",
             "cleanup_status": status,
@@ -945,8 +946,9 @@ async def force_cleanup():
     Forzar limpieza inmediata del sistema.
     """
     try:
-        disk_cleanup = DiskCleanupManager()
-        cleanup_result = disk_cleanup.force_cleanup()
+        # disk_cleanup = DiskCleanupManager()  # Temporalmente deshabilitado
+        # cleanup_result = disk_cleanup.force_cleanup()
+        cleanup_result = {"message": "Force cleanup temporarily disabled"}
         return {
             "status": "success",
             "cleanup_result": cleanup_result,

@@ -176,9 +176,9 @@ def handle_exception(e: Exception, context: str = "Unknown") -> Dict[str, Any]:
             "traceback": traceback.format_exc(),
             "module": getattr(e, '__module__', 'unknown'),
             "args": getattr(e, 'args', []),
-            "filename": traceback.extract_tb(e.__traceback__)[-1].filename if e.__traceback__ else None,
-            "lineno": traceback.extract_tb(e.__traceback__)[-1].lineno if e.__traceback__ else None,
-            "function": traceback.extract_tb(e.__traceback__)[-1].name if e.__traceback__ else None
+            "filename": traceback.extract_tb(getattr(e, '__traceback__', None))[-1].filename if getattr(e, '__traceback__', None) else None,
+            "lineno": traceback.extract_tb(getattr(e, '__traceback__', None))[-1].lineno if getattr(e, '__traceback__', None) else None,
+            "function": traceback.extract_tb(getattr(e, '__traceback__', None))[-1].name if getattr(e, '__traceback__', None) else None
         }
         
         logger.error(f"   📍 Error genérico: {error_info}")
