@@ -175,16 +175,24 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                         processing_time=0.0
                     )
                     
-                    # Crear objeto PDFDocument para el analizador
-                    from backend.app.core.pdf_processor import PDFDocument
-                    pdf_doc = PDFDocument(
-                        filename=document_name,
-                        text_content=pdf_content,
-                        page_count=pages_count,
-                        file_size=0,  # Tamaño estimado
-                        processing_time=0.0,
-                        images=[]  # Por ahora sin imágenes
-                    )
+                    # Usar el PDFDocument ya procesado o crear uno básico si falló
+                    if 'pdf_document' in locals():
+                        pdf_doc = pdf_document
+                    else:
+                        # Si falló el procesamiento completo, crear uno básico
+                        from backend.app.core.pdf_processor import PDFDocument, PDFPage
+                        pdf_doc = PDFDocument(
+                            filename=document_name,
+                            file_path=str(file_path),
+                            file_size=file_path.stat().st_size if file_path.exists() else 0,
+                            page_count=pages_count,
+                            pages=[],  # Sin páginas detalladas
+                            metadata={},
+                            text_content=pdf_content,
+                            images=[],
+                            processing_time=0.0,
+                            file_hash=""
+                        )
                     
                     # Analizar el documento
                     analysis_result = document_analyzer.analyze_document(
@@ -302,16 +310,24 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                         processing_time=0.0
                     )
                     
-                    # Crear objeto PDFDocument para el analizador
-                    from backend.app.core.pdf_processor import PDFDocument
-                    pdf_doc = PDFDocument(
-                        filename=document_name,
-                        text_content=pdf_content,
-                        page_count=pages_count,
-                        file_size=0,  # Tamaño estimado
-                        processing_time=0.0,
-                        images=[]  # Por ahora sin imágenes
-                    )
+                    # Usar el PDFDocument ya procesado o crear uno básico si falló
+                    if 'pdf_document' in locals():
+                        pdf_doc = pdf_document
+                    else:
+                        # Si falló el procesamiento completo, crear uno básico
+                        from backend.app.core.pdf_processor import PDFDocument, PDFPage
+                        pdf_doc = PDFDocument(
+                            filename=document_name,
+                            file_path=str(file_path),
+                            file_size=file_path.stat().st_size if file_path.exists() else 0,
+                            page_count=pages_count,
+                            pages=[],  # Sin páginas detalladas
+                            metadata={},
+                            text_content=pdf_content,
+                            images=[],
+                            processing_time=0.0,
+                            file_hash=""
+                        )
                     
                     # Analizar el documento
                     analysis_result = document_analyzer.analyze_document(
