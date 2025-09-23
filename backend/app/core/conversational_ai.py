@@ -168,7 +168,7 @@ class ConversationalAI:
             self.logger.error(f"Error iniciando conversación: {e}")
             return None
     
-    def process_message(self, session_id: str, user_message: str) -> str:
+    async def process_message(self, session_id: str, user_message: str) -> str:
         """Procesa un mensaje del usuario"""
         try:
             if session_id not in self.active_sessions:
@@ -180,7 +180,7 @@ class ConversationalAI:
             self._add_message(session, "user", user_message)
             
             # Analizar intención
-            intent = self._analyze_intent(user_message)
+            intent = await self._analyze_intent(user_message)
             
             # Procesar según el estado y la intención
             response = self._process_intent(session, user_message, intent)
@@ -214,7 +214,7 @@ class ConversationalAI:
         session.messages.append(message)
         session.updated_at = datetime.now().isoformat()
     
-    def _analyze_intent(self, message: str) -> str:
+    async def _analyze_intent(self, message: str) -> str:
         """Analiza la intención del mensaje"""
         try:
             message_lower = message.lower()
@@ -226,13 +226,13 @@ class ConversationalAI:
                         return intent
             
             # Si no se encuentra patrón específico, usar IA para clasificar
-            return self._classify_intent_with_ai(message)
+            return await self._classify_intent_with_ai(message)
             
         except Exception as e:
             self.logger.error(f"Error analizando intención: {e}")
             return "unclear"
     
-    def _classify_intent_with_ai(self, message: str) -> str:
+    async def _classify_intent_with_ai(self, message: str) -> str:
         """Clasifica la intención usando IA"""
         try:
             prompt = f"""
