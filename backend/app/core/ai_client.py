@@ -20,7 +20,7 @@ except ImportError:
             pass
 
 from .config import get_config
-from .error_handling import AIProcessingError, ErrorCode, handle_exception
+from .error_handling import AIProcessingError, ErrorCode, handle_exception_function
 from .logging_config import log_performance, log_api_call
 
 logger = logging.getLogger(__name__)
