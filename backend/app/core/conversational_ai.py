@@ -180,7 +180,7 @@ class ConversationalAI:
             self._add_message(session, "user", user_message)
             
             # Analizar intención
-            intent = self._analyze_intent(user_message)
+            intent = await self._analyze_intent(user_message)
             
             # Procesar según el estado y la intención
             response = self._process_intent(session, user_message, intent)
@@ -214,7 +214,7 @@ class ConversationalAI:
         session.messages.append(message)
         session.updated_at = datetime.now().isoformat()
     
-    def _analyze_intent(self, message: str) -> str:
+    async def _analyze_intent(self, message: str) -> str:
         """Analiza la intención del mensaje"""
         try:
             message_lower = message.lower()
