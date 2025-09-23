@@ -74,7 +74,7 @@ class EnhancedMainEndpoints:
                     raise HTTPException(status_code=400, detail="No valid PDF files uploaded")
                 
                 # Perform comprehensive verification
-                verification_results = self.verification_system.verify_project_comprehensive(
+                verification_results = await self.verification_system.verify_project_comprehensive(
                     saved_files, is_existing_building
                 )
                 

@@ -255,7 +255,7 @@ class EnhancedProjectAnalyzerV2:
         return min(1.0, confidence)
     
     @handle_exception
-    def extract_project_data(self, extracted_data: Dict[str, Any]) -> ProjectData:
+    async def extract_project_data(self, extracted_data: Dict[str, Any]) -> ProjectData:
         """
         Extract project data using advanced NLP analysis.
         
@@ -289,7 +289,7 @@ class EnhancedProjectAnalyzerV2:
                 all_sections.extend(sections)
             
             # Extract project data using AI and NLP
-            project_data = self._extract_project_data_advanced(all_text, all_entities, all_sections)
+            project_data = await self._extract_project_data_advanced(all_text, all_entities, all_sections)
             
             self._processing_stats['successful_extractions'] += 1
             
@@ -323,7 +323,7 @@ class EnhancedProjectAnalyzerV2:
         
         return combined_text
     
-    def _extract_project_data_advanced(self, text: str, entities: List[ArchitecturalEntity], sections: List[DocumentSection]) -> ProjectData:
+    async def _extract_project_data_advanced(self, text: str, entities: List[ArchitecturalEntity], sections: List[DocumentSection]) -> ProjectData:
         """Extract project data using advanced NLP and AI."""
         try:
             # Use AI for structured extraction
@@ -443,7 +443,7 @@ class EnhancedProjectAnalyzerV2:
             return project_data
     
     @handle_exception
-    def check_complete_compliance(self, project_data: ProjectData, extracted_data: Dict[str, Any], normative_docs: Dict[str, str]) -> Dict[str, Any]:
+    async def check_complete_compliance(self, project_data: ProjectData, extracted_data: Dict[str, Any], normative_docs: Dict[str, str]) -> Dict[str, Any]:
         """
         Check complete compliance using advanced rule engine and NLP.
         
@@ -471,7 +471,7 @@ class EnhancedProjectAnalyzerV2:
             issues = self.rule_engine.generate_issues_from_results(rule_results)
             
             # Add AI-based compliance checking
-            ai_issues = self._check_compliance_with_ai(project_data, extracted_data, normative_docs)
+            ai_issues = await self._check_compliance_with_ai(project_data, extracted_data, normative_docs)
             issues.extend(ai_issues)
             
             # Calculate overall confidence
@@ -531,7 +531,7 @@ class EnhancedProjectAnalyzerV2:
         
         return context
     
-    def _check_compliance_with_ai(self, project_data: ProjectData, extracted_data: Dict[str, Any], normative_docs: Dict[str, str]) -> List[Issue]:
+    async def _check_compliance_with_ai(self, project_data: ProjectData, extracted_data: Dict[str, Any], normative_docs: Dict[str, str]) -> List[Issue]:
         """Check compliance using AI analysis."""
         try:
             issues = []
@@ -613,7 +613,7 @@ class EnhancedProjectAnalyzerV2:
         return min(1.0, max(0.0, confidence))
     
     @handle_exception
-    def generate_questions(self, extracted_data: Dict[str, Any], issues: List[Issue]) -> List[Question]:
+    async def generate_questions(self, extracted_data: Dict[str, Any], issues: List[Issue]) -> List[Question]:
         """
         Generate questions using advanced NLP analysis.
         
@@ -632,7 +632,7 @@ class EnhancedProjectAnalyzerV2:
             # Generate questions based on issues
             for issue in issues:
                 if issue.severity in [SeverityLevel.HIGH, SeverityLevel.MEDIUM]:
-                    question = self._generate_question_for_issue(issue, extracted_data)
+                    question = await self._generate_question_for_issue(issue, extracted_data)
                     if question:
                         questions.append(question)
             
@@ -641,7 +641,7 @@ class EnhancedProjectAnalyzerV2:
             questions.extend(missing_info_questions)
             
             # Generate questions based on contradictions
-            contradiction_questions = self._generate_contradiction_questions(extracted_data)
+            contradiction_questions = await self._generate_contradiction_questions(extracted_data)
             questions.extend(contradiction_questions)
             
             self._processing_stats['contradictions_detected'] += len(contradiction_questions)
@@ -654,7 +654,7 @@ class EnhancedProjectAnalyzerV2:
             logger.error(f"Error generating questions: {e}")
             return []
     
-    def _generate_question_for_issue(self, issue: Issue, extracted_data: Dict[str, Any]) -> Optional[Question]:
+    async def _generate_question_for_issue(self, issue: Issue, extracted_data: Dict[str, Any]) -> Optional[Question]:
         """Generate a question for a specific issue."""
         try:
             # Use AI to generate contextual question
@@ -726,7 +726,7 @@ class EnhancedProjectAnalyzerV2:
         
         return False
     
-    def _generate_contradiction_questions(self, extracted_data: Dict[str, Any]) -> List[Question]:
+    async def _generate_contradiction_questions(self, extracted_data: Dict[str, Any]) -> List[Question]:
         """Generate questions for contradictions."""
         questions = []
         

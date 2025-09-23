@@ -30,7 +30,7 @@ class IntegratedVerificationSystem:
         
         logger.info("Integrated Verification System initialized")
     
-    def verify_project_comprehensive(
+    async def verify_project_comprehensive(
         self, 
         pdf_files: List[str],
         is_existing_building: bool = False
@@ -55,10 +55,10 @@ class IntegratedVerificationSystem:
             plan_analysis = self._analyze_plans(pdf_files, ocr_results)
             
             # Phase 3: Project Data Extraction
-            project_data = self._extract_project_data(ocr_results)
+            project_data = await self._extract_project_data(ocr_results)
             
             # Phase 4: Normative Compliance Check
-            compliance_results = self._check_normative_compliance(
+            compliance_results = await self._check_normative_compliance(
                 project_data, ocr_results, plan_analysis, is_existing_building
             )
             
@@ -159,7 +159,7 @@ class IntegratedVerificationSystem:
             logger.error(f"Error analyzing plans: {e}")
             return {}
     
-    def _extract_project_data(self, ocr_results: Dict[str, Any]) -> Optional[ProjectData]:
+    async def _extract_project_data(self, ocr_results: Dict[str, Any]) -> Optional[ProjectData]:
         """Extract project data using AI."""
         try:
             # Combine all text for analysis
@@ -170,7 +170,7 @@ class IntegratedVerificationSystem:
                 return None
             
             # Extract project data
-            project_data = self.project_analyzer.extract_project_data(ocr_results)
+            project_data = await self.project_analyzer.extract_project_data(ocr_results)
             
             return project_data
             
@@ -178,7 +178,7 @@ class IntegratedVerificationSystem:
             logger.error(f"Error extracting project data: {e}")
             return None
     
-    def _check_normative_compliance(
+    async def _check_normative_compliance(
         self, 
         project_data: Optional[ProjectData], 
         ocr_results: Dict[str, Any], 
@@ -212,7 +212,7 @@ class IntegratedVerificationSystem:
                     is_existing_building
                 )
                 
-                complete_compliance = self.project_analyzer.check_complete_compliance(
+                complete_compliance = await self.project_analyzer.check_complete_compliance(
                     project_data, ocr_results, normative_docs
                 )
                 
