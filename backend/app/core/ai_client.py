@@ -97,19 +97,19 @@ class AIClient:
         self.client = None
         self.client_type = None
         
-        if self.ai_config.groq_api_key:
+        if self.ai_config.groq_api_keys:
             try:
                 self.client = OpenAI(
                     base_url="https://api.groq.com/openai/v1",
-                    api_key=self.ai_config.groq_api_key
+                    api_key=self.ai_config.get_current_key()
                 )
                 self.client_type = "groq"
-                logger.info("Groq API client initialized successfully")
+                logger.info(f"Groq API client initialized successfully with {len(self.ai_config.groq_api_keys)} keys")
             except Exception as e:
                 logger.error(f"Failed to initialize Groq client: {e}")
                 self.client = None
         else:
-            logger.warning("GROQ_API_KEY not provided, AI functionality disabled")
+            logger.warning("GROQ_API_KEYS not provided, AI functionality disabled")
         
         # Fallback to OpenAI if available (for compatibility)
         if not self.client and self.ai_config.openai_api_key:

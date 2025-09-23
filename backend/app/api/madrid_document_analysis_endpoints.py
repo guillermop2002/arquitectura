@@ -229,14 +229,14 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     # Almacenar documento en Neo4j
                     try:
                         neo4j_manager.create_document_node({
-                            'document_id': f"{project_id}_{document_name}",
+                            'id': f"{project_id}_{document_name}",
+                            'name': document_name,
+                            'type': 'memoria',
                             'document_name': document_name,
-                            'document_type': 'memoria',
-                            'pages_count': pages_count,
+                            'pages': pages_count,
                             'confidence': classification.confidence,
-                            'key_findings': getattr(analysis_result, 'key_findings', []),
-                            'project_id': project_id
-                        })
+                            'key_findings': getattr(analysis_result, 'key_findings', [])
+                        }, project_id)
                         logger.info(f"Documento almacenado en Neo4j: {document_name}")
                     except Exception as neo4j_error:
                         logger.warning(f"Error almacenando documento en Neo4j: {neo4j_error}")
@@ -367,14 +367,14 @@ async def analyze_documents(request: DocumentAnalysisRequest, background_tasks: 
                     # Almacenar documento en Neo4j
                     try:
                         neo4j_manager.create_document_node({
-                            'document_id': f"{project_id}_{document_name}",
+                            'id': f"{project_id}_{document_name}",
+                            'name': document_name,
+                            'type': 'plano',
                             'document_name': document_name,
-                            'document_type': 'plano',
-                            'pages_count': pages_count,
+                            'pages': pages_count,
                             'confidence': classification.confidence,
-                            'key_findings': getattr(analysis_result, 'key_findings', []),
-                            'project_id': project_id
-                        })
+                            'key_findings': getattr(analysis_result, 'key_findings', [])
+                        }, project_id)
                         logger.info(f"Documento almacenado en Neo4j: {document_name}")
                     except Exception as neo4j_error:
                         logger.warning(f"Error almacenando documento en Neo4j: {neo4j_error}")

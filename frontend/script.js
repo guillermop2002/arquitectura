@@ -1724,29 +1724,55 @@ class MadridVerificationSystem {
         let html = '<div class="final-checklist">';
         html += '<h4><i class="fas fa-clipboard-check text-primary"></i> Checklist Final de Verificación</h4>';
         
-        // Resumen general
-        html += '<div class="checklist-summary mb-4">';
-        html += '<div class="row">';
-        html += '<div class="col-md-3">';
-        html += `<div class="card text-center">`;
-        html += `<div class="card-body">`;
-        html += `<h5 class="card-title text-primary">${checklist.overall_completion.toFixed(1)}%</h5>`;
-        html += '<p class="card-text">Completado</p>';
-        html += '</div></div></div>';
-        
-        html += '<div class="col-md-3">';
-        html += `<div class="card text-center">`;
-        html += `<div class="card-body">`;
-        html += `<h5 class="card-title text-success">${checklist.completed_items}</h5>`;
-        html += '<p class="card-text">Completados</p>';
-        html += '</div></div></div>';
-        
-        html += '<div class="col-md-3">';
-        html += `<div class="card text-center">`;
-        html += `<div class="card-body">`;
-        html += `<h5 class="card-title text-warning">${checklist.total_items - checklist.completed_items}</h5>`;
-        html += '<p class="card-text">Pendientes</p>';
-        html += '</div></div></div>';
+        // Verificar si es el formato simplificado nuevo
+        if (checklist.total_incumplimientos !== undefined) {
+            // Nuevo formato simplificado
+            html += '<div class="checklist-summary mb-4">';
+            html += '<div class="row">';
+            html += '<div class="col-md-4">';
+            html += `<div class="card text-center">`;
+            html += `<div class="card-body">`;
+            html += `<h5 class="card-title ${checklist.total_incumplimientos === 0 ? 'text-success' : 'text-danger'}">${checklist.total_incumplimientos}</h5>`;
+            html += '<p class="card-text">Incumplimientos Detectados</p>';
+            html += '</div></div></div>';
+            
+            html += '<div class="col-md-4">';
+            html += `<div class="card text-center">`;
+            html += `<div class="card-body">`;
+            html += `<h5 class="card-title text-info">${checklist.project_id || 'N/A'}</h5>`;
+            html += '<p class="card-text">ID Proyecto</p>';
+            html += '</div></div></div>';
+            
+            html += '<div class="col-md-4">';
+            html += `<div class="card text-center">`;
+            html += `<div class="card-body">`;
+            html += `<h5 class="card-title ${checklist.status === 'completed' ? 'text-success' : 'text-warning'}">${checklist.status || 'N/A'}</h5>`;
+            html += '<p class="card-text">Estado</p>';
+            html += '</div></div></div>';
+        } else {
+            // Formato anterior (para compatibilidad)
+            html += '<div class="checklist-summary mb-4">';
+            html += '<div class="row">';
+            html += '<div class="col-md-3">';
+            html += `<div class="card text-center">`;
+            html += `<div class="card-body">`;
+            html += `<h5 class="card-title text-primary">${(checklist.overall_completion || 0).toFixed(1)}%</h5>`;
+            html += '<p class="card-text">Completado</p>';
+            html += '</div></div></div>';
+            
+            html += '<div class="col-md-3">';
+            html += `<div class="card text-center">`;
+            html += `<div class="card-body">`;
+            html += `<h5 class="card-title text-success">${checklist.completed_items || 0}</h5>`;
+            html += '<p class="card-text">Completados</p>';
+            html += '</div></div></div>';
+            
+            html += '<div class="col-md-3">';
+            html += `<div class="card text-center">`;
+            html += `<div class="card-body">`;
+            html += `<h5 class="card-title text-warning">${(checklist.total_items || 0) - (checklist.completed_items || 0)}</h5>`;
+            html += '<p class="card-text">Pendientes</p>';
+            html += '</div></div></div>';
         
         html += '<div class="col-md-3">';
         html += `<div class="card text-center">`;
@@ -1757,12 +1783,41 @@ class MadridVerificationSystem {
         
         html += '</div></div>';
         
-        // Categorías del checklist
-        html += '<div class="checklist-categories">';
-        html += '<h5>Categorías de Verificación</h5>';
-        html += '<div class="accordion" id="checklistAccordion">';
-        
-        checklist.categories.forEach((category, index) => {
+        // Mostrar incumplimientos según el formato
+        if (checklist.total_incumplimientos !== undefined) {
+            // Nuevo formato simplificado - Lista de incumplimientos
+            html += '<div class="incumplimientos-section">';
+            html += '<h5><i class="fas fa-exclamation-triangle text-warning"></i> Lista de Incumplimientos</h5>';
+            
+            if (checklist.total_incumplimientos === 0) {
+                html += '<div class="alert alert-success">';
+                html += '<i class="fas fa-check-circle"></i> ¡Excelente! No se detectaron incumplimientos normativos.';
+                html += '</div>';
+            } else {
+                html += '<div class="alert alert-warning">';
+                html += `<i class="fas fa-exclamation-triangle"></i> Se detectaron ${checklist.total_incumplimientos} incumplimientos que requieren atención.`;
+                html += '</div>';
+                
+                html += '<div class="list-group">';
+                checklist.incumplimientos.forEach((incumplimiento, index) => {
+                    html += `<div class="list-group-item">`;
+                    html += `<div class="d-flex w-100 justify-content-between">`;
+                    html += `<h6 class="mb-1 text-danger">${index + 1}. Incumplimiento Detectado</h6>`;
+                    html += '</div>';
+                    html += `<p class="mb-1">${incumplimiento}</p>`;
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+            
+            html += '</div>';
+        } else {
+            // Formato anterior con categorías
+            html += '<div class="checklist-categories">';
+            html += '<h5>Categorías de Verificación</h5>';
+            html += '<div class="accordion" id="checklistAccordion">';
+            
+            (checklist.categories || []).forEach((category, index) => {
             const statusClass = category.completion_percentage >= 100 ? 'success' : 
                                category.completion_percentage >= 70 ? 'warning' : 'danger';
             
@@ -1849,7 +1904,16 @@ class MadridVerificationSystem {
         html += '<button id="exportChecklistBtn" class="btn btn-outline-secondary">';
         html += '<i class="fas fa-download"></i> Exportar Checklist';
         html += '</button>';
-        html += '</div></div></div>';
+            html += '</div></div></div>';
+            html += '</div></div>';
+        }
+        
+        // Fecha y hora del análisis
+        html += '<div class="analysis-timestamp mt-4">';
+        html += '<small class="text-muted">';
+        html += `<i class="fas fa-clock"></i> Análisis generado el: ${checklist.analysis_date ? new Date(checklist.analysis_date).toLocaleString() : new Date().toLocaleString()}`;
+        html += '</small>';
+        html += '</div>';
         
         html += '</div>';
         container.innerHTML = html;
