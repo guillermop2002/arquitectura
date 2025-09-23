@@ -210,9 +210,27 @@ class MadridNormativeApplicator:
             
             applicable_documents = []
             
-            # 1. APLICAR DOCUMENTOS BÁSICOS (siempre)
-            basic_docs = [doc for doc in self.documents.values() 
-                         if doc.type == "basic"]
+            # 1. APLICAR DOCUMENTOS BÁSICOS (con lógica específica para DBSI)
+            basic_docs = []
+            for doc in self.documents.values():
+                if doc.type == "basic":
+                    # Lógica específica para DBSI según el tipo de uso
+                    if doc.name in ["DBSI", "REGLAMENTO INSTALACIONES"]:
+                        primary_use_normalized = self._normalize_building_type(primary_use)
+                        if primary_use_normalized == "industrial":
+                            # Para uso industrial: REGLAMENTO INSTALACIONES.pdf, NO DBSI.pdf
+                            if doc.name == "REGLAMENTO INSTALACIONES":
+                                basic_docs.append(doc)
+                                logger.info(f"Aplicando REGLAMENTO INSTALACIONES para uso industrial")
+                        else:
+                            # Para otros usos: DBSI.pdf, NO REGLAMENTO INSTALACIONES.pdf
+                            if doc.name == "DBSI":
+                                basic_docs.append(doc)
+                                logger.info(f"Aplicando DBSI para uso {primary_use}")
+                    else:
+                        # Todos los demás documentos básicos se aplican normalmente
+                        basic_docs.append(doc)
+            
             applicable_documents.extend(basic_docs)
             logger.info(f"Aplicando {len(basic_docs)} documentos básicos")
             
