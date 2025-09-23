@@ -75,7 +75,7 @@ class AdvancedPlanAnalyzer:
         
         self.logger.info("AdvancedPlanAnalyzer initialized with Groq AI")
     
-    def analyze_plan(self, plan_path: str, project_id: str) -> Dict[str, Any]:
+    async def analyze_plan(self, plan_path: str, project_id: str) -> Dict[str, Any]:
         """
         Analyze a single plan file and extract architectural elements.
         
@@ -116,7 +116,7 @@ class AdvancedPlanAnalyzer:
                 self._build_connectivity_graph(rooms, elements, connectivity_graph)
             
             # Classify elements using Groq AI
-            classified_elements = self._classify_elements_with_groq(all_elements)
+            classified_elements = await self._classify_elements_with_groq(all_elements)
             
             # Analyze normative compliance
             compliance_analysis = self._analyze_normative_compliance(classified_elements, all_rooms)
@@ -307,7 +307,7 @@ class AdvancedPlanAnalyzer:
         except:
             return False
     
-    def _classify_elements_with_groq(self, elements: List[ArchitecturalElement]) -> List[ArchitecturalElement]:
+    async def _classify_elements_with_groq(self, elements: List[ArchitecturalElement]) -> List[ArchitecturalElement]:
         """Classify architectural elements using Groq AI."""
         if not self.ai_client.is_available():
             self.logger.warning("Groq AI client not available, using basic classification")

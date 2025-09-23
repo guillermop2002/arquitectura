@@ -122,7 +122,7 @@ class EnhancedProjectAnalyzerV4:
             
             # 2. FASE 2: Visión por Computador para Planos
             self.logger.info("=== FASE 2: Visión por Computador para Planos ===")
-            plan_analysis = self._analyze_plans_computer_vision(plans_directory, project_id)
+            plan_analysis = await self._analyze_plans_computer_vision(plans_directory, project_id)
             
             # 3. Análisis de Dimensiones
             self.logger.info("=== Análisis de Dimensiones ===")
@@ -276,7 +276,7 @@ class EnhancedProjectAnalyzerV4:
             self.logger.error(f"Error en análisis avanzado de documentos: {e}")
             return {}
     
-    def _analyze_plans_computer_vision(self, plans_directory: str, project_id: str) -> Dict[str, Any]:
+    async def _analyze_plans_computer_vision(self, plans_directory: str, project_id: str) -> Dict[str, Any]:
         """Análisis de planos con visión por computador (Fase 2)"""
         try:
             self.logger.info("Analizando planos con visión por computador...")
@@ -306,7 +306,7 @@ class EnhancedProjectAnalyzerV4:
                     cv_result = self.cv_analyzer.analyze_plan(plan_path)
                     
                     # Análisis específico de planos
-                    plan_result = self.plan_analyzer.analyze_plan(plan_path)
+                    plan_result = await self.plan_analyzer.analyze_plan(plan_path, project_id)
                     
                     # Combinar resultados
                     elements = cv_result.get('elements', []) + plan_result.get('elements', [])
