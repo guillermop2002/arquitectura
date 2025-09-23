@@ -146,7 +146,7 @@ class ReportGenerator:
             }
         }
     
-    def generate_comprehensive_report(self, project_data: Dict[str, Any], 
+    async def generate_comprehensive_report(self, project_data: Dict[str, Any], 
                                     analysis_results: Dict[str, Any]) -> Report:
         """Genera un reporte integral completo"""
         try:
@@ -158,7 +158,7 @@ class ReportGenerator:
             sections = []
             
             # 1. Resumen ejecutivo
-            executive_summary = self._generate_executive_summary(project_data, analysis_results)
+            executive_summary = await self._generate_executive_summary(project_data, analysis_results)
             sections.append(executive_summary)
             
             # 2. Visión general del proyecto
@@ -224,7 +224,7 @@ class ReportGenerator:
             self.logger.error(f"Error generando reporte integral: {e}")
             return None
     
-    def _generate_executive_summary(self, project_data: Dict[str, Any], 
+    async def _generate_executive_summary(self, project_data: Dict[str, Any], 
                                   analysis_results: Dict[str, Any]) -> ReportSection:
         """Genera el resumen ejecutivo"""
         try:

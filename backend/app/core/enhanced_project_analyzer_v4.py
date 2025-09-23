@@ -165,7 +165,7 @@ class EnhancedProjectAnalyzerV4:
             
             # 8. Generar reporte integral
             self.logger.info("=== Generación de Reporte Integral ===")
-            report_path = self._generate_comprehensive_report(
+            report_path = await self._generate_comprehensive_report(
                 project_id, document_analysis, plan_analysis, dimension_analysis,
                 compliance_analysis, nlp_analysis, rule_analysis, ambiguities, questions
             )
@@ -618,7 +618,7 @@ class EnhancedProjectAnalyzerV4:
             self.logger.error(f"Error en análisis con motor de reglas: {e}")
             return {}
     
-    def _generate_comprehensive_report(self, project_id: str, document_analysis: Dict[str, Any],
+    async def _generate_comprehensive_report(self, project_id: str, document_analysis: Dict[str, Any],
                                      plan_analysis: Dict[str, Any], dimension_analysis: Dict[str, Any],
                                      compliance_analysis: Dict[str, Any], nlp_analysis: Dict[str, Any],
                                      rule_analysis: Dict[str, Any], ambiguities: List[Dict[str, Any]],
@@ -647,7 +647,7 @@ class EnhancedProjectAnalyzerV4:
             }
             
             # Generar reporte
-            report = self.report_generator.generate_comprehensive_report(
+            report = await self.report_generator.generate_comprehensive_report(
                 project_data, analysis_results
             )
             
