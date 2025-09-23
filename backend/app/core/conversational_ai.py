@@ -180,7 +180,7 @@ class ConversationalAI:
             self._add_message(session, "user", user_message)
             
             # Analizar intención
-            intent = await self._analyze_intent(user_message)
+            intent = self._analyze_intent(user_message)
             
             # Procesar según el estado y la intención
             response = self._process_intent(session, user_message, intent)
@@ -214,7 +214,7 @@ class ConversationalAI:
         session.messages.append(message)
         session.updated_at = datetime.now().isoformat()
     
-    async def _analyze_intent(self, message: str) -> str:
+    def _analyze_intent(self, message: str) -> str:
         """Analiza la intención del mensaje"""
         try:
             message_lower = message.lower()
@@ -286,7 +286,7 @@ class ConversationalAI:
             elif intent == "question_about_structure":
                 return self._handle_structure_question(session, message)
             elif intent == "request_explanation":
-                return await self._handle_explanation_request(session, message)
+                return self._handle_explanation_request(session, message)
             elif intent == "confirmation":
                 return self._handle_confirmation(session, message)
             elif intent == "negation":
@@ -464,7 +464,7 @@ class ConversationalAI:
             self.logger.error(f"Error manejando pregunta estructural: {e}")
             return "Lo siento, no puedo acceder a la información estructural en este momento."
     
-    async def _handle_explanation_request(self, session: ConversationSession, message: str) -> str:
+    def _handle_explanation_request(self, session: ConversationSession, message: str) -> str:
         """Maneja solicitudes de explicación"""
         try:
             # Usar IA para generar explicación detallada
@@ -484,7 +484,7 @@ class ConversationalAI:
             Explicación:
             """
             
-            response = await self.ai_client.generate_completion(prompt)
+            response = self.ai_client.generate_completion(prompt)
             
             if response and response.success:
                 return response.content
