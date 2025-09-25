@@ -17,25 +17,25 @@ class BasicoNormativeLoader:
     def get_applicable_normatives(self, project_context: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Determina qué normativas son aplicables según el contexto del proyecto.
-        Esta es la lógica crítica para la Fase 3.
+        LÓGICA ESPECÍFICA: Solo PGOUM + normativas de incendios según especificación exacta.
         """
         applicable_normatives = []
         
         uso_principal = project_context.get("uso_principal", "").lower()
         norma_zonal = project_context.get("norma_zonal", "").lower()
-        grado = project_context.get("grado", "").lower()
         
-        # 1. PGOUM General - SIEMPRE aplicable
+        # 1. PGOUM General - SIEMPRE aplicable (para todos los planos MENOS Planos_Incendios)
         pgoum_general = {
             "name": "PGOUM General",
             "file_path": "Normativa/PGOUM/pgoum_general.pdf",
-            "justification": "Aplicable a todos los proyectos",
+            "justification": "Aplicable a todos los planos excepto Planos_Incendios",
             "priority": 1,
-            "sections_to_apply": "all_relevant"  # No todo el documento
+            "applies_to": "all_except_fire",
+            "sections_to_apply": "general_pgoum"
         }
         applicable_normatives.append(pgoum_general)
         
-        # 2. PGOUM Específico de Uso - Solo si coincide con uso_principal
+        # 2. PGOUM Específico de Uso - Solo si existe el archivo correspondiente
         uso_files = {
             "residencial": "pgoum_residencial.pdf",
             "industrial": "pgoum_industrial.pdf",
@@ -53,15 +53,16 @@ class BasicoNormativeLoader:
         
         if uso_principal in uso_files:
             uso_specific = {
-                "name": f"PGOUM {uso_principal.title()}",
+                "name": f"PGOUM {uso_principal.replace('_', ' ').title()}",
                 "file_path": f"Normativa/PGOUM/Usos/{uso_files[uso_principal]}",
                 "justification": f"Aplicable por uso principal: {uso_principal}",
                 "priority": 2,
+                "applies_to": "all_except_fire",
                 "sections_to_apply": "use_specific"
             }
             applicable_normatives.append(uso_specific)
         
-        # 3. PGOUM Zonal - Solo si coincide con norma_zonal
+        # 3. PGOUM Zonal - Solo si existe la zona
         zona_files = {
             "nz1": "NZ1.pdf",
             "nz2": "NZ2.pdf", 
@@ -80,88 +81,37 @@ class BasicoNormativeLoader:
                 "file_path": f"Normativa/PGOUM/Zonas/{zona_files[norma_zonal]}",
                 "justification": f"Aplicable por norma zonal: {norma_zonal}",
                 "priority": 3,
+                "applies_to": "all_except_fire",
                 "sections_to_apply": "zone_specific"
             }
             applicable_normatives.append(zona_specific)
         
-        # 4. CTE - Según requisitos del proyecto
-        cte_normatives = self._get_applicable_cte(project_context)
-        applicable_normatives.extend(cte_normatives)
-        
-        # 5. Reglamentos específicos
+        # 4. NORMATIVAS DE INCENDIOS - ÚNICAMENTE para Planos_Incendios
         if uso_principal == "industrial":
-            reglamento_industrial = {
+            # Para uso industrial: REGLAMENTO INSTALACIONES
+            fire_regulation = {
                 "name": "Reglamento de Instalaciones Industriales",
                 "file_path": "Normativa/DOCUMENTOS BASICOS/DBSI/REGLAMENTO INSTALACIONES.pdf",
-                "justification": "Aplicable por uso industrial",
+                "justification": "ÚNICAMENTE para Planos_Incendios - uso industrial",
                 "priority": 4,
-                "sections_to_apply": "industrial_specific"
+                "applies_to": "fire_plans_only",
+                "sections_to_apply": "industrial_fire"
             }
-            applicable_normatives.append(reglamento_industrial)
+            applicable_normatives.append(fire_regulation)
         else:
-            # Para usos no industriales, aplicar DBSI
+            # Para cualquier otro uso: DBSI
             dbsi = {
                 "name": "DB-SI (Seguridad en caso de Incendio)",
                 "file_path": "Normativa/DOCUMENTOS BASICOS/DBSI/DBSI.pdf",
-                "justification": "Aplicable por uso no industrial",
+                "justification": "ÚNICAMENTE para Planos_Incendios - uso no industrial",
                 "priority": 4,
+                "applies_to": "fire_plans_only",
                 "sections_to_apply": "fire_safety"
             }
             applicable_normatives.append(dbsi)
         
         return applicable_normatives
     
-    def _get_applicable_cte(self, project_context: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Determinar qué Documentos Básicos del CTE son aplicables"""
-        cte_normatives = []
-        
-        # Analizar requisitos específicos del proyecto
-        requisitos_cte = project_context.get("requisitos_cte", {})
-        superficie = project_context.get("superficie_construida", 0)
-        plantas = project_context.get("plantas", 1)
-        uso_principal = project_context.get("uso_principal", "").lower()
-        
-        # DB-SE (Seguridad Estructural) - Casi siempre aplicable
-        if superficie > 50 or plantas > 1:
-            cte_normatives.append({
-                "name": "DB-SE (Seguridad Estructural)",
-                "file_path": "Normativa/DOCUMENTOS BASICOS/DBSE/DBSE.pdf",
-                "justification": f"Aplicable por superficie ({superficie}m²) y/o plantas ({plantas})",
-                "priority": 5,
-                "sections_to_apply": "structural"
-            })
-        
-        # DB-SUA (Seguridad de Utilización y Accesibilidad)
-        if superficie > 20:  # Prácticamente todos los edificios
-            cte_normatives.append({
-                "name": "DB-SUA (Seguridad de Utilización y Accesibilidad)",
-                "file_path": "Normativa/DOCUMENTOS BASICOS/DBSUA/DBSUA.pdf",
-                "justification": "Aplicable por requisitos de accesibilidad",
-                "priority": 6,
-                "sections_to_apply": "accessibility"
-            })
-        
-        # DB-HE (Ahorro de Energía) - Según uso y superficie
-        if superficie > 100 or uso_principal in ["residencial", "oficinas", "comercial"]:
-            cte_normatives.append({
-                "name": "DB-HE (Ahorro de Energía)",
-                "file_path": "Normativa/DOCUMENTOS BASICOS/DBHE/DBHE.pdf",
-                "justification": f"Aplicable por uso ({uso_principal}) y superficie ({superficie}m²)",
-                "priority": 7,
-                "sections_to_apply": "energy_efficiency"
-            })
-        
-        # DB-HS (Salubridad) - Según uso
-        if uso_principal in ["residencial", "comercial", "oficinas", "dotacional"]:
-            cte_normatives.append({
-                "name": "DB-HS (Salubridad)",
-                "file_path": "Normativa/DOCUMENTOS BASICOS/DBHS/DBHS.pdf",
-                "justification": f"Aplicable por uso: {uso_principal}",
-                "priority": 8,
-                "sections_to_apply": "health"
-            })
-        
-        return cte_normatives
     
     def load_normative_content(self, normative_info: Dict[str, Any]) -> Dict[str, Any]:
         """
