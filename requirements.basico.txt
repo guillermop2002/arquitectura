@@ -1,0 +1,22 @@
+# Dependencias específicas para el módulo /basico
+# Optimizadas para ARM64 y Oracle Cloud
+
+# Framework web
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+
+# IA y procesamiento
+groq==0.15.0
+PyMuPDF==1.25.2
+pytesseract==0.3.14
+Pillow==11.1.0
+
+# Utilidades
+python-multipart==0.0.20
+python-dotenv==1.0.1
+redis==5.2.1
+requests==2.32.3
+
+# Logging y monitoreo
+pydantic==2.10.4
+typing_extensions==4.15.0

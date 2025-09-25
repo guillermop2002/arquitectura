@@ -1,0 +1,39 @@
+FROM python:3.11-slim
+
+# Instalar dependencias del sistema necesarias para /basico
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    tesseract-ocr-spa \
+    libglib2.0-0 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Configurar directorio de trabajo
+WORKDIR /app
+
+# Copiar requirements específicos para basico
+COPY requirements.basico.txt .
+
+# Instalar dependencias Python
+RUN pip install --no-cache-dir -r requirements.basico.txt
+
+# Copiar código de la aplicación
+COPY . .
+
+# Crear directorios necesarios
+RUN mkdir -p uploads sessions logs temp
+
+# Configurar permisos
+RUN chmod -R 755 /app
+
+# Variables de entorno
+ENV PYTHONPATH=/app
+ENV HOST=0.0.0.0
+ENV PORT=8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Comando para ejecutar
+CMD ["python", "basico_server.py"]
