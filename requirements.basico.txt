@@ -8,7 +8,7 @@ uvicorn[standard]==0.32.1
 # IA y procesamiento
 groq==0.15.0
 PyMuPDF==1.25.2
-pytesseract==0.3.14
+pytesseract==0.3.13
 Pillow==11.1.0
 
 # Utilidades
