@@ -68,3 +68,8 @@ async def get_production_status():
         "overall_score": audit_result["overall_score"],
         "readiness_level": audit_result["readiness_level"]
     }
+
+@router.post("/analyze/normatives-preview")
+async def preview_applicable_normatives(project_context: Dict[str, Any]):
+    """Obtener vista previa de normativas aplicables según contexto del proyecto"""
+    return analyzer.normative_loader.get_normative_summary(project_context)
