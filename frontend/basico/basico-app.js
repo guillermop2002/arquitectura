@@ -268,7 +268,11 @@ class BasicoApp {
         const zona = document.getElementById('zonaSelect').value;
         const grado = document.getElementById('gradoSelect').value;
         
+        console.log('🔍 FRONTEND: Actualizando vista previa de normativas');
+        console.log('📋 FRONTEND: Configuración actual:', { uso, zona, grado });
+        
         if (!uso || !zona) {
+            console.log('⚠️  FRONTEND: Falta uso o zona, ocultando vista previa');
             document.getElementById('normativePreview').style.display = 'none';
             return;
         }
@@ -281,6 +285,8 @@ class BasicoApp {
             plantas: 2 // Valor por defecto
         };
 
+        console.log('📤 FRONTEND: Enviando configuración al servidor:', config);
+
         try {
             const response = await fetch(`${this.baseURL}/normatives/preview`, {
                 method: 'POST',
@@ -290,12 +296,29 @@ class BasicoApp {
                 body: JSON.stringify(config)
             });
 
+            console.log('📥 FRONTEND: Respuesta del servidor:', response.status, response.statusText);
+
             if (response.ok) {
                 const data = await response.json();
+                console.log('📊 FRONTEND: Datos recibidos:', data);
+                console.log(`📋 FRONTEND: Total de normativas: ${data.total_normatives}`);
+                
+                // Log detallado de cada normativa
+                data.normatives.forEach((norm, index) => {
+                    const status = norm.file_exists ? '✅' : '❌';
+                    console.log(`${status} FRONTEND: Normativa ${index + 1}: ${norm.name}`);
+                    console.log(`   📁 FRONTEND: Archivo: ${norm.file_path || 'No especificado'}`);
+                    console.log(`   📝 FRONTEND: Justificación: ${norm.justification}`);
+                    console.log(`   🎯 FRONTEND: Aplica a: ${norm.applies_to || 'No especificado'}`);
+                });
+                
                 this.displayNormativePreview(data);
+            } else {
+                const errorText = await response.text();
+                console.error('❌ FRONTEND: Error del servidor:', response.status, errorText);
             }
         } catch (error) {
-            console.error('Error obteniendo vista previa:', error);
+            console.error('❌ FRONTEND: Error de conexión:', error);
         }
         
         this.checkConfigComplete();

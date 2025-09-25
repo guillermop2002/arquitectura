@@ -9,7 +9,21 @@ from fastapi.staticfiles import StaticFiles
 from backend.app.basico.router import router as basico_router
 import uvicorn
 import os
+import logging
 from pathlib import Path
+
+# Configure detailed logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Console output
+    ]
+)
+
+# Set specific logger levels for detailed debugging
+logging.getLogger("basico.normative_loader").setLevel(logging.INFO)
+logging.getLogger("uvicorn.access").setLevel(logging.INFO)
 
 # Configurar variables de entorno por defecto
 os.environ.setdefault('HOST', '0.0.0.0')

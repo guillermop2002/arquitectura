@@ -39,16 +39,16 @@ class BasicoNormativeLoader:
         uso_files = {
             "residencial": "pgoum_residencial.pdf",
             "industrial": "pgoum_industrial.pdf",
-            "garaje-aparcamiento": "pgoum_garaje.pdf",
-            "servicios_terciarios": "pgoum_terciario.pdf",
-            "dotacional_zona_verde": "pgoum_dotacional.pdf",
+            "garaje-aparcamiento": "pgoum_garaje-aparcamiento.pdf",
+            "servicios_terciarios": "pgoum_servicios terciarios.pdf",
+            "dotacional_zona_verde": "pgoum_dotacional zona verde.pdf",
             "dotacional_deportivo": "pgoum_dotacional deportivo.pdf",
-            "dotacional_equipamiento": "pgoum_dotacional.pdf",
-            "dotacional_servicios_publicos": "pgoum_dotacional.pdf",
-            "dotacional_administracion_publica": "pgoum_dotacional.pdf",
-            "dotacional_infraestructural": "pgoum_dotacional.pdf",
-            "dotacional_via_publica": "pgoum_dotacional.pdf",
-            "dotacional_transporte": "pgoum_dotacional.pdf"
+            "dotacional_equipamiento": "pgoum_dotacional equipamiento.pdf",
+            "dotacional_servicios_publicos": "pgoum_dotacional servicios publicos.pdf",
+            "dotacional_administracion_publica": "pgoum_dotacional administracion publica.pdf",
+            "dotacional_infraestructural": "pgoum_dotacional infraestructural.pdf",
+            "dotacional_via_publica": "pgoum_dotacional via publica.pdf",
+            "dotacional_transporte": "pgoum_dotacional transporte.pdf"
         }
         
         if uso_principal in uso_files:
@@ -234,19 +234,47 @@ class BasicoNormativeLoader:
     
     def get_normative_summary(self, project_context: Dict[str, Any]) -> Dict[str, Any]:
         """Obtener resumen de normativas aplicables"""
-        applicable_normatives = self.get_applicable_normatives(project_context)
+        import logging
+        logger = logging.getLogger("basico.normative_loader")
         
-        return {
+        logger.info(f"🔍 Analizando normativas para contexto: {project_context}")
+        
+        applicable_normatives = self.get_applicable_normatives(project_context)
+        logger.info(f"📋 Se encontraron {len(applicable_normatives)} normativas aplicables")
+        
+        normatives_with_status = []
+        for norm in applicable_normatives:
+            file_path = Path(norm["file_path"])
+            file_exists = file_path.exists()
+            
+            logger.info(f"📁 Verificando archivo: {file_path}")
+            logger.info(f"   {'✅' if file_exists else '❌'} Existe: {file_exists}")
+            
+            if not file_exists:
+                logger.warning(f"⚠️  ARCHIVO FALTANTE: {file_path}")
+                # Verificar si el directorio padre existe
+                parent_dir = file_path.parent
+                logger.info(f"📂 Directorio padre: {parent_dir} - Existe: {parent_dir.exists()}")
+                if parent_dir.exists():
+                    # Listar archivos en el directorio
+                    try:
+                        files_in_dir = list(parent_dir.glob("*.pdf"))
+                        logger.info(f"📄 Archivos PDF en {parent_dir}: {[f.name for f in files_in_dir]}")
+                    except Exception as e:
+                        logger.error(f"❌ Error listando archivos: {e}")
+            
+            normatives_with_status.append({
+                "name": norm["name"],
+                "justification": norm["justification"],
+                "priority": norm["priority"],
+                "file_exists": file_exists,
+                "file_path": str(file_path),
+                "applies_to": norm.get("applies_to", "unknown")
+            })
+        
+        result = {
             "total_normatives": len(applicable_normatives),
-            "normatives": [
-                {
-                    "name": norm["name"],
-                    "justification": norm["justification"],
-                    "priority": norm["priority"],
-                    "file_exists": Path(norm["file_path"]).exists()
-                }
-                for norm in applicable_normatives
-            ],
+            "normatives": normatives_with_status,
             "context_used": {
                 "uso_principal": project_context.get("uso_principal"),
                 "norma_zonal": project_context.get("norma_zonal"),
@@ -254,3 +282,6 @@ class BasicoNormativeLoader:
                 "superficie_construida": project_context.get("superficie_construida")
             }
         }
+        
+        logger.info(f"📊 Resultado final: {result}")
+        return result
