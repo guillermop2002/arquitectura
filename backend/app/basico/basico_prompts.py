@@ -19,7 +19,11 @@ IMPORTANTE: Responde SIEMPRE en formato JSON válido, sin texto adicional.
 # FASE 1: VERIFICACIÓN DE DOCUMENTACIÓN
 # =============================================================================
 
-BASICO_VERIFICACION_DOCUMENTOS = f"""{BASICO_GROQ_BASE}
+BASICO_VERIFICACION_DOCUMENTOS = """Eres un experto arquitecto especializado en normativa española del Código Técnico de la Edificación (CTE) y el Anexo I que define los contenidos mínimos del Proyecto Básico.
+
+Tu tarea es analizar documentos de proyectos arquitectónicos y verificar su cumplimiento con la normativa española.
+
+IMPORTANTE: Responde SIEMPRE en formato JSON válido, sin texto adicional.
 
 Analiza el siguiente texto de un proyecto arquitectónico y verifica qué elementos del Anexo I del CTE están presentes.
 
@@ -54,7 +58,7 @@ PRESUPUESTO:
 22. Presupuesto
 
 TEXTO DEL PROYECTO:
-{{texto_proyecto}}
+{texto_proyecto}
 
 Responde en este formato JSON exacto:
 {{
@@ -81,50 +85,132 @@ Responde en este formato JSON exacto:
 # FASE 2: ANÁLISIS DE MEMORIA
 # =============================================================================
 
-BASICO_ANALISIS_MEMORIA = f"""{BASICO_GROQ_BASE}
+BASICO_ANALISIS_MEMORIA = """Eres un experto arquitecto especializado en normativa española del Código Técnico de la Edificación (CTE) y el Anexo I que define los contenidos mínimos del Proyecto Básico.
 
-Analiza la memoria del proyecto y extrae los datos técnicos principales.
+Tu tarea es analizar documentos de proyectos arquitectónicos y verificar su cumplimiento con la normativa española.
+
+IMPORTANTE: Responde SIEMPRE en formato JSON válido, sin texto adicional.
+
+FASE 2: EXTRACCIÓN MÁXIMA DE INFORMACIÓN DE LA MEMORIA
+
+Tu tarea es extraer TODA la información técnica posible de la memoria del proyecto para usar en la Fase 3 de verificación normativa.
 
 TEXTO DE LA MEMORIA:
-{{{{memoria_texto}}}}
+{memoria_texto}
 
-CONFIGURACIÓN DEL PROYECTO:
-{{{{config_proyecto}}}}
+CONFIGURACIÓN DEL PROYECTO (PREVALECE SOBRE MEMORIA):
+{config_proyecto}
+
+INSTRUCCIONES CRÍTICAS:
+1. Extrae TODA información técnica disponible
+2. Busca datos de superficies, alturas, materiales, instalaciones
+3. Identifica sistemas constructivos y estructurales
+4. Detecta requisitos específicos del CTE mencionados
+5. La configuración del proyecto PREVALECE sobre información conflictiva
+6. Si no encuentras un dato, indica "no_especificado"
 
 Responde en este formato JSON exacto:
 {{
   "datos_proyecto": {{
-    "uso_principal": "string",
-    "superficie_total": number,
-    "superficie_construida": number,
-    "plantas": number,
-    "altura_total": number,
-    "ubicacion": "string",
-    "referencia_catastral": "string"
+    "uso_principal": "string (de config o memoria)",
+    "superficie_total": "number o 'no_especificado'",
+    "superficie_construida": "number o 'no_especificado'",
+    "superficie_util": "number o 'no_especificado'",
+    "plantas": "number o 'no_especificado'",
+    "plantas_sobre_rasante": "number o 'no_especificado'",
+    "plantas_bajo_rasante": "number o 'no_especificado'",
+    "altura_total": "number o 'no_especificado'",
+    "altura_libre": "number o 'no_especificado'",
+    "ubicacion": "string o 'no_especificado'",
+    "referencia_catastral": "string o 'no_especificado'",
+    "parcela_superficie": "number o 'no_especificado'",
+    "ocupacion_parcela": "number o 'no_especificado'",
+    "edificabilidad": "number o 'no_especificado'",
+    "retranqueos": {{
+      "frontal": "number o 'no_especificado'",
+      "lateral": "number o 'no_especificado'",
+      "posterior": "number o 'no_especificado'"
+    }},
+    "accesibilidad_mencionada": "boolean",
+    "normativa_aplicable_mencionada": ["norma1", "norma2"] 
   }},
   "analisis_tecnico": {{
-    "sistema_estructural": "string",
-    "tipo_cimentacion": "string",
-    "instalaciones": ["instalacion1", "instalacion2"],
-    "materiales_principales": ["material1", "material2"]
+    "sistema_estructural": "string o 'no_especificado'",
+    "tipo_cimentacion": "string o 'no_especificado'",
+    "forjados": "string o 'no_especificado'",
+    "cubierta_tipo": "string o 'no_especificado'",
+    "fachada_material": "string o 'no_especificado'",
+    "aislamiento_termico": "string o 'no_especificado'",
+    "instalaciones_detectadas": {{
+      "electricidad": "boolean",
+      "fontaneria": "boolean", 
+      "calefaccion": "boolean",
+      "climatizacion": "boolean",
+      "gas": "boolean",
+      "telecomunicaciones": "boolean",
+      "ascensor": "boolean",
+      "incendios": "boolean",
+      "ventilacion": "boolean"
+    }},
+    "sistemas_ambientales": {{
+      "eficiencia_energetica_mencionada": "boolean",
+      "certificacion_energetica": "string o 'no_especificado'",
+      "aislamiento_acustico": "boolean",
+      "ventilacion_natural": "boolean",
+      "iluminacion_natural": "boolean"
+    }},
+    "requisitos_cte": {{
+      "db_si_mencionado": "boolean",
+      "db_sua_mencionado": "boolean", 
+      "db_he_mencionado": "boolean",
+      "db_hs_mencionado": "boolean",
+      "db_hr_mencionado": "boolean",
+      "db_se_mencionado": "boolean",
+      "sectores_incendio": "number o 'no_especificado'",
+      "escaleras_evacuacion": "number o 'no_especificado'",
+      "distancia_evacuacion": "number o 'no_especificado'"
+    }},
+    "materiales_principales": ["material1", "material2"],
+    "normativa_estructural": "string o 'no_especificado'"
   }},
-  "normativa_mencionada": ["norma1", "norma2"],
-  "observaciones": ["observacion1", "observacion2"]
+  "contexto_urbanistico": {{
+    "zona_mencionada": "string o 'no_especificado'",
+    "grado_mencionado": "string o 'no_especificado'",
+    "parametros_urbanisticos": {{
+      "altura_maxima_permitida": "number o 'no_especificado'",
+      "ocupacion_maxima": "number o 'no_especificado'",
+      "edificabilidad_maxima": "number o 'no_especificado'"
+    }}
+  }},
+  "informacion_adicional": {{
+    "presupuesto_mencionado": "number o 'no_especificado'",
+    "plazo_ejecucion": "string o 'no_especificado'",
+    "promotor": "string o 'no_especificado'",
+    "arquitecto": "string o 'no_especificado'",
+    "fecha_proyecto": "string o 'no_especificado'"
+  }},
+  "observaciones_criticas": [
+    "Lista de aspectos importantes detectados que pueden afectar la verificación normativa"
+  ]
 }}
 """
 
-BASICO_VERIFICACION_COHERENCIA = f"""{BASICO_GROQ_BASE}
+BASICO_VERIFICACION_COHERENCIA = """Eres un experto arquitecto especializado en normativa española del Código Técnico de la Edificación (CTE) y el Anexo I que define los contenidos mínimos del Proyecto Básico.
+
+Tu tarea es analizar documentos de proyectos arquitectónicos y verificar su cumplimiento con la normativa española.
+
+IMPORTANTE: Responde SIEMPRE en formato JSON válido, sin texto adicional.
 
 Verifica la coherencia entre los datos extraídos de la memoria y la configuración proporcionada.
 
 DATOS DE LA MEMORIA:
-{{{{datos_memoria}}}}
+{datos_memoria}
 
 CONFIGURACIÓN ESPERADA:
-{{{{config_esperada}}}}
+{config_esperada}
 
 DATOS DE PLANOS (si disponibles):
-{{{{datos_planos}}}}
+{datos_planos}
 
 Responde en este formato JSON exacto:
 {{
@@ -147,18 +233,22 @@ Responde en este formato JSON exacto:
 }}
 """
 
-BASICO_VERIFICACION_NORMATIVA = f"""{BASICO_GROQ_BASE}
+BASICO_VERIFICACION_NORMATIVA = """Eres un experto arquitecto especializado en normativa española del Código Técnico de la Edificación (CTE) y el Anexo I que define los contenidos mínimos del Proyecto Básico.
+
+Tu tarea es analizar documentos de proyectos arquitectónicos y verificar su cumplimiento con la normativa española.
+
+IMPORTANTE: Responde SIEMPRE en formato JSON válido, sin texto adicional.
 
 Verifica el cumplimiento normativo del proyecto según el CTE y normativa española.
 
 TEXTO DEL PROYECTO:
-{{texto_proyecto}}
+{texto_proyecto}
 
 DATOS DEL PROYECTO:
-{{{{datos_proyecto}}}}
+{datos_proyecto}
 
 CONTEXTO DE FASES ANTERIORES:
-{{{{contexto_fases}}}}
+{contexto_fases}
 
 Responde en este formato JSON exacto:
 {{
@@ -206,15 +296,19 @@ Responde en este formato JSON exacto:
 }}
 """
 
-BASICO_VERIFICACION_CTE = f"""{BASICO_GROQ_BASE}
+BASICO_VERIFICACION_CTE = """Eres un experto arquitecto especializado en normativa española del Código Técnico de la Edificación (CTE) y el Anexo I que define los contenidos mínimos del Proyecto Básico.
+
+Tu tarea es analizar documentos de proyectos arquitectónicos y verificar su cumplimiento con la normativa española.
+
+IMPORTANTE: Responde SIEMPRE en formato JSON válido, sin texto adicional.
 
 Verifica específicamente el cumplimiento del Código Técnico de la Edificación.
 
 TEXTO DEL PROYECTO:
-{{texto_proyecto}}
+{texto_proyecto}
 
 CONFIGURACIÓN DEL PROYECTO:
-{{{{config_proyecto}}}}
+{config_proyecto}
 
 Responde en este formato JSON exacto:
 {{
@@ -259,15 +353,19 @@ Responde en este formato JSON exacto:
 }}
 """
 
-BASICO_VERIFICACION_PGOUM = f"""{BASICO_GROQ_BASE}
+BASICO_VERIFICACION_PGOUM = """Eres un experto arquitecto especializado en normativa española del Código Técnico de la Edificación (CTE) y el Anexo I que define los contenidos mínimos del Proyecto Básico.
+
+Tu tarea es analizar documentos de proyectos arquitectónicos y verificar su cumplimiento con la normativa española.
+
+IMPORTANTE: Responde SIEMPRE en formato JSON válido, sin texto adicional.
 
 Verifica el cumplimiento del Plan General de Ordenación Urbana Municipal (PGOUM).
 
 TEXTO DEL PROYECTO:
-{{texto_proyecto}}
+{texto_proyecto}
 
 CONFIGURACIÓN DEL PROYECTO:
-{{{{config_proyecto}}}}
+{config_proyecto}
 
 Responde en este formato JSON exacto:
 {{
@@ -307,7 +405,11 @@ Responde en este formato JSON exacto:
 # ANÁLISIS DE PLANOS CON OCR
 # =============================================================================
 
-BASICO_ANALISIS_PLANOS = f"""{BASICO_GROQ_BASE}
+BASICO_ANALISIS_PLANOS = """Eres un experto arquitecto especializado en normativa española del Código Técnico de la Edificación (CTE) y el Anexo I que define los contenidos mínimos del Proyecto Básico.
+
+Tu tarea es analizar documentos de proyectos arquitectónicos y verificar su cumplimiento con la normativa española.
+
+IMPORTANTE: Responde SIEMPRE en formato JSON válido, sin texto adicional.
 {{
   "planos_detectados": [
     {{
@@ -328,8 +430,8 @@ BASICO_ANALISIS_PLANOS = f"""{BASICO_GROQ_BASE}
   }}
 }}
 
-TEXTO EXTRAÍDO DE PLANOS: {{{{plans_text}}}}
-DATOS DE MEMORIA: {{{{memory_data}}}}"""
+TEXTO EXTRAÍDO DE PLANOS: {plans_text}
+DATOS DE MEMORIA: {memory_data}"""
 
 # =============================================================================
 # FUNCIONES DE UTILIDAD

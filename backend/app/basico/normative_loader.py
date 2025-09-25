@@ -38,11 +38,17 @@ class BasicoNormativeLoader:
         # 2. PGOUM Específico de Uso - Solo si coincide con uso_principal
         uso_files = {
             "residencial": "pgoum_residencial.pdf",
-            "comercial": "pgoum_comercial.pdf", 
             "industrial": "pgoum_industrial.pdf",
-            "dotacional": "pgoum_dotacional.pdf",
-            "deportivo": "pgoum_dotacional deportivo.pdf",
-            "oficinas": "pgoum_oficinas.pdf"
+            "garaje-aparcamiento": "pgoum_garaje.pdf",
+            "servicios_terciarios": "pgoum_terciario.pdf",
+            "dotacional_zona_verde": "pgoum_dotacional.pdf",
+            "dotacional_deportivo": "pgoum_dotacional deportivo.pdf",
+            "dotacional_equipamiento": "pgoum_dotacional.pdf",
+            "dotacional_servicios_publicos": "pgoum_dotacional.pdf",
+            "dotacional_administracion_publica": "pgoum_dotacional.pdf",
+            "dotacional_infraestructural": "pgoum_dotacional.pdf",
+            "dotacional_via_publica": "pgoum_dotacional.pdf",
+            "dotacional_transporte": "pgoum_dotacional.pdf"
         }
         
         if uso_principal in uso_files:
@@ -61,7 +67,11 @@ class BasicoNormativeLoader:
             "nz2": "NZ2.pdf", 
             "nz3": "NZ3.pdf",
             "nz4": "NZ4.pdf",
-            "nz5": "NZ5.pdf"
+            "nz5": "NZ5.pdf",
+            "nz6": "NZ6.pdf",
+            "nz7": "NZ7.pdf",
+            "nz8": "NZ8.pdf",
+            "nz9": "NZ9.pdf"
         }
         
         if norma_zonal in zona_files:

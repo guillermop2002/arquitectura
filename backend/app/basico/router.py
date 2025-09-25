@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi.responses import FileResponse
 from typing import List, Dict, Any, Optional
 import json
+from pathlib import Path
 from .session_manager import BasicoSessionManager
 from .analyzer import BasicoAnalyzer
 from .audit_checker import BasicoAuditChecker
@@ -73,3 +75,26 @@ async def get_production_status():
 async def preview_applicable_normatives(project_context: Dict[str, Any]):
     """Obtener vista previa de normativas aplicables según contexto del proyecto"""
     return analyzer.normative_loader.get_normative_summary(project_context)
+
+@router.get("/")
+async def serve_frontend():
+    """Servir el frontend de la aplicación básica"""
+    frontend_path = Path("frontend/basico/index.html")
+    if frontend_path.exists():
+        return FileResponse(frontend_path, media_type="text/html")
+    else:
+        return {"message": "Frontend no encontrado", "available_endpoints": [
+            "GET /basico/audit/complete",
+            "POST /basico/normatives/preview", 
+            "POST /basico/session/create",
+            "GET /basico/session/{id}/results"
+        ]}
+
+@router.get("/basico-app.js")
+async def serve_js():
+    """Servir archivo JavaScript"""
+    js_path = Path("frontend/basico/basico-app.js")
+    if js_path.exists():
+        return FileResponse(js_path, media_type="application/javascript")
+    else:
+        raise HTTPException(status_code=404, detail="Archivo JavaScript no encontrado")
