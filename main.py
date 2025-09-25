@@ -47,6 +47,8 @@ from backend.app.api.madrid_final_checklist_endpoints import final_checklist_rou
 from backend.app.api.madrid_integration_endpoints import integration_router
 from backend.app.api.madrid_normativa_upload_endpoints import normativa_upload_router
 from backend.app.api.madrid_file_upload_endpoints import file_upload_router
+from backend.app.basico.router import router as basico_router
+from backend.app.basico.audit_checker import BasicoAuditChecker
 
 # Initialize logging
 initialize_logging()
@@ -90,6 +92,9 @@ enhanced_endpoints = EnhancedMainEndpoints(app)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+# Initialize básico audit checker
+basico_audit_checker = BasicoAuditChecker()
 
 @app.on_event("startup")
 async def startup_event():
@@ -149,6 +154,7 @@ app.include_router(final_checklist_router)
 app.include_router(integration_router)
 app.include_router(normativa_upload_router)
 app.include_router(file_upload_router)
+app.include_router(basico_router)
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
@@ -1118,6 +1124,43 @@ async def cleanup_old_conversations(
         logger.error(f"Error cleaning up conversations: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/basico/audit/complete")
+async def basico_complete_audit():
+    """Ejecutar auditoría completa del sistema básico"""
+    try:
+        logger.info("Iniciando auditoría completa del sistema básico desde main")
+        
+        audit_results = basico_audit_checker.run_complete_audit()
+        
+        return {
+            "status": "success",
+            "audit_results": audit_results,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error en auditoría completa: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/basico/production-status")
+async def basico_production_status():
+    """Verificar estado de producción del sistema básico"""
+    try:
+        audit_results = basico_audit_checker.run_complete_audit()
+        production_ready = audit_results['production_readiness']['production_ready']
+        
+        return {
+            "production_ready": production_ready,
+            "overall_score": audit_results['production_readiness']['overall_score'],
+            "readiness_level": audit_results['production_readiness']['readiness_level'],
+            "recommendations": audit_results['recommendations'],
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error verificando estado de producción: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
@@ -1126,3 +1169,4 @@ if __name__ == "__main__":
         reload=config.debug,
         log_level="info"
     )
+

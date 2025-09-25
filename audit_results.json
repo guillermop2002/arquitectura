@@ -1,0 +1,177 @@
+{
+  "audit_timestamp": "2025-09-25T23:46:32.009282",
+  "system_status": "production_ready",
+  "overall_score": 93.1,
+  "readiness_level": "Bueno",
+  "production_ready": true,
+  "individual_scores": {
+    "components": 87.5,
+    "dependencies": 100.0,
+    "configuration": 100.0,
+    "normative_files": 100.0,
+    "ai_integration": 75.0,
+    "ocr_processing": 100.0
+  },
+  "detailed_checks": {
+    "components": {
+      "total_count": 8,
+      "working_count": 7,
+      "component_details": {
+        "SessionManager": {
+          "status": "working",
+          "module_path": "backend.app.basico.session_manager.BasicoSessionManager",
+          "available": true
+        },
+        "Analyzer": {
+          "status": "working",
+          "module_path": "backend.app.basico.analyzer.BasicoAnalyzer",
+          "available": true
+        },
+        "AnexoVerifier": {
+          "status": "working",
+          "module_path": "backend.app.basico.anexo_verifier.BasicoAnexoVerifier",
+          "available": true
+        },
+        "OCRProcessor": {
+          "status": "working",
+          "module_path": "backend.app.basico.ocr_processor.BasicoOCRProcessor",
+          "available": true
+        },
+        "AIClient": {
+          "status": "working",
+          "module_path": "backend.app.basico.ai_client.BasicoAIClient",
+          "available": true
+        },
+        "FileManager": {
+          "status": "working",
+          "module_path": "backend.app.core.file_manager.FileManager",
+          "available": true
+        },
+        "PromptManager": {
+          "status": "not_callable",
+          "module_path": "backend.app.basico.basico_prompts",
+          "available": false
+        },
+        "ConfigManager": {
+          "status": "working",
+          "module_path": "backend.app.core.config.get_config",
+          "available": true
+        }
+      },
+      "all_working": false
+    },
+    "dependencies": {
+      "total_count": 6,
+      "working_count": 6,
+      "dependency_details": {
+        "fastapi": {
+          "available": true,
+          "description": "FastAPI framework",
+          "status": "installed"
+        },
+        "groq": {
+          "available": true,
+          "description": "Groq AI client",
+          "status": "installed"
+        },
+        "PyMuPDF": {
+          "available": true,
+          "description": "PDF processing (fitz)",
+          "status": "installed"
+        },
+        "pytesseract": {
+          "available": true,
+          "description": "OCR processing",
+          "status": "installed"
+        },
+        "redis": {
+          "available": true,
+          "description": "Session storage",
+          "status": "installed"
+        },
+        "Pillow": {
+          "available": true,
+          "description": "Image processing",
+          "status": "installed"
+        }
+      },
+      "all_available": true
+    },
+    "configuration": {
+      "all_configured": true,
+      "checks": {
+        "environment_variables": {
+          "status": "good",
+          "missing_variables": [],
+          "total_required": 6,
+          "found": 6
+        },
+        "directories": {
+          "status": "good",
+          "missing_directories": [],
+          "total_required": 5,
+          "found": 5
+        },
+        "file_permissions": {
+          "status": "good",
+          "permission_issues": [],
+          "checked_paths": [
+            "uploads",
+            "sessions",
+            "logs",
+            "temp"
+          ]
+        },
+        "logging_config": {
+          "status": "good",
+          "logging_available": true
+        }
+      },
+      "working_count": 4,
+      "total_count": 4
+    },
+    "normative_files": {
+      "status": "partial",
+      "checks": {
+        "normativa_directory": {
+          "exists": true,
+          "is_directory": true
+        },
+        "anexo1_json": {
+          "exists": true,
+          "valid_json": true,
+          "structure_valid": false
+        },
+        "normative_files_count": 48
+      },
+      "directory_exists": true,
+      "anexo1_exists": true,
+      "pdf_files_count": 48,
+      "json_files_count": 1
+    },
+    "ai_integration": {
+      "status": "partial",
+      "checks": {
+        "groq_api_key": true,
+        "prompts_available": true,
+        "client_available": false
+      },
+      "prompts_available": true,
+      "config_available": true
+    },
+    "ocr_processing": {
+      "status": "good",
+      "ocr_available": true,
+      "extract_method": "extract_text_from_pdf",
+      "search_method": "extract_text_from_image",
+      "tesseract_config": true
+    }
+  },
+  "recommendations": [
+    "🔧 Reparar componentes con errores",
+    "🤖 Verificar integración con IA"
+  ],
+  "next_steps": [
+    "Mejorar ai_integration (puntuación actual: 75.0%)"
+  ]
+}

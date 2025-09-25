@@ -1,0 +1,381 @@
+{
+  "Proyecto_Basico_Obligatorio": {
+    "Documentos_Analizados": [
+      { "pdf": "", "paginas_totales": null }
+    ],
+    "Memoria": {
+      "Documentos_Memoria": [
+        { "pdf": "", "paginas_totales": null }
+      ],
+      "Memoria_Descriptiva": {
+        "Agentes": {
+          "origen": [
+            { "pdf": "", "paginas": [] }
+          ],
+          "promotor": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "constructor": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "proyectista": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "director_obra": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "director_ejecucion": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          }
+        },
+        "Informacion_Previa": {
+          "origen": [
+            { "pdf": "", "paginas": [] }
+          ],
+          "antecedentes_condicionantes": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "datos_emplazamiento": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "entorno_fisico": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "normativa_urbanistica": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "normativa_en_su_caso": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "datos_edificio_rehabilitacion_reforma_ampliacion": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }],
+            "informes_realizados": {
+              "presente": null,
+              "pages": [],
+              "snippet": "",
+              "origen": [{ "pdf": "", "paginas": [] }]
+            }
+          }
+        },
+        "Descripcion_Proyecto": {
+          "origen": [
+            { "pdf": "", "paginas": [] }
+          ],
+          "descripcion_general": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "programa_necesidades": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "uso_caracteristico": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "otros_usos": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "relacion_entorno": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "cumplimiento_CTE": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "otras_normas": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "geometria_volumen": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "superficies_utiles_y_construidas": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "accesos_evacuacion": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "parametros_sistema_estructural": {
+            "origen": [{ "pdf": "", "paginas": [] }],
+            "cimentacion": {
+              "presente": null,
+              "pages": [],
+              "snippet": "",
+              "origen": [{ "pdf": "", "paginas": [] }]
+            },
+            "estructura_portante": {
+              "presente": null,
+              "pages": [],
+              "snippet": "",
+              "origen": [{ "pdf": "", "paginas": [] }]
+            },
+            "estructura_horizontal": {
+              "presente": null,
+              "pages": [],
+              "snippet": "",
+              "origen": [{ "pdf": "", "paginas": [] }]
+            }
+          },
+          "sistema_compartimentacion": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "sistema_envolvente": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "sistema_acabados": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "sistemas_acondicionamiento": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "sistemas_ambiental": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "sistemas_servicios": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          }
+        },
+        "Prestaciones_Edificio": {
+          "origen": [
+            { "pdf": "", "paginas": [] }
+          ],
+          "prestaciones_por_requisitos_basicos_CTE": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "acuerdos_promotor_proyectista_superan_umbrales": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "limitaciones_uso_edificio": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "dependencias_instalaciones": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          }
+        },
+        "Presupuesto_Aproximado": {
+          "origen": [
+            { "pdf": "", "paginas": [] }
+          ],
+          "presupuesto_y_valoracion": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          }
+        }
+      },
+      "Memoria_Constructiva": {
+        "origen": [
+          { "pdf": "", "paginas": [] }
+        ],
+        "Sustentacion_del_edificio": {
+          "origen": [
+            { "pdf": "", "paginas": [] }
+          ],
+          "justificacion_caracteristicas_suelo": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "parametros_para_cimentacion": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          }
+        },
+        "Seguridad_Incendio": {
+          "origen": [
+            { "pdf": "", "paginas": [] }
+          ],
+          "justificacion_prestaciones_seguridad_incendio": {
+            "presente": null,
+            "pages": [],
+            "snippet": "",
+            "origen": [{ "pdf": "", "paginas": [] }]
+          }
+        }
+      }
+    },
+    "Planos": {
+      "Documentos_Planos": [
+        { "pdf": "", "paginas_totales": null }
+      ],
+      "Plano_Situacion": {
+        "presente": null,
+        "origen": [{ "pdf": "", "paginas": [] }],
+        "referencia_planeamiento_puntos_localizables_norte": {
+          "presente": null,
+          "origen": [{ "pdf": "", "paginas": [] }]
+        }
+      },
+      "Plano_Emplazamiento": {
+        "presente": null,
+        "origen": [{ "pdf": "", "paginas": [] }],
+        "justificacion_urbanistica_alineaciones_retranqueos": {
+          "presente": null,
+          "origen": [{ "pdf": "", "paginas": [] }]
+        }
+      },
+      "Plano_Urbanizacion": {
+        "presente": null,
+        "origen": [{ "pdf": "", "paginas": [] }],
+        "red_viaria_acometidas": {
+          "presente": null,
+          "origen": [{ "pdf": "", "paginas": [] }]
+        }
+      },
+      "Plantas_Generales": {
+        "presente": null,
+        "origen": [{ "pdf": "", "paginas": [] }],
+        "acotadas_indicacion_escala": {
+          "presente": null,
+          "origen": [{ "pdf": "", "paginas": [] }]
+        },
+        "indicacion_de_usos": {
+          "presente": null,
+          "origen": [{ "pdf": "", "paginas": [] }]
+        },
+        "elementos_fijos_y_mobiliario": {
+          "presente": null,
+          "origen": [{ "pdf": "", "paginas": [] }]
+        }
+      },
+      "Planos_Incendios": {
+        "presente": null,
+        "origen": [{ "pdf": "", "paginas": [] }]
+      },
+      "Planos_Cubiertas": {
+        "presente": null,
+        "origen": [{ "pdf": "", "paginas": [] }],
+        "pendientes_puntos_recogida_aguas": {
+          "presente": null,
+          "origen": [{ "pdf": "", "paginas": [] }]
+        }
+      },
+      "Alzados_Secciones": {
+        "presente": null,
+        "origen": [{ "pdf": "", "paginas": [] }],
+        "acotados_indicacion_escala": {
+          "presente": null,
+          "origen": [{ "pdf": "", "paginas": [] }]
+        },
+        "cotas_altura_plantas": {
+          "presente": null,
+          "origen": [{ "pdf": "", "paginas": [] }]
+        },
+        "gruesos_forjado": {
+          "presente": null,
+          "origen": [{ "pdf": "", "paginas": [] }]
+        },
+        "alturas_totales": {
+          "presente": null,
+          "origen": [{ "pdf": "", "paginas": [] }],
+          "altura_coronacion": {
+            "presente": null,
+            "origen": [{ "pdf": "", "paginas": [] }]
+          },
+          "altura_cornisa": {
+            "presente": null,
+            "origen": [{ "pdf": "", "paginas": [] }]
+          }
+        }
+      }
+    },
+    "Resumen_Resultados": {
+      "encontrado_total": null,
+      "faltan_items": [],
+      "observaciones": ""
+    }
+  }
+}
