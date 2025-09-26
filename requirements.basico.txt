@@ -10,6 +10,7 @@ groq==0.15.0
 PyMuPDF==1.25.2
 pytesseract==0.3.13
 Pillow==11.1.0
+numpy==1.26.4
 
 # Utilidades
 python-multipart==0.0.20
