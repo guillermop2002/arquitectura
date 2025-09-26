@@ -13,7 +13,7 @@ Pillow==11.1.0
 numpy==1.26.4
 
 # Procesamiento de imágenes avanzado (Parte 1)
-opencv-python==4.10.0.84
+opencv-python-headless==4.10.0.84
 scikit-image==0.24.0
 pdf2image==1.17.0
 
