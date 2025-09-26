@@ -3,12 +3,60 @@
  * JavaScript principal para manejo de frontend
  */
 
+// Sistema de logging detallado para F12
+class FrontendLogger {
+    constructor() {
+        this.logLevel = 'DEBUG';
+        this.sessionId = Math.random().toString(36).substr(2, 9);
+        console.log(`🔧 FRONTEND LOGGER INICIADO - Sesión: ${this.sessionId}`);
+    }
+
+    debug(message, data = null) {
+        const timestamp = new Date().toISOString();
+        console.debug(`[${timestamp}] 🔍 DEBUG:`, message, data || '');
+    }
+
+    info(message, data = null) {
+        const timestamp = new Date().toISOString();
+        console.info(`[${timestamp}] ℹ️  INFO:`, message, data || '');
+    }
+
+    warn(message, data = null) {
+        const timestamp = new Date().toISOString();
+        console.warn(`[${timestamp}] ⚠️  WARN:`, message, data || '');
+    }
+
+    error(message, data = null) {
+        const timestamp = new Date().toISOString();
+        console.error(`[${timestamp}] ❌ ERROR:`, message, data || '');
+    }
+
+    api(method, url, data = null) {
+        const timestamp = new Date().toISOString();
+        console.group(`[${timestamp}] 🌐 API ${method.toUpperCase()}: ${url}`);
+        if (data) console.log('📤 Enviando:', data);
+        console.groupEnd();
+    }
+
+    apiResponse(status, data, duration) {
+        const timestamp = new Date().toISOString();
+        const icon = status >= 200 && status < 300 ? '✅' : '❌';
+        console.group(`[${timestamp}] ${icon} RESPUESTA ${status} (${duration}ms)`);
+        console.log('📥 Recibido:', data);
+        console.groupEnd();
+    }
+}
+
+const flog = new FrontendLogger();
+
 class BasicoApp {
     constructor() {
         this.baseURL = '/basico';
         this.sessionId = null;
         this.uploadedFiles = {};
         this.projectConfig = {};
+        
+        flog.info('🚀 BasicoApp inicializado');
         
         // Configuración de zonas y grados
         this.zoneGrades = {
@@ -268,11 +316,11 @@ class BasicoApp {
         const zona = document.getElementById('zonaSelect').value;
         const grado = document.getElementById('gradoSelect').value;
         
-        console.log('🔍 FRONTEND: Actualizando vista previa de normativas');
-        console.log('📋 FRONTEND: Configuración actual:', { uso, zona, grado });
+        flog.info('updateNormativePreview iniciado');
+        flog.debug('Valores extraídos del formulario', { uso, zona, grado });
         
         if (!uso || !zona) {
-            console.log('⚠️  FRONTEND: Falta uso o zona, ocultando vista previa');
+            flog.warn('Faltan uso o zona requeridos');
             document.getElementById('normativePreview').style.display = 'none';
             return;
         }
@@ -285,9 +333,11 @@ class BasicoApp {
             plantas: 2 // Valor por defecto
         };
 
-        console.log('📤 FRONTEND: Enviando configuración al servidor:', config);
+        flog.api('POST', `${this.baseURL}/normatives/preview`, config);
 
         try {
+            const startTime = performance.now();
+            
             const response = await fetch(`${this.baseURL}/normatives/preview`, {
                 method: 'POST',
                 headers: {
@@ -296,29 +346,36 @@ class BasicoApp {
                 body: JSON.stringify(config)
             });
 
-            console.log('📥 FRONTEND: Respuesta del servidor:', response.status, response.statusText);
+            const duration = Math.round(performance.now() - startTime);
 
             if (response.ok) {
                 const data = await response.json();
-                console.log('📊 FRONTEND: Datos recibidos:', data);
-                console.log(`📋 FRONTEND: Total de normativas: ${data.total_normatives}`);
+                flog.apiResponse(response.status, data, duration);
+                flog.info(`Total normativas recibidas: ${data.total_normatives}`);
                 
-                // Log detallado de cada normativa
+                // Log detallado de cada normativa con más información
                 data.normatives.forEach((norm, index) => {
-                    const status = norm.file_exists ? '✅' : '❌';
-                    console.log(`${status} FRONTEND: Normativa ${index + 1}: ${norm.name}`);
-                    console.log(`   📁 FRONTEND: Archivo: ${norm.file_path || 'No especificado'}`);
-                    console.log(`   📝 FRONTEND: Justificación: ${norm.justification}`);
-                    console.log(`   🎯 FRONTEND: Aplica a: ${norm.applies_to || 'No especificado'}`);
+                    const status = norm.file_exists ? '✅ EXISTE' : '❌ NO EXISTE';
+                    flog.debug(`Normativa ${index + 1}: ${norm.name}`, {
+                        status: status,
+                        justification: norm.justification,
+                        priority: norm.priority,
+                        file_exists: norm.file_exists
+                    });
                 });
                 
                 this.displayNormativePreview(data);
             } else {
                 const errorText = await response.text();
-                console.error('❌ FRONTEND: Error del servidor:', response.status, errorText);
+                flog.apiResponse(response.status, errorText, duration);
+                flog.error('Error en respuesta del servidor', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    error: errorText
+                });
             }
         } catch (error) {
-            console.error('❌ FRONTEND: Error de conexión:', error);
+            flog.error('Error en fetch de normativas', error);
         }
         
         this.checkConfigComplete();

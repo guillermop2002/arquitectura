@@ -1,7 +1,17 @@
 import json
+import logging
 from typing import Dict, Any, List
 from pathlib import Path
 from .ocr_processor import BasicoOCRProcessor
+
+# Configurar logger específico con logs detallados
+logger = logging.getLogger("basico.normative_loader")
+logger.setLevel(logging.DEBUG)
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 class BasicoNormativeLoader:
     """
@@ -19,10 +29,13 @@ class BasicoNormativeLoader:
         Determina qué normativas son aplicables según el contexto del proyecto.
         LÓGICA ESPECÍFICA: Solo PGOUM + normativas de incendios según especificación exacta.
         """
+        logger.info(f"🔍 INICIANDO get_applicable_normatives con contexto: {project_context}")
         applicable_normatives = []
         
         uso_principal = project_context.get("uso_principal", "").lower()
         norma_zonal = project_context.get("norma_zonal", "").lower()
+        
+        logger.debug(f"📋 Parámetros extraídos - Uso: '{uso_principal}', Zona: '{norma_zonal}'")
         
         # 1. PGOUM General - SIEMPRE aplicable (para todos los planos MENOS Planos_Incendios)
         pgoum_general = {
@@ -51,16 +64,26 @@ class BasicoNormativeLoader:
             "dotacional_transporte": "pgoum_dotacional transporte.pdf"
         }
         
+        logger.debug(f"📋 Mapeo de archivos de uso configurado: {uso_files}")
+        
         if uso_principal in uso_files:
+            archivo_uso = uso_files[uso_principal]
+            ruta_completa_uso = f"Normativa/PGOUM/Usos/{archivo_uso}"
+            logger.info(f"✅ USO ENCONTRADO: '{uso_principal}' -> archivo: '{archivo_uso}'")
+            logger.debug(f"📁 Ruta completa uso: '{ruta_completa_uso}'")
+            
             uso_specific = {
                 "name": f"PGOUM {uso_principal.replace('_', ' ').title()}",
-                "file_path": f"Normativa/PGOUM/Usos/{uso_files[uso_principal]}",
+                "file_path": ruta_completa_uso,
                 "justification": f"Aplicable por uso principal: {uso_principal}",
                 "priority": 2,
                 "applies_to": "all_except_fire",
                 "sections_to_apply": "use_specific"
             }
             applicable_normatives.append(uso_specific)
+        else:
+            logger.warning(f"⚠️  USO NO ENCONTRADO: '{uso_principal}' no está en uso_files")
+            logger.debug(f"📋 Usos disponibles: {list(uso_files.keys())}")
         
         # 3. PGOUM Zonal - Solo si existe la zona
         zona_files = {
@@ -76,15 +99,23 @@ class BasicoNormativeLoader:
         }
         
         if norma_zonal in zona_files:
+            archivo_zona = zona_files[norma_zonal]
+            ruta_completa_zona = f"Normativa/PGOUM/Zonas/{archivo_zona}"
+            logger.info(f"✅ ZONA ENCONTRADA: '{norma_zonal}' -> archivo: '{archivo_zona}'")
+            logger.debug(f"📁 Ruta completa zona: '{ruta_completa_zona}'")
+            
             zona_specific = {
                 "name": f"Norma Zonal {norma_zonal.upper()}",
-                "file_path": f"Normativa/PGOUM/Zonas/{zona_files[norma_zonal]}",
+                "file_path": ruta_completa_zona,
                 "justification": f"Aplicable por norma zonal: {norma_zonal}",
                 "priority": 3,
                 "applies_to": "all_except_fire",
                 "sections_to_apply": "zone_specific"
             }
             applicable_normatives.append(zona_specific)
+        else:
+            logger.warning(f"⚠️  ZONA NO ENCONTRADA: '{norma_zonal}' no está en zona_files")
+            logger.debug(f"📋 Zonas disponibles: {list(zona_files.keys())}")
         
         # 4. NORMATIVAS DE INCENDIOS - ÚNICAMENTE para Planos_Incendios
         if uso_principal == "industrial":
@@ -233,48 +264,42 @@ class BasicoNormativeLoader:
             return full_text[:3000]
     
     def get_normative_summary(self, project_context: Dict[str, Any]) -> Dict[str, Any]:
-        """Obtener resumen de normativas aplicables"""
-        import logging
-        logger = logging.getLogger("basico.normative_loader")
-        
-        logger.info(f"🔍 Analizando normativas para contexto: {project_context}")
-        
+        """Obtener resumen de normativas aplicables con logs detallados"""
+        logger.info(f"🎯 GENERANDO RESUMEN DE NORMATIVAS para contexto: {project_context}")
         applicable_normatives = self.get_applicable_normatives(project_context)
-        logger.info(f"📋 Se encontraron {len(applicable_normatives)} normativas aplicables")
         
-        normatives_with_status = []
+        logger.info(f"📊 Total de normativas encontradas: {len(applicable_normatives)}")
+        
+        normatives_with_existence = []
         for norm in applicable_normatives:
             file_path = Path(norm["file_path"])
             file_exists = file_path.exists()
             
-            logger.info(f"📁 Verificando archivo: {file_path}")
+            logger.info(f"🔍 VERIFICANDO ARCHIVO: '{norm['name']}'")
+            logger.debug(f"   📁 Ruta: {file_path}")
+            logger.debug(f"   📁 Ruta absoluta: {file_path.absolute()}")
             logger.info(f"   {'✅' if file_exists else '❌'} Existe: {file_exists}")
             
             if not file_exists:
-                logger.warning(f"⚠️  ARCHIVO FALTANTE: {file_path}")
-                # Verificar si el directorio padre existe
+                logger.warning(f"⚠️  ARCHIVO NO ENCONTRADO: {file_path}")
+                # Verificar directorio padre
                 parent_dir = file_path.parent
-                logger.info(f"📂 Directorio padre: {parent_dir} - Existe: {parent_dir.exists()}")
+                logger.debug(f"   📂 Directorio padre: {parent_dir}")
+                logger.debug(f"   📂 Directorio padre existe: {parent_dir.exists()}")
                 if parent_dir.exists():
-                    # Listar archivos en el directorio
-                    try:
-                        files_in_dir = list(parent_dir.glob("*.pdf"))
-                        logger.info(f"📄 Archivos PDF en {parent_dir}: {[f.name for f in files_in_dir]}")
-                    except Exception as e:
-                        logger.error(f"❌ Error listando archivos: {e}")
+                    archivos_en_directorio = list(parent_dir.glob("*.pdf"))
+                    logger.debug(f"   📋 Archivos PDF en directorio: {[f.name for f in archivos_en_directorio]}")
             
-            normatives_with_status.append({
+            normatives_with_existence.append({
                 "name": norm["name"],
                 "justification": norm["justification"],
                 "priority": norm["priority"],
-                "file_exists": file_exists,
-                "file_path": str(file_path),
-                "applies_to": norm.get("applies_to", "unknown")
+                "file_exists": file_exists
             })
         
         result = {
             "total_normatives": len(applicable_normatives),
-            "normatives": normatives_with_status,
+            "normatives": normatives_with_existence,
             "context_used": {
                 "uso_principal": project_context.get("uso_principal"),
                 "norma_zonal": project_context.get("norma_zonal"),
@@ -283,5 +308,6 @@ class BasicoNormativeLoader:
             }
         }
         
-        logger.info(f"📊 Resultado final: {result}")
+        logger.info(f"📋 RESUMEN COMPLETADO - {len([n for n in normatives_with_existence if n['file_exists']])} archivos existen, {len([n for n in normatives_with_existence if not n['file_exists']])} no existen")
+        
         return result
