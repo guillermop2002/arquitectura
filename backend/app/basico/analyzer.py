@@ -365,40 +365,52 @@ class BasicoAnalyzer:
         return self._parse_ai_json_response(response)
     
     async def _analyze_planos_with_ai(self, session_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Análisis inteligente de planos con IA - EXTRACCIÓN COMPLETA DE DIMENSIONES"""
+        """Análisis inteligente de planos con IA - EXTRACCIÓN COMPLETA DE DIMENSIONES Y OCR MEJORADO"""
         planos_texts = {}
+        dimensional_data = {}
         
-        # Extraer texto de TODOS los archivos PDF (no solo los que parecen planos)
+        # Extraer texto de TODOS los archivos PDF con OCR mejorado
         for file_info in session_data.get("files", []):
             file_path = file_info["path"]
             if file_path.lower().endswith('.pdf'):
+                # Usar OCR mejorado con análisis dimensional
                 text_data = self.ocr_processor.extract_text_from_pdf(file_path)
                 planos_texts[file_info["filename"]] = text_data
+                
+                # Extraer datos dimensionales
+                if "dimensional_analysis" in text_data:
+                    dimensional_data[file_info["filename"]] = text_data["dimensional_analysis"]
         
         if not planos_texts:
             return {"message": "No se encontraron archivos para analizar", "dimensiones_extraidas": {}}
         
         combined_planos = self._combine_texts(planos_texts)
         
-        # Crear prompt inteligente para análisis completo de planos
+        # Combinar análisis dimensional de todos los archivos
+        combined_dimensional_analysis = self._combine_dimensional_analysis(dimensional_data)
+        
+        # Crear prompt inteligente para análisis completo de planos con datos dimensionales
         intelligent_planos_prompt = f"""
         {BASICO_GROQ_BASE}
         
-        ANÁLISIS INTELIGENTE COMPLETO DE PLANOS Y DOCUMENTACIÓN GRÁFICA
+        ANÁLISIS INTELIGENTE COMPLETO DE PLANOS CON OCR MEJORADO Y ANÁLISIS DIMENSIONAL
         
         DOCUMENTACIÓN GRÁFICA COMPLETA:
         {combined_planos[:12000]}
         
+        ANÁLISIS DIMENSIONAL EXTRAÍDO POR OCR:
+        {json.dumps(combined_dimensional_analysis, indent=2)}
+        
         INSTRUCCIONES PARA ANÁLISIS INTELIGENTE DE PLANOS:
         
-        Analiza TODA la documentación gráfica y extrae CUALQUIER información técnica que pueda ser relevante para la verificación normativa. Busca información en:
+        Analiza TODA la documentación gráfica y extrae CUALQUIER información técnica que pueda ser relevante para la verificación normativa. Usa los datos dimensionales extraídos por OCR como base para tu análisis. Busca información en:
         
-        1. **DIMENSIONES Y MEDIDAS:**
-           - Superficies totales y por planta
-           - Alturas totales y por planta
-           - Dimensiones de espacios, habitaciones, pasillos
-           - Cotas, escalas, medidas en planos
-           - Volúmenes construidos
+        1. **DIMENSIONES Y MEDIDAS (usando datos OCR):**
+           - Superficies totales y por planta (usar áreas extraídas)
+           - Alturas totales y por planta (usar alturas extraídas)
+           - Dimensiones de espacios, habitaciones, pasillos (usar dimensiones extraídas)
+           - Cotas, escalas, medidas en planos (usar análisis estadístico)
+           - Volúmenes construidos (calcular a partir de dimensiones)
         
         2. **ELEMENTOS CONSTRUCTIVOS:**
            - Tipos de estructura (pilares, vigas, muros)
@@ -450,10 +462,10 @@ class BasicoAnalyzer:
         Devuelve un JSON con la siguiente estructura:
         {{
             "dimensiones_extraidas": {{
-                "superficie_total": "valor en m²",
-                "superficie_util": "valor en m²",
-                "superficie_construida": "valor en m²",
-                "altura_total": "valor en m",
+                "superficie_total": "valor en m² (usar datos OCR)",
+                "superficie_util": "valor en m² (usar datos OCR)",
+                "superficie_construida": "valor en m² (usar datos OCR)",
+                "altura_total": "valor en m (usar datos OCR)",
                 "plantas": "número de plantas",
                 "dimensiones_por_planta": {{
                     "planta_baja": "superficie en m²",
@@ -469,6 +481,13 @@ class BasicoAnalyzer:
                     "habitaciones": "dimensiones típicas",
                     "pasillos": "anchos mínimos",
                     "escaleras": "dimensiones"
+                }},
+                "datos_ocr_utilizados": {{
+                    "total_dimensiones": "número de dimensiones extraídas",
+                    "total_areas": "número de áreas extraídas",
+                    "total_alturas": "número de alturas extraídas",
+                    "rango_mas_comun": "rango más común de valores",
+                    "valores_atipicos": "valores atípicos detectados"
                 }}
             }},
             "elementos_constructivos": {{
@@ -552,6 +571,12 @@ class BasicoAnalyzer:
                 "dimensiones_consistentes": "verificación",
                 "usos_consistentes": "verificación",
                 "inconsistencias": ["lista de inconsistencias"]
+            }},
+            "calidad_ocr": {{
+                "metodo_extraccion": "método principal usado",
+                "confianza_promedio": "confianza promedio del OCR",
+                "dimensiones_extraidas": "número de dimensiones extraídas",
+                "calidad_datos": "evaluación de la calidad de los datos extraídos"
             }}
         }}
         """
@@ -649,6 +674,152 @@ class BasicoAnalyzer:
         response = await self.ai_client.generate_response(coherence_prompt, max_tokens=2000)
         
         return self._parse_ai_json_response(response)
+    
+    def _combine_dimensional_analysis(self, dimensional_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Combinar análisis dimensional de múltiples archivos"""
+        
+        try:
+            combined = {
+                'total_files_analyzed': len(dimensional_data),
+                'total_dimensions': 0,
+                'total_areas': 0,
+                'total_heights': 0,
+                'dimension_summary': {},
+                'area_summary': {},
+                'height_summary': {},
+                'statistical_analysis': {},
+                'file_analysis': {}
+            }
+            
+            all_dimensions = []
+            all_areas = []
+            all_heights = []
+            
+            for filename, analysis in dimensional_data.items():
+                if not analysis or 'error' in analysis:
+                    continue
+                
+                combined['file_analysis'][filename] = {
+                    'dimensions': analysis.get('total_dimensions', 0),
+                    'areas': analysis.get('total_areas', 0),
+                    'heights': analysis.get('total_heights', 0)
+                }
+                
+                combined['total_dimensions'] += analysis.get('total_dimensions', 0)
+                combined['total_areas'] += analysis.get('total_areas', 0)
+                combined['total_heights'] += analysis.get('total_heights', 0)
+                
+                # Acumular valores para análisis estadístico
+                if 'dimension_summary' in analysis and 'values' in analysis['dimension_summary']:
+                    all_dimensions.extend(analysis['dimension_summary']['values'])
+                
+                if 'area_summary' in analysis and 'values' in analysis['area_summary']:
+                    all_areas.extend(analysis['area_summary']['values'])
+                
+                if 'height_summary' in analysis and 'values' in analysis['height_summary']:
+                    all_heights.extend(analysis['height_summary']['values'])
+            
+            # Análisis estadístico combinado
+            if all_dimensions:
+                combined['dimension_summary'] = {
+                    'count': len(all_dimensions),
+                    'min': min(all_dimensions),
+                    'max': max(all_dimensions),
+                    'avg': sum(all_dimensions) / len(all_dimensions),
+                    'values': all_dimensions
+                }
+            
+            if all_areas:
+                combined['area_summary'] = {
+                    'count': len(all_areas),
+                    'min': min(all_areas),
+                    'max': max(all_areas),
+                    'avg': sum(all_areas) / len(all_areas),
+                    'values': all_areas
+                }
+            
+            if all_heights:
+                combined['height_summary'] = {
+                    'count': len(all_heights),
+                    'min': min(all_heights),
+                    'max': max(all_heights),
+                    'avg': sum(all_heights) / len(all_heights),
+                    'values': all_heights
+                }
+            
+            # Análisis estadístico general
+            all_values = all_dimensions + all_areas + all_heights
+            if all_values:
+                combined['statistical_analysis'] = {
+                    'total_measurements': len(all_values),
+                    'range': max(all_values) - min(all_values),
+                    'most_common_range': self._find_most_common_range(all_values),
+                    'outliers': self._find_outliers(all_values)
+                }
+            
+            return combined
+            
+        except Exception as e:
+            logger.error(f"❌ Error combinando análisis dimensional: {str(e)}")
+            return {
+                'total_files_analyzed': 0,
+                'total_dimensions': 0,
+                'total_areas': 0,
+                'total_heights': 0,
+                'error': str(e)
+            }
+    
+    def _find_most_common_range(self, values: List[float]) -> Dict[str, Any]:
+        """Encontrar el rango más común de valores"""
+        
+        try:
+            if not values:
+                return {}
+            
+            # Agrupar valores en rangos
+            ranges = {}
+            for value in values:
+                # Redondear a rangos de 0.5
+                range_key = round(value * 2) / 2
+                if range_key not in ranges:
+                    ranges[range_key] = 0
+                ranges[range_key] += 1
+            
+            # Encontrar el rango más común
+            most_common = max(ranges.items(), key=lambda x: x[1])
+            
+            return {
+                'range': most_common[0],
+                'count': most_common[1],
+                'percentage': (most_common[1] / len(values)) * 100
+            }
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Error encontrando rango común: {str(e)}")
+            return {}
+    
+    def _find_outliers(self, values: List[float]) -> List[float]:
+        """Encontrar valores atípicos usando el método IQR"""
+        
+        try:
+            if len(values) < 4:
+                return []
+            
+            sorted_values = sorted(values)
+            q1 = sorted_values[len(sorted_values) // 4]
+            q3 = sorted_values[3 * len(sorted_values) // 4]
+            iqr = q3 - q1
+            
+            lower_bound = q1 - 1.5 * iqr
+            upper_bound = q3 + 1.5 * iqr
+            
+            outliers = [v for v in values if v < lower_bound or v > upper_bound]
+            
+            return outliers
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Error encontrando outliers: {str(e)}")
+            return []
     
     def _prepare_project_text(self, session_data: Dict[str, Any]) -> str:
         """Preparar texto del proyecto para análisis normativo"""
