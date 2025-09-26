@@ -58,8 +58,12 @@ class BasicoAnalyzer:
         return {
             "fase": 2,
             "tipo": "analisis_memoria",
+            "user_config": config,  # Guardar configuración original del usuario
             "datos_proyecto": ai_analysis.get("datos_proyecto", {}),
             "analisis_tecnico": ai_analysis.get("analisis_tecnico", {}),
+            "contexto_urbanistico": ai_analysis.get("contexto_urbanistico", {}),
+            "informacion_adicional": ai_analysis.get("informacion_adicional", {}),
+            "observaciones_criticas": ai_analysis.get("observaciones_criticas", []),
             "planos_analysis": planos_analysis,
             "coherencia_config": coherence_check,
             "coherence_score": coherence_check.get("coherence_score", 0),
@@ -73,18 +77,31 @@ class BasicoAnalyzer:
         # 1. Preparar datos para análisis normativo
         project_text = self._prepare_project_text(session_data)
         fase2_result = context.get('fase2', {})
-        config = fase2_result.get('datos_proyecto', {})
         
-        # 2. Verificación normativa con IA
-        normative_verification = await self._verify_normative_with_ai(project_text, config, fase2_result)
+        # 2. Extraer configuración del usuario de la Fase 2 (config original del usuario)
+        user_config = fase2_result.get('user_config', {})
+        datos_proyecto = fase2_result.get('datos_proyecto', {})
+        analisis_tecnico = fase2_result.get('analisis_tecnico', {})
         
-        # 3. Verificación CTE específica
-        cte_verification = await self._verify_cte_with_ai(project_text, config)
+        # 3. Crear contexto enriquecido combinando datos extraídos y configuración del usuario
+        enriched_context = {
+            "user_config": user_config,  # Configuración original del usuario
+            "datos_proyecto": datos_proyecto,  # Datos extraídos de la memoria
+            "analisis_tecnico": analisis_tecnico,  # Análisis técnico de la memoria
+            "planos_analysis": fase2_result.get('planos_analysis', {}),
+            "coherence_check": fase2_result.get('coherencia_config', {})
+        }
         
-        # 4. Verificación PGOUM (si aplica)
-        pgoum_verification = await self._verify_pgoum_with_ai(project_text, config)
+        # 4. Verificación normativa con IA usando contexto enriquecido
+        normative_verification = await self._verify_normative_with_ai(project_text, user_config, enriched_context)
         
-        # 5. Calcular puntuación final
+        # 5. Verificación CTE específica
+        cte_verification = await self._verify_cte_with_ai(project_text, user_config)
+        
+        # 6. Verificación PGOUM (si aplica)
+        pgoum_verification = await self._verify_pgoum_with_ai(project_text, user_config)
+        
+        # 7. Calcular puntuación final
         final_score = self._calculate_final_score(normative_verification, cte_verification, pgoum_verification)
         
         return {
@@ -95,6 +112,11 @@ class BasicoAnalyzer:
             "pgoum_verification": pgoum_verification,
             "final_compliance_score": final_score,
             "production_ready": final_score > 75,
+            "context_used": {
+                "user_config": user_config,
+                "datos_extraidos": datos_proyecto,
+                "analisis_tecnico": analisis_tecnico
+            },
             "timestamp": self._get_timestamp()
         }
     
@@ -128,10 +150,7 @@ class BasicoAnalyzer:
         
         response = await self.ai_client.generate_response(prompt)
         
-        try:
-            return json.loads(response)
-        except json.JSONDecodeError:
-            return {"error": "Error parsing AI response", "raw_response": response}
+        return self._parse_ai_json_response(response)
     
     def _combine_verifications(self, ai_result: Dict[str, Any], traditional_result: Dict[str, Any]) -> Dict[str, Any]:
         """Combinar resultados de verificación IA y tradicional"""
@@ -154,13 +173,27 @@ class BasicoAnalyzer:
         }
     
     def _extract_memoria_texts(self, session_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Extraer textos específicamente de archivos de memoria"""
+        """Extraer textos específicamente de archivos de memoria - MEJORADO"""
         memoria_texts = {}
         
         for file_info in session_data.get("files", []):
             filename = file_info["filename"].lower()
-            # Identificar archivos de memoria
-            if any(keyword in filename for keyword in ["memoria", "memory", "descriptiva"]):
+            # Identificar archivos de memoria con más criterios
+            memoria_keywords = [
+                "memoria", "memory", "descriptiva", "descripcion", "description",
+                "proyecto", "project", "basico", "basico", "ejecucion", "ejecucion",
+                "memoria_descriptiva", "memoria_justificativa", "justificativa"
+            ]
+            
+            if any(keyword in filename for keyword in memoria_keywords):
+                file_path = file_info["path"]
+                if file_path.lower().endswith('.pdf'):
+                    text_data = self.ocr_processor.extract_text_from_pdf(file_path)
+                    memoria_texts[file_info["filename"]] = text_data
+        
+        # Si no se encontraron archivos específicos de memoria, usar todos los PDFs
+        if not memoria_texts:
+            for file_info in session_data.get("files", []):
                 file_path = file_info["path"]
                 if file_path.lower().endswith('.pdf'):
                     text_data = self.ocr_processor.extract_text_from_pdf(file_path)
@@ -169,50 +202,118 @@ class BasicoAnalyzer:
         return memoria_texts
     
     async def _analyze_memoria_with_ai(self, memoria_texts: Dict[str, Any], config: Dict[str, Any]) -> Dict[str, Any]:
-        """Análisis de memoria con IA"""
+        """Análisis de memoria con IA - MEJORADO"""
         combined_memoria = self._combine_texts(memoria_texts)
         
+        # Crear prompt mejorado con más contexto
         prompt = BASICO_ANALISIS_MEMORIA.format(
-            memoria_texto=combined_memoria[:10000],  # Limitar texto
+            memoria_texto=combined_memoria[:12000],  # Aumentar límite de texto
             config_proyecto=json.dumps(config, indent=2)
         )
         
-        response = await self.ai_client.generate_response(prompt)
+        # Añadir instrucciones específicas para extracción técnica
+        enhanced_prompt = f"""
+        {prompt}
         
-        try:
-            return json.loads(response)
-        except json.JSONDecodeError:
-            return {"error": "Error parsing AI response", "raw_response": response}
+        INSTRUCCIONES ADICIONALES PARA EXTRACCIÓN TÉCNICA:
+        1. Busca específicamente valores numéricos (superficies, alturas, dimensiones)
+        2. Identifica materiales de construcción mencionados
+        3. Detecta sistemas de instalaciones (eléctricas, fontanería, climatización)
+        4. Extrae información sobre accesibilidad y normativas mencionadas
+        5. Identifica parámetros urbanísticos (retranqueos, ocupación, edificabilidad)
+        6. Busca referencias a normativas específicas (CTE, PGOUM, etc.)
+        7. Extrae información sobre sistemas estructurales y de cimentación
+        8. Identifica requisitos de seguridad contra incendios
+        9. Detecta sistemas de eficiencia energética
+        10. Extrae información sobre aislamiento térmico y acústico
+        """
+        
+        response = await self.ai_client.generate_response(enhanced_prompt, max_tokens=2500)
+        
+        return self._parse_ai_json_response(response)
     
     async def _analyze_planos_with_ai(self, session_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Análisis de planos con IA"""
+        """Análisis de planos con IA - MEJORADO PARA DIMENSIONES"""
         planos_texts = {}
         
         for file_info in session_data.get("files", []):
             filename = file_info["filename"].lower()
-            # Identificar archivos de planos
-            if any(keyword in filename for keyword in ["plano", "plan", "dwg", "autocad"]):
+            # Identificar archivos de planos con más criterios
+            planos_keywords = [
+                "plano", "plan", "dwg", "autocad", "plantas", "alzados", "secciones",
+                "situacion", "emplazamiento", "fachadas", "cortes", "detalles"
+            ]
+            
+            if any(keyword in filename for keyword in planos_keywords):
                 file_path = file_info["path"]
                 if file_path.lower().endswith('.pdf'):
                     text_data = self.ocr_processor.extract_text_from_pdf(file_path)
                     planos_texts[file_info["filename"]] = text_data
         
         if not planos_texts:
-            return {"message": "No se encontraron planos para analizar"}
+            return {"message": "No se encontraron planos para analizar", "dimensiones_extraidas": {}}
         
         combined_planos = self._combine_texts(planos_texts)
         
-        prompt = BASICO_ANALISIS_PLANOS.format(
-            plans_text=combined_planos[:8000],
-            memory_data="{}"  # Se completará con datos de memoria
-        )
+        # Crear prompt mejorado para extracción de dimensiones
+        enhanced_prompt = f"""
+        {BASICO_GROQ_BASE}
         
-        response = await self.ai_client.generate_response(prompt)
+        ANÁLISIS DE PLANOS PARA EXTRACCIÓN DE DIMENSIONES Y ELEMENTOS TÉCNICOS
         
-        try:
-            return json.loads(response)
-        except json.JSONDecodeError:
-            return {"error": "Error parsing AI response", "raw_response": response}
+        TEXTO DE PLANOS:
+        {combined_planos[:10000]}
+        
+        INSTRUCCIONES ESPECÍFICAS:
+        1. Extrae TODAS las dimensiones numéricas (alturas, anchos, largos, superficies)
+        2. Identifica elementos constructivos (muros, pilares, forjados, cubiertas)
+        3. Detecta instalaciones (eléctricas, fontanería, climatización, gas)
+        4. Extrae información sobre accesibilidad (rampas, ascensores, anchos de paso)
+        5. Identifica elementos de seguridad (salidas de emergencia, extintores)
+        6. Detecta sistemas de ventilación y evacuación
+        7. Extrae información sobre materiales y acabados
+        8. Identifica elementos estructurales (vigas, pilares, cimentación)
+        9. Detecta sistemas de protección contra incendios
+        10. Extrae información sobre eficiencia energética
+        
+        Devuelve un JSON con la siguiente estructura:
+        {{
+            "dimensiones_extraidas": {{
+                "superficie_total": "valor en m²",
+                "altura_total": "valor en m",
+                "plantas": "número de plantas",
+                "dimensiones_por_planta": {{}},
+                "alturas_por_planta": {{}}
+            }},
+            "elementos_constructivos": {{
+                "estructura": "tipo de estructura",
+                "muros": "tipo de muros",
+                "cubierta": "tipo de cubierta",
+                "cimentacion": "tipo de cimentación"
+            }},
+            "instalaciones_detectadas": {{
+                "electricas": "descripción",
+                "fontaneria": "descripción",
+                "climatizacion": "descripción",
+                "gas": "descripción"
+            }},
+            "accesibilidad": {{
+                "rampas": "descripción",
+                "ascensores": "descripción",
+                "anchos_paso": "descripción"
+            }},
+            "seguridad": {{
+                "salidas_emergencia": "descripción",
+                "extintores": "descripción",
+                "sistemas_deteccion": "descripción"
+            }},
+            "observaciones_tecnicas": []
+        }}
+        """
+        
+        response = await self.ai_client.generate_response(enhanced_prompt, max_tokens=2000)
+        
+        return self._parse_ai_json_response(response)
     
     async def _check_coherence_with_ai(self, ai_analysis: Dict[str, Any], config: Dict[str, Any], planos_analysis: Dict[str, Any]) -> Dict[str, Any]:
         """Verificar coherencia entre memoria, configuración y planos"""
@@ -239,8 +340,20 @@ class BasicoAnalyzer:
             coherence_score -= 20
         
         # Verificar superficie
-        memoria_superficie = memoria_data.get("superficie_construida", 0)
-        planos_superficie = planos_data.get("superficie_planos", 0)
+        memoria_superficie_raw = memoria_data.get("superficie_construida", 0)
+        planos_superficie_raw = planos_data.get("superficie_planos", 0)
+        
+        # Convertir a números, manejando casos de "no_especificado" o strings
+        try:
+            memoria_superficie = float(memoria_superficie_raw) if isinstance(memoria_superficie_raw, (int, float)) else 0
+        except (ValueError, TypeError):
+            memoria_superficie = 0
+            
+        try:
+            planos_superficie = float(planos_superficie_raw) if isinstance(planos_superficie_raw, (int, float)) else 0
+        except (ValueError, TypeError):
+            planos_superficie = 0
+        
         if memoria_superficie > 0 and planos_superficie > 0:
             diferencia = abs(memoria_superficie - planos_superficie) / memoria_superficie
             if diferencia > 0.1:  # Más del 10% de diferencia
@@ -266,24 +379,28 @@ class BasicoAnalyzer:
         all_texts = self._extract_all_texts(session_data)
         return self._combine_texts(all_texts)
     
-    async def _verify_normative_with_ai(self, project_text: str, config: Dict[str, Any], fase2_result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _verify_normative_with_ai(self, project_text: str, user_config: Dict[str, Any], enriched_context: Dict[str, Any]) -> Dict[str, Any]:
         """Verificación normativa contextual con IA - FASE 3 MEJORADA CON CARGA SELECTIVA"""
         
         # Extraer información contextual de Fase 2
-        datos_proyecto = fase2_result.get('datos_proyecto', {})
-        analisis_tecnico = fase2_result.get('analisis_tecnico', {})
+        datos_proyecto = enriched_context.get('datos_proyecto', {})
+        analisis_tecnico = enriched_context.get('analisis_tecnico', {})
+        planos_analysis = enriched_context.get('planos_analysis', {})
         
-        # Crear contexto enriquecido para la IA
+        # Crear contexto enriquecido para la IA (configuración del usuario tiene prioridad)
         contexto_proyecto = {
-            "uso_principal": config.get("uso_principal", datos_proyecto.get("uso_principal", "")),
-            "norma_zonal": config.get("norma_zonal", datos_proyecto.get("norma_zonal", "")),
-            "grado": config.get("grado", datos_proyecto.get("grado", "")),
+            "uso_principal": user_config.get("uso_principal", datos_proyecto.get("uso_principal", "")),
+            "norma_zonal": user_config.get("norma_zonal", datos_proyecto.get("norma_zonal", "")),
+            "grado": user_config.get("grado", datos_proyecto.get("grado", "")),
             "superficie_construida": datos_proyecto.get("superficie_construida", 0),
             "plantas": datos_proyecto.get("plantas", 0),
-            "altura_edificio": datos_proyecto.get("altura_edificio", 0),
-            "sistemas_estructurales": analisis_tecnico.get("sistemas_estructurales", {}),
+            "altura_edificio": datos_proyecto.get("altura_total", datos_proyecto.get("altura_edificio", 0)),
+            "sistemas_estructurales": analisis_tecnico.get("sistema_estructural", "no_especificado"),
             "sistemas_ambientales": analisis_tecnico.get("sistemas_ambientales", {}),
-            "requisitos_cte": analisis_tecnico.get("requisitos_cte", {})
+            "requisitos_cte": analisis_tecnico.get("requisitos_cte", {}),
+            "instalaciones_detectadas": analisis_tecnico.get("instalaciones_detectadas", {}),
+            "materiales_principales": analisis_tecnico.get("materiales_principales", []),
+            "planos_dimensiones": planos_analysis.get("dimensiones_extraidas", {})
         }
         
         # PASO 1: Determinar normativas aplicables específicamente para este proyecto
@@ -366,17 +483,15 @@ class BasicoAnalyzer:
         
         response = await self.ai_client.generate_response(prompt, max_tokens=3000)
         
-        try:
-            result = json.loads(response)
+        result = self._parse_ai_json_response(response)
+        if "error" not in result:
             # Añadir metadatos sobre las normativas aplicadas
             result["metadata"] = {
                 "normativas_consideradas": len(applicable_normatives),
                 "normativas_cargadas": len(normative_contents),
                 "contexto_aplicado": contexto_proyecto
             }
-            return result
-        except json.JSONDecodeError:
-            return {"error": "Error parsing AI response", "raw_response": response}
+        return result
     
     async def _verify_cte_with_ai(self, project_text: str, config: Dict[str, Any]) -> Dict[str, Any]:
         """Verificación CTE específica"""
@@ -387,10 +502,7 @@ class BasicoAnalyzer:
         
         response = await self.ai_client.generate_response(prompt)
         
-        try:
-            return json.loads(response)
-        except json.JSONDecodeError:
-            return {"error": "Error parsing AI response", "raw_response": response}
+        return self._parse_ai_json_response(response)
     
     async def _verify_pgoum_with_ai(self, project_text: str, config: Dict[str, Any]) -> Dict[str, Any]:
         """Verificación PGOUM específica"""
@@ -401,10 +513,7 @@ class BasicoAnalyzer:
         
         response = await self.ai_client.generate_response(prompt)
         
-        try:
-            return json.loads(response)
-        except json.JSONDecodeError:
-            return {"error": "Error parsing AI response", "raw_response": response}
+        return self._parse_ai_json_response(response)
     
     def _calculate_final_score(self, normative_verification: Dict[str, Any], cte_verification: Dict[str, Any], pgoum_verification: Dict[str, Any]) -> float:
         """Calcular puntuación final de cumplimiento"""
@@ -451,4 +560,32 @@ class BasicoAnalyzer:
         """Obtener timestamp actual"""
         from datetime import datetime
         return datetime.now().isoformat()
+    
+    def _parse_ai_json_response(self, response: str) -> Dict[str, Any]:
+        """Parse AI JSON response, handling markdown code blocks"""
+        try:
+            # First try direct JSON parsing
+            return json.loads(response)
+        except json.JSONDecodeError:
+            # Try to extract JSON from markdown code blocks
+            import re
+            
+            # Look for JSON in code blocks
+            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response, re.DOTALL)
+            if json_match:
+                try:
+                    return json.loads(json_match.group(1))
+                except json.JSONDecodeError:
+                    pass
+            
+            # Look for JSON without code blocks
+            json_match = re.search(r'(\{.*\})', response, re.DOTALL)
+            if json_match:
+                try:
+                    return json.loads(json_match.group(1))
+                except json.JSONDecodeError:
+                    pass
+            
+            # If all else fails, return error
+            return {"error": "Error parsing AI response", "raw_response": response}
 

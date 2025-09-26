@@ -98,3 +98,12 @@ async def serve_js():
         return FileResponse(js_path, media_type="application/javascript")
     else:
         raise HTTPException(status_code=404, detail="Archivo JavaScript no encontrado")
+
+@router.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "ok", 
+        "service": "basico-verification",
+        "version": "1.0.0"
+    }

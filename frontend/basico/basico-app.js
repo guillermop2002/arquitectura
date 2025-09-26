@@ -472,7 +472,7 @@ class BasicoApp {
                     <ul class="list-unstyled">
                         <li><i class="fas fa-check text-success me-2"></i>Fase 1: Documentos subidos</li>
                         <li><i class="fas fa-check text-success me-2"></i>Fase 2: Configuración guardada</li>
-                        <li><i class="fas fa-clock text-warning me-2"></i>Fase 3: Pendiente de implementación</li>
+                        <li><i class="fas fa-play text-info me-2"></i>Fase 3: Lista para ejecutar</li>
                     </ul>
                 </div>
             </div>
@@ -482,6 +482,182 @@ class BasicoApp {
         document.getElementById('phase3').scrollIntoView({ behavior: 'smooth' });
         
         this.showAlert('Configuración guardada correctamente', 'success');
+    }
+
+    async executePhase3() {
+        flog.info('🚀 Iniciando ejecución de Fase 3');
+        
+        const button = document.getElementById('executePhase3');
+        const originalText = button.innerHTML;
+        
+        // Deshabilitar botón y mostrar loading
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Ejecutando verificación...';
+        
+        try {
+            flog.api('POST', `${this.baseURL}/analyze/fase3/${this.sessionId}`);
+            
+            const startTime = performance.now();
+            const response = await fetch(`${this.baseURL}/analyze/fase3/${this.sessionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const duration = Math.round(performance.now() - startTime);
+            
+            if (response.ok) {
+                const result = await response.json();
+                flog.apiResponse(response.status, result, duration);
+                flog.info('✅ Fase 3 completada exitosamente');
+                
+                this.displayPhase3Results(result);
+                this.updatePhase3Status('completed');
+                
+                this.showAlert('Verificación normativa completada exitosamente', 'success');
+            } else {
+                const errorText = await response.text();
+                flog.apiResponse(response.status, errorText, duration);
+                flog.error('❌ Error en Fase 3', { status: response.status, error: errorText });
+                
+                this.showAlert('Error en verificación normativa: ' + errorText, 'danger');
+            }
+        } catch (error) {
+            flog.error('❌ Error de conexión en Fase 3', error);
+            this.showAlert('Error de conexión durante la verificación', 'danger');
+        } finally {
+            // Restaurar botón
+            button.disabled = false;
+            button.innerHTML = originalText;
+        }
+    }
+
+    displayPhase3Results(result) {
+        const resultsContainer = document.getElementById('phase3Results');
+        
+        let html = `
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i>
+                        Resultados de la Verificación Normativa
+                    </h5>
+                </div>
+                <div class="card-body">
+        `;
+        
+        if (result.normative_verification) {
+            const verificacion = result.normative_verification;
+            
+            html += `
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-chart-pie me-2"></i>Puntuación General</h6>
+                            <h4 class="mb-0">${verificacion.puntuacion_cumplimiento || 'N/A'}/100</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-${(verificacion.puntuacion_cumplimiento || 0) >= 75 ? 'success' : 'warning'}">
+                            <h6><i class="fas fa-${(verificacion.puntuacion_cumplimiento || 0) >= 75 ? 'check-circle' : 'exclamation-triangle'} me-2"></i>Estado General</h6>
+                            <h5 class="mb-0">${(verificacion.puntuacion_cumplimiento || 0) >= 75 ? 'Cumple' : 'Requiere atención'}</h5>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            if (verificacion.incumplimientos_detectados && verificacion.incumplimientos_detectados.length > 0) {
+                html += `
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Incumplimientos Detectados</h6>
+                        <ul class="mb-0">
+                `;
+                
+                verificacion.incumplimientos_detectados.forEach(incumplimiento => {
+                    html += `
+                        <li>
+                            <strong>${incumplimiento.normativa || 'Normativa no especificada'}:</strong> 
+                            ${incumplimiento.descripcion_incumplimiento || 'Descripción no disponible'}
+                            ${incumplimiento.ubicacion_en_proyecto ? `<br><small class="text-muted">Ubicación: ${incumplimiento.ubicacion_en_proyecto}</small>` : ''}
+                        </li>
+                    `;
+                });
+                
+                html += `
+                        </ul>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="alert alert-success">
+                        <h6><i class="fas fa-check-circle me-2"></i>¡Excelente!</h6>
+                        <p class="mb-0">No se detectaron incumplimientos normativos.</p>
+                    </div>
+                `;
+            }
+            
+            if (verificacion.elementos_faltantes_verificados && verificacion.elementos_faltantes_verificados.length > 0) {
+                html += `
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Elementos Faltantes</h6>
+                        <ul class="mb-0">
+                `;
+                
+                verificacion.elementos_faltantes_verificados.forEach(elemento => {
+                    html += `<li>${elemento.elemento || elemento} (de ${elemento.normativa_origen || 'normativa'})</li>`;
+                });
+                
+                html += `
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            if (verificacion.observaciones_especificas && verificacion.observaciones_especificas.length > 0) {
+                html += `
+                    <div class="alert alert-light">
+                        <h6><i class="fas fa-comment me-2"></i>Observaciones Específicas</h6>
+                        <ul class="mb-0">
+                `;
+                
+                verificacion.observaciones_especificas.forEach(obs => {
+                    html += `<li>${obs}</li>`;
+                });
+                
+                html += `
+                        </ul>
+                    </div>
+                `;
+            }
+        } else {
+            html += `
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Resultados Parciales</h6>
+                    <p class="mb-0">Los resultados de la verificación no están completamente disponibles.</p>
+                </div>
+            `;
+        }
+        
+        html += `
+                </div>
+            </div>
+        `;
+        
+        resultsContainer.innerHTML = html;
+        resultsContainer.style.display = 'block';
+        
+        // Scroll to results
+        resultsContainer.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    updatePhase3Status(status) {
+        const statusElement = document.querySelector('#sessionInfo ul li:last-child');
+        if (statusElement) {
+            const icon = status === 'completed' ? 'fas fa-check text-success' : 'fas fa-play text-info';
+            const text = status === 'completed' ? 'Fase 3: Completada' : 'Fase 3: Lista para ejecutar';
+            statusElement.innerHTML = `<i class="${icon} me-2"></i>${text}`;
+        }
     }
 
     getTotalFiles() {

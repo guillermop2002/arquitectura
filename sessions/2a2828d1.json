@@ -1,0 +1,307 @@
+{
+  "session_id": "2a2828d1",
+  "project_name": "Test Project",
+  "created_at": "2025-09-26T03:45:35.515147",
+  "status": "created",
+  "files": [],
+  "phase_results": {
+    "fase2": {
+      "fase": 2,
+      "tipo": "analisis_memoria",
+      "datos_proyecto": {
+        "uso_principal": "residencial",
+        "superficie_total": "no_especificado",
+        "superficie_construida": "no_especificado",
+        "superficie_util": "no_especificado",
+        "plantas": "no_especificado",
+        "plantas_sobre_rasante": "no_especificado",
+        "plantas_bajo_rasante": "no_especificado",
+        "altura_total": "no_especificado",
+        "altura_libre": "no_especificado",
+        "ubicacion": "no_especificado",
+        "referencia_catastral": "no_especificado",
+        "parcela_superficie": "no_especificado",
+        "ocupacion_parcela": "no_especificado",
+        "edificabilidad": "no_especificado",
+        "retranqueos": {
+          "frontal": "no_especificado",
+          "lateral": "no_especificado",
+          "posterior": "no_especificado"
+        },
+        "accesibilidad_mencionada": false,
+        "normativa_aplicable_mencionada": [
+          "nz5"
+        ]
+      },
+      "analisis_tecnico": {
+        "sistema_estructural": "no_especificado",
+        "tipo_cimentacion": "no_especificado",
+        "forjados": "no_especificado",
+        "cubierta_tipo": "no_especificado",
+        "fachada_material": "no_especificado",
+        "aislamiento_termico": "no_especificado",
+        "instalaciones_detectadas": {
+          "electricidad": false,
+          "fontaneria": false,
+          "calefaccion": false,
+          "climatizacion": false,
+          "gas": false,
+          "telecomunicaciones": false,
+          "ascensor": false,
+          "incendios": false,
+          "ventilacion": false
+        },
+        "sistemas_ambientales": {
+          "eficiencia_energetica_mencionada": false,
+          "certificacion_energetica": "no_especificado",
+          "aislamiento_acustico": false,
+          "ventilacion_natural": false,
+          "iluminacion_natural": false
+        },
+        "requisitos_cte": {
+          "db_si_mencionado": false,
+          "db_sua_mencionado": false,
+          "db_he_mencionado": false,
+          "db_hs_mencionado": false,
+          "db_hr_mencionado": false,
+          "db_se_mencionado": false,
+          "sectores_incendio": "no_especificado",
+          "escaleras_evacuacion": "no_especificado",
+          "distancia_evacuacion": "no_especificado"
+        },
+        "materiales_principales": [],
+        "normativa_estructural": "no_especificado"
+      },
+      "planos_analysis": {
+        "message": "No se encontraron planos para analizar"
+      },
+      "coherencia_config": {
+        "coherence_score": 100,
+        "issues": [],
+        "total_issues": 0,
+        "high_severity_issues": 0,
+        "recommendations": [
+          "No se detectaron problemas de coherencia significativos"
+        ]
+      },
+      "coherence_score": 100,
+      "next_phase_ready": true,
+      "timestamp": "2025-09-26T03:45:39.323599"
+    },
+    "fase3": {
+      "fase": 3,
+      "tipo": "verificacion_normativa",
+      "normative_verification": {
+        "normativas_verificadas": [
+          {
+            "normativa": "PGOUM General",
+            "articulos_verificados": [],
+            "aplicable_justificacion": "Aplicable a todos los planos excepto Planos_Incendios"
+          },
+          {
+            "normativa": "PGOUM Residencial",
+            "articulos_verificados": [],
+            "aplicable_justificacion": "Aplicable por uso principal: residencial"
+          },
+          {
+            "normativa": "DB-SI (Seguridad en caso de Incendio)",
+            "articulos_verificados": [],
+            "aplicable_justificacion": "ÚNICAMENTE para Planos_Incendios - uso no industrial"
+          }
+        ],
+        "incumplimientos_detectados": [
+          {
+            "normativa": "PGOUM General",
+            "articulo_especifico": "",
+            "texto_normativo": "",
+            "descripcion_incumplimiento": "No se proporciona información sobre la norma zonal",
+            "ubicacion_en_proyecto": "CONTEXTO DEL PROYECTO",
+            "severidad": "medium",
+            "evidencia_textual": "norma_zonal: \"\""
+          },
+          {
+            "normativa": "PGOUM Residencial",
+            "articulo_especifico": "",
+            "texto_normativo": "",
+            "descripcion_incumplimiento": "No se proporciona información sobre la superficie construida",
+            "ubicacion_en_proyecto": "CONTEXTO DEL PROYECTO",
+            "severidad": "medium",
+            "evidencia_textual": "superficie_construida: \"no_especificado\""
+          },
+          {
+            "normativa": "DB-SI (Seguridad en caso de Incendio)",
+            "articulo_especifico": "",
+            "texto_normativo": "",
+            "descripcion_incumplimiento": "No se proporciona información sobre sectores de incendio",
+            "ubicacion_en_proyecto": "CONTEXTO DEL PROYECTO",
+            "severidad": "high",
+            "evidencia_textual": "sectores_incendio: \"no_especificado\""
+          }
+        ],
+        "elementos_faltantes_verificados": [
+          {
+            "elemento": "norma zonal",
+            "normativa_origen": "PGOUM General",
+            "texto_normativo_origen": "",
+            "obligatorio_justificacion": "Necesario para determinar requisitos específicos del proyecto"
+          },
+          {
+            "elemento": "superficie construida",
+            "normativa_origen": "PGOUM Residencial",
+            "texto_normativo_origen": "",
+            "obligatorio_justificacion": "Necesario para determinar requisitos específicos del proyecto"
+          },
+          {
+            "elemento": "sectores de incendio",
+            "normativa_origen": "DB-SI (Seguridad en caso de Incendio)",
+            "texto_normativo_origen": "",
+            "obligatorio_justificacion": "Necesario para garantizar la seguridad en caso de incendio"
+          }
+        ],
+        "puntuacion_cumplimiento": 0,
+        "observaciones_especificas": [
+          "El proyecto carece de información fundamental para determinar su cumplimiento con las normativas aplicables",
+          "Es necesario proporcionar más detalles sobre la norma zonal, superficie construida y sectores de incendio para una evaluación más precisa"
+        ],
+        "metadata": {
+          "normativas_consideradas": 3,
+          "normativas_cargadas": 3,
+          "contexto_aplicado": {
+            "uso_principal": "residencial",
+            "norma_zonal": "",
+            "grado": "",
+            "superficie_construida": "no_especificado",
+            "plantas": "no_especificado",
+            "altura_edificio": 0,
+            "sistemas_estructurales": {},
+            "sistemas_ambientales": {
+              "eficiencia_energetica_mencionada": false,
+              "certificacion_energetica": "no_especificado",
+              "aislamiento_acustico": false,
+              "ventilacion_natural": false,
+              "iluminacion_natural": false
+            },
+            "requisitos_cte": {
+              "db_si_mencionado": false,
+              "db_sua_mencionado": false,
+              "db_he_mencionado": false,
+              "db_hs_mencionado": false,
+              "db_hr_mencionado": false,
+              "db_se_mencionado": false,
+              "sectores_incendio": "no_especificado",
+              "escaleras_evacuacion": "no_especificado",
+              "distancia_evacuacion": "no_especificado"
+            }
+          }
+        }
+      },
+      "cte_verification": {
+        "verificacion_cte": {
+          "documentos_basicos_mencionados": [
+            "DB-SI",
+            "DB-SUA",
+            "DB-HE",
+            "DB-HS",
+            "DB-HR",
+            "DB-SE"
+          ],
+          "justificaciones_encontradas": {
+            "db_si": {
+              "presente": false,
+              "completa": false,
+              "elementos": []
+            },
+            "db_sua": {
+              "presente": false,
+              "completa": false,
+              "elementos": []
+            },
+            "db_he": {
+              "presente": false,
+              "completa": false,
+              "elementos": []
+            },
+            "db_hs": {
+              "presente": false,
+              "completa": false,
+              "elementos": []
+            },
+            "db_hr": {
+              "presente": false,
+              "completa": false,
+              "elementos": []
+            },
+            "db_se": {
+              "presente": false,
+              "completa": false,
+              "elementos": []
+            }
+          }
+        },
+        "puntuacion_cte": 0,
+        "elementos_criticos_faltantes": [
+          "superficie_total",
+          "superficie_construida",
+          "superficie_util",
+          "plantas",
+          "plantas_sobre_rasante",
+          "plantas_bajo_rasante",
+          "altura_total",
+          "altura_libre",
+          "ubicacion",
+          "referencia_catastral",
+          "parcela_superficie",
+          "ocupacion_parcela",
+          "edificabilidad",
+          "retranqueos"
+        ],
+        "recomendaciones_cte": [
+          "Incluir todos los datos de configuración del proyecto",
+          "Verificar la normativa aplicable y mencionar todos los documentos básicos del CTE",
+          "Incluir justificaciones para cada documento básico del CTE"
+        ]
+      },
+      "pgoum_verification": {
+        "verificacion_pgoum": {
+          "zona_normativa_mencionada": false,
+          "zona_identificada": "no especificada",
+          "parametros_verificados": {
+            "retranqueos": {
+              "mencionado": true,
+              "cumple": null,
+              "valor": "no especificado"
+            },
+            "altura_maxima": {
+              "mencionado": false,
+              "cumple": null,
+              "valor": "no especificado"
+            },
+            "uso_permitido": {
+              "mencionado": false,
+              "cumple": null,
+              "valor": "residencial"
+            },
+            "ocupacion_maxima": {
+              "mencionado": false,
+              "cumple": null,
+              "valor": "no especificado"
+            }
+          }
+        },
+        "puntuacion_pgoum": 0,
+        "observaciones_urbanisticas": [
+          "No se menciona la zona normativa del PGOUM",
+          "No se especifican los parámetros urbanísticos"
+        ],
+        "recomendaciones_pgoum": [
+          "Especificar la zona normativa del PGOUM",
+          "Incluir los parámetros urbanísticos como retranqueos, altura máxima, uso permitido y ocupación máxima"
+        ]
+      },
+      "final_compliance_score": 0.0,
+      "production_ready": false,
+      "timestamp": "2025-09-26T03:45:44.510698"
+    }
+  },
+  "last_updated": "2025-09-26T03:45:44.510698"
+}

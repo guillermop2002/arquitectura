@@ -355,13 +355,24 @@
                     </h2>
 
                     <div class="alert alert-info">
-                        <h5>Configuración completada. El análisis se implementará en la Fase 2 del desarrollo.</h5>
+                        <h5>Configuración completada. Listo para verificación normativa.</h5>
                         <div id="sessionInfo">
                             <!-- Se llenará con información de la sesión -->
                         </div>
                     </div>
 
-                    <div class="text-center">
+                    <div class="text-center mb-4">
+                        <button class="btn btn-success btn-lg" id="executePhase3" onclick="app.executePhase3()">
+                            <i class="fas fa-play me-2"></i>
+                            Ejecutar Verificación Normativa (Fase 3)
+                        </button>
+                    </div>
+
+                    <div id="phase3Results" style="display: none;">
+                        <!-- Los resultados de la Fase 3 se mostrarán aquí -->
+                    </div>
+
+                    <div class="text-center mt-4">
                         <button class="btn btn-primary" onclick="location.reload()">
                             <i class="fas fa-redo me-2"></i>
                             Nuevo Análisis
