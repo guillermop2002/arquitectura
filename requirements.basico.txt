@@ -12,6 +12,11 @@ pytesseract==0.3.13
 Pillow==11.1.0
 numpy==1.26.4
 
+# Procesamiento de imágenes avanzado (Parte 1)
+opencv-python==4.10.0.84
+scikit-image==0.24.0
+pdf2image==1.17.0
+
 # Utilidades
 python-multipart==0.0.20
 python-dotenv==1.0.1
