@@ -263,6 +263,181 @@ class BasicoNormativeLoader:
             # Si no encuentra secciones específicas, devolver una muestra del documento
             return full_text[:3000]
     
+    async def get_intelligent_sections(self, normative_info: Dict[str, Any], project_context: Dict[str, Any], ai_client) -> Dict[str, Any]:
+        """
+        Selección inteligente de secciones normativas usando IA.
+        Analiza el contexto del proyecto y selecciona solo las secciones relevantes.
+        """
+        logger.info(f"🧠 INICIANDO SELECCIÓN INTELIGENTE DE SECCIONES para: {normative_info['name']}")
+        
+        file_path = Path(normative_info["file_path"])
+        
+        if not file_path.exists():
+            return {
+                "error": f"Archivo no encontrado: {file_path}",
+                "content": "",
+                "selected_sections": []
+            }
+        
+        # Verificar cache
+        cache_key = f"{file_path}_intelligent_{hash(str(project_context))}"
+        if cache_key in self.normative_cache:
+            logger.info(f"📋 Usando contenido en caché para: {normative_info['name']}")
+            return self.normative_cache[cache_key]
+        
+        try:
+            # Extraer texto completo del PDF
+            extracted_content = self.ocr_processor.extract_text_from_pdf(str(file_path))
+            full_text = extracted_content.get("full_text", "")
+            
+            if not full_text:
+                return {
+                    "error": f"No se pudo extraer texto de: {file_path}",
+                    "content": "",
+                    "selected_sections": []
+                }
+            
+            # Usar IA para seleccionar secciones relevantes
+            selected_sections = await self._ai_select_relevant_sections(
+                full_text, project_context, normative_info, ai_client
+            )
+            
+            # Combinar secciones seleccionadas
+            if selected_sections:
+                combined_content = "\n\n--- SECCIÓN SELECCIONADA ---\n\n".join(selected_sections)
+            else:
+                # Fallback: usar las primeras 3000 caracteres
+                combined_content = full_text[:3000]
+                logger.warning(f"⚠️ No se encontraron secciones específicas, usando muestra general")
+            
+            result = {
+                "name": normative_info["name"],
+                "file_path": str(file_path),
+                "content": combined_content,
+                "selected_sections": selected_sections,
+                "total_sections_found": len(selected_sections),
+                "justification": normative_info.get("justification", ""),
+                "selection_method": "ai_intelligent"
+            }
+            
+            # Guardar en cache
+            self.normative_cache[cache_key] = result
+            logger.info(f"✅ SELECCIÓN INTELIGENTE COMPLETADA: {len(selected_sections)} secciones seleccionadas")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"❌ Error en selección inteligente: {str(e)}")
+            return {
+                "error": f"Error en selección inteligente de {file_path}: {str(e)}",
+                "content": "",
+                "selected_sections": []
+            }
+    
+    async def _ai_select_relevant_sections(self, full_text: str, project_context: Dict[str, Any], normative_info: Dict[str, Any], ai_client) -> List[str]:
+        """
+        Usa IA para seleccionar las secciones más relevantes del documento normativo.
+        """
+        # Crear prompt para selección inteligente de secciones
+        selection_prompt = f"""
+        Eres un experto en normativa de construcción española. Tu tarea es analizar un documento normativo y seleccionar ÚNICAMENTE las secciones que son relevantes para un proyecto específico.
+
+        CONTEXTO DEL PROYECTO:
+        {json.dumps(project_context, indent=2)}
+
+        INFORMACIÓN DE LA NORMATIVA:
+        - Nombre: {normative_info['name']}
+        - Justificación: {normative_info.get('justification', '')}
+        - Tipo: {normative_info.get('sections_to_apply', 'general')}
+
+        DOCUMENTO NORMATIVO COMPLETO:
+        {full_text[:15000]}
+
+        INSTRUCCIONES PARA SELECCIÓN INTELIGENTE:
+
+        1. **ANALIZA EL CONTEXTO DEL PROYECTO:**
+           - Uso principal del edificio
+           - Norma zonal aplicable
+           - Superficie y características técnicas
+           - Sistemas constructivos detectados
+
+        2. **IDENTIFICA SECCIONES RELEVANTES:**
+           - Artículos que se aplican específicamente al tipo de proyecto
+           - Secciones relacionadas con el uso principal
+           - Normativas específicas de la zona
+           - Requisitos técnicos aplicables
+
+        3. **EXCLUYE SECCIONES NO APLICABLES:**
+           - Artículos para otros tipos de uso
+           - Normativas de otras zonas
+           - Requisitos no aplicables al proyecto
+           - Información general no específica
+
+        4. **SELECCIONA CON PRECISIÓN:**
+           - Solo secciones que realmente se aplican
+           - Incluye contexto suficiente para entender cada sección
+           - Mantén la numeración y estructura original
+           - Prioriza secciones con requisitos específicos
+
+        Devuelve un JSON con la siguiente estructura:
+        {{
+            "secciones_seleccionadas": [
+                {{
+                    "numero_articulo": "número del artículo/sección",
+                    "titulo": "título de la sección",
+                    "contenido": "contenido completo de la sección",
+                    "relevancia": "explicación de por qué es relevante para este proyecto",
+                    "aplicabilidad": "cómo se aplica específicamente al proyecto"
+                }}
+            ],
+            "resumen_seleccion": {{
+                "total_secciones_encontradas": "número total de secciones en el documento",
+                "secciones_seleccionadas": "número de secciones seleccionadas",
+                "criterios_aplicados": ["lista de criterios usados para la selección"],
+                "exclusiones": ["lista de tipos de secciones excluidas y por qué"]
+            }}
+        }}
+        """
+        
+        try:
+            response = await ai_client.generate_response(selection_prompt, max_tokens=3000)
+            
+            # Parsear respuesta de IA
+            import json
+            import re
+            
+            # Intentar parsear JSON directamente
+            try:
+                ai_result = json.loads(response)
+            except json.JSONDecodeError:
+                # Si falla, intentar extraer JSON de bloques markdown
+                json_match = re.search(r'```json\s*(\{.*?\})\s*```', response, re.DOTALL)
+                if json_match:
+                    ai_result = json.loads(json_match.group(1))
+                else:
+                    # Fallback: buscar JSON en la respuesta
+                    json_match = re.search(r'\{.*\}', response, re.DOTALL)
+                    if json_match:
+                        ai_result = json.loads(json_match.group(0))
+                    else:
+                        logger.error(f"❌ No se pudo extraer JSON de la respuesta de IA")
+                        return []
+            
+            # Extraer secciones seleccionadas
+            selected_sections = []
+            if "secciones_seleccionadas" in ai_result:
+                for seccion in ai_result["secciones_seleccionadas"]:
+                    if "contenido" in seccion:
+                        selected_sections.append(seccion["contenido"])
+            
+            logger.info(f"🎯 IA seleccionó {len(selected_sections)} secciones de {normative_info['name']}")
+            
+            return selected_sections
+            
+        except Exception as e:
+            logger.error(f"❌ Error en selección IA: {str(e)}")
+            return []
+    
     def get_normative_summary(self, project_context: Dict[str, Any]) -> Dict[str, Any]:
         """Obtener resumen de normativas aplicables con logs detallados"""
         logger.info(f"🎯 GENERANDO RESUMEN DE NORMATIVAS para contexto: {project_context}")

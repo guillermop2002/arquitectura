@@ -682,78 +682,99 @@ class BasicoAnalyzer:
         # PASO 1: Determinar normativas aplicables específicamente para este proyecto
         applicable_normatives = self.normative_loader.get_applicable_normatives(contexto_proyecto)
         
-        # PASO 2: Cargar solo el contenido relevante de cada normativa
+        # PASO 2: Cargar contenido con selección inteligente de secciones
         normative_contents = []
         for normative in applicable_normatives[:5]:  # Limitar a 5 normativas principales
-            content = self.normative_loader.load_normative_content(normative)
+            # Usar selección inteligente de secciones
+            content = await self.normative_loader.get_intelligent_sections(
+                normative, contexto_proyecto, self.ai_client
+            )
             if not content.get("error"):
                 normative_contents.append({
                     "name": content["name"],
                     "justification": content["justification"],
-                    "relevant_content": content["content"][:2000]  # Limitar contenido
+                    "selection_method": content.get("selection_method", "unknown"),
+                    "sections_selected": content.get("total_sections_found", 0),
+                    "relevant_content": content["content"][:3000]  # Más contenido con secciones seleccionadas
                 })
         
-        # PASO 3: Crear prompt contextual específico
+        # PASO 3: Crear prompt contextual específico con información de selección inteligente
         normatives_text = "\n\n".join([
-            f"NORMATIVA: {norm['name']}\nJUSTIFICACIÓN: {norm['justification']}\nCONTENIDO RELEVANTE:\n{norm['relevant_content']}"
+            f"NORMATIVA: {norm['name']}\n"
+            f"JUSTIFICACIÓN: {norm['justification']}\n"
+            f"MÉTODO DE SELECCIÓN: {norm['selection_method']}\n"
+            f"SECCIONES SELECCIONADAS: {norm['sections_selected']}\n"
+            f"CONTENIDO RELEVANTE (secciones seleccionadas por IA):\n{norm['relevant_content']}"
             for norm in normative_contents
         ])
         
         prompt = f"""
         {BASICO_GROQ_BASE}
         
-        FASE 3: VERIFICACIÓN NORMATIVA CONTEXTUAL ESPECÍFICA
+        FASE 3: VERIFICACIÓN NORMATIVA CON SELECCIÓN INTELIGENTE DE SECCIONES
         
-        Analiza el proyecto aplicando ÚNICAMENTE las normativas cargadas que son específicamente relevantes para este proyecto.
+        Analiza el proyecto aplicando ÚNICAMENTE las secciones normativas que han sido seleccionadas inteligentemente para este proyecto específico.
         
         CONTEXTO DEL PROYECTO (Fase 2):
         {json.dumps(contexto_proyecto, indent=2)}
         
-        NORMATIVAS APLICABLES (solo estas):
-        {normatives_text[:8000]}
+        NORMATIVAS CON SECCIONES SELECCIONADAS (solo estas secciones son relevantes):
+        {normatives_text[:10000]}
         
         TEXTO DEL PROYECTO:
         {project_text[:8000]}
         
         INSTRUCCIONES CRÍTICAS:
-        1. SOLO verifica contra las normativas proporcionadas arriba
-        2. NO inventes normativas o artículos no mencionados
+        1. SOLO verifica contra las secciones normativas proporcionadas arriba
+        2. NO inventes normativas, artículos o secciones no mencionadas
         3. Si un artículo no está en el contenido cargado, NO lo menciones
         4. Cada incumplimiento debe citar específicamente el texto normativo proporcionado
-        5. Justifica por qué cada normativa/artículo es aplicable a ESTE proyecto específico
+        5. Justifica por qué cada sección normativa es aplicable a ESTE proyecto específico
+        6. Considera que las secciones han sido pre-seleccionadas por IA para ser relevantes
         
         Responde en formato JSON:
         {{
           "normativas_verificadas": [
             {{
               "normativa": "nombre exacto de la normativa cargada",
-              "articulos_verificados": ["artículos encontrados en contenido cargado"],
+              "secciones_seleccionadas": "número de secciones seleccionadas por IA",
+              "metodo_seleccion": "método usado para seleccionar secciones",
+              "articulos_verificados": ["artículos encontrados en secciones cargadas"],
               "aplicable_justificacion": "por qué es aplicable a este proyecto"
             }}
           ],
           "incumplimientos_detectados": [
             {{
               "normativa": "nombre_normativa_cargada",
+              "seccion_aplicable": "sección específica seleccionada por IA",
               "articulo_especifico": "artículo exacto del contenido cargado",
               "texto_normativo": "texto exacto de la normativa",
               "descripcion_incumplimiento": "qué no cumple el proyecto",
               "ubicacion_en_proyecto": "dónde se detectó en el proyecto",
               "severidad": "low/medium/high",
-              "evidencia_textual": "cita textual del proyecto que evidencia el incumplimiento"
+              "evidencia_textual": "cita textual del proyecto que evidencia el incumplimiento",
+              "relevancia_seleccion": "por qué esta sección fue seleccionada como relevante"
             }}
           ],
           "elementos_faltantes_verificados": [
             {{
-              "elemento": "elemento específico mencionado en normativa cargada",
+              "elemento": "elemento específico mencionado en sección normativa cargada",
               "normativa_origen": "normativa cargada que lo requiere",
+              "seccion_origen": "sección específica que lo requiere",
               "texto_normativo_origen": "texto exacto que lo requiere",
-              "obligatorio_justificacion": "por qué es obligatorio según el contexto"
+              "ubicacion_esperada": "dónde debería estar en el proyecto"
             }}
           ],
-          "puntuacion_cumplimiento": 0-100,
           "observaciones_especificas": [
-            "observaciones basadas únicamente en normativas cargadas y proyecto analizado"
-          ]
+            "observaciones sobre aplicabilidad de secciones normativas específicas"
+          ],
+          "puntuacion_cumplimiento": "porcentaje de cumplimiento basado en secciones cargadas",
+          "resumen_seleccion_inteligente": {{
+            "total_normativas_cargadas": "número de normativas procesadas",
+            "total_secciones_seleccionadas": "número total de secciones seleccionadas",
+            "criterios_aplicados": ["criterios usados para selección de secciones"],
+            "eficiencia_seleccion": "evaluación de la precisión de la selección"
+          }}
         }}
         """
         
