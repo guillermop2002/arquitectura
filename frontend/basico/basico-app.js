@@ -82,22 +82,33 @@ class BasicoApp {
 
     async createSession() {
         try {
+            flog.info('🔧 Iniciando creación de sesión');
             const formData = new FormData();
             formData.append('project_name', `Proyecto ${new Date().toLocaleString()}`);
             
+            flog.api('POST', `${this.baseURL}/session/create`, formData);
+            
+            const startTime = Date.now();
             const response = await fetch(`${this.baseURL}/session/create`, {
                 method: 'POST',
                 body: formData
             });
+            const duration = Date.now() - startTime;
             
             if (response.ok) {
                 const data = await response.json();
                 this.sessionId = data.session_id;
+                flog.apiResponse(response.status, data, duration);
+                flog.info(`✅ Sesión creada: ${this.sessionId}`);
                 console.log('Sesión creada:', this.sessionId);
             } else {
-                throw new Error('Error creando sesión');
+                const errorText = await response.text();
+                flog.apiResponse(response.status, errorText, duration);
+                flog.error(`❌ Error creando sesión: ${response.status} - ${errorText}`);
+                throw new Error(`Error creando sesión: ${response.status} - ${errorText}`);
             }
         } catch (error) {
+            flog.error(`❌ Error en createSession: ${error.message}`);
             console.error('Error:', error);
             this.showAlert('Error al crear sesión', 'danger');
         }
@@ -255,14 +266,21 @@ class BasicoApp {
 
         try {
             const formData = new FormData();
+            let totalFiles = 0;
             
             // Añadir todos los archivos
             Object.keys(this.uploadedFiles).forEach(category => {
                 this.uploadedFiles[category].forEach(fileObj => {
                     formData.append('files', fileObj.file);
+                    totalFiles++;
+                    flog.debug(`📄 Archivo: ${fileObj.file.name} (${fileObj.file.size} bytes)`);
                 });
             });
 
+            flog.info(`📊 Total de archivos a subir: ${totalFiles}`);
+            flog.api('POST', `${this.baseURL}/session/${this.sessionId}/upload`, formData);
+
+            const startTime = Date.now();
             const response = await fetch(`${this.baseURL}/session/${this.sessionId}/upload`, {
                 method: 'POST',
                 body: formData
@@ -270,12 +288,18 @@ class BasicoApp {
 
             if (response.ok) {
                 const result = await response.json();
+                flog.apiResponse(response.status, result, Date.now() - startTime);
+                flog.info(`✅ Archivos subidos: ${result.total_files} archivos`);
                 console.log('Archivos subidos:', result);
                 this.showAlert(`${result.total_files} archivos subidos correctamente`, 'success');
             } else {
-                throw new Error('Error subiendo archivos');
+                const errorText = await response.text();
+                flog.apiResponse(response.status, errorText, Date.now() - startTime);
+                flog.error(`❌ Error subiendo archivos: ${response.status} - ${errorText}`);
+                throw new Error(`Error subiendo archivos: ${response.status} - ${errorText}`);
             }
         } catch (error) {
+            flog.error(`❌ Error en uploadFiles: ${error.message}`);
             console.error('Error:', error);
             this.showAlert('Error al subir archivos', 'danger');
             throw error;
@@ -419,10 +443,14 @@ class BasicoApp {
             grado: document.getElementById('gradoSelect').value || 'basico'
         };
 
+        flog.info(`💾 Guardando configuración: ${JSON.stringify(config)}`);
         this.projectConfig = config;
         
         try {
             // Ejecutar Fase 2 (análisis de memoria)
+            flog.api('POST', `${this.baseURL}/analyze/fase2/${this.sessionId}`, config);
+            
+            const startTime = Date.now();
             const response = await fetch(`${this.baseURL}/analyze/fase2/${this.sessionId}`, {
                 method: 'POST',
                 headers: {
@@ -430,18 +458,24 @@ class BasicoApp {
                 },
                 body: JSON.stringify(config)
             });
+            const duration = Date.now() - startTime;
 
             if (response.ok) {
                 const result = await response.json();
+                flog.apiResponse(response.status, result, duration);
+                flog.info(`✅ Fase 2 completada: coherence_score=${result.coherence_score}`);
                 console.log('Fase 2 completada:', result);
                 this.showPhase3(result);
             } else {
                 const errorText = await response.text();
+                flog.apiResponse(response.status, errorText, duration);
+                flog.error(`❌ Error en Fase 2: ${response.status} - ${errorText}`);
                 console.error('Error en Fase 2:', errorText);
                 this.showAlert('Error en análisis de memoria. Continuando...', 'warning');
                 this.showPhase3({ error: 'Análisis parcial' });
             }
         } catch (error) {
+            flog.error(`❌ Error en saveConfiguration: ${error.message}`);
             console.error('Error:', error);
             this.showAlert('Error en configuración. Continuando...', 'warning');
             this.showPhase3({ error: 'Configuración parcial' });

@@ -67,8 +67,8 @@ async def log_requests(request: Request, call_next):
     
     return response
 
-# Agregar router de basico
-app.include_router(basico_router, prefix="/basico")
+# Agregar router de basico (sin prefijo adicional ya que el router ya lo tiene)
+app.include_router(basico_router)
 
 # Endpoint de health check
 @app.get("/health")
