@@ -173,206 +173,482 @@ class BasicoAnalyzer:
         }
     
     def _extract_memoria_texts(self, session_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Extraer textos específicamente de archivos de memoria - MEJORADO"""
-        memoria_texts = {}
+        """Extraer textos de TODOS los archivos para análisis inteligente con IA"""
+        all_texts = {}
         
+        # Extraer texto de TODOS los archivos PDF disponibles
         for file_info in session_data.get("files", []):
-            filename = file_info["filename"].lower()
-            # Identificar archivos de memoria con más criterios
-            memoria_keywords = [
-                "memoria", "memory", "descriptiva", "descripcion", "description",
-                "proyecto", "project", "basico", "basico", "ejecucion", "ejecucion",
-                "memoria_descriptiva", "memoria_justificativa", "justificativa"
-            ]
-            
-            if any(keyword in filename for keyword in memoria_keywords):
-                file_path = file_info["path"]
-                if file_path.lower().endswith('.pdf'):
-                    text_data = self.ocr_processor.extract_text_from_pdf(file_path)
-                    memoria_texts[file_info["filename"]] = text_data
+            file_path = file_info["path"]
+            if file_path.lower().endswith('.pdf'):
+                text_data = self.ocr_processor.extract_text_from_pdf(file_path)
+                all_texts[file_info["filename"]] = text_data
         
-        # Si no se encontraron archivos específicos de memoria, usar todos los PDFs
-        if not memoria_texts:
-            for file_info in session_data.get("files", []):
-                file_path = file_info["path"]
-                if file_path.lower().endswith('.pdf'):
-                    text_data = self.ocr_processor.extract_text_from_pdf(file_path)
-                    memoria_texts[file_info["filename"]] = text_data
-        
-        return memoria_texts
+        return all_texts
     
     async def _analyze_memoria_with_ai(self, memoria_texts: Dict[str, Any], config: Dict[str, Any]) -> Dict[str, Any]:
-        """Análisis de memoria con IA - MEJORADO"""
+        """Análisis inteligente de TODOS los documentos con IA - EXTRACCIÓN COMPLETA"""
         combined_memoria = self._combine_texts(memoria_texts)
         
-        # Crear prompt mejorado con más contexto
-        prompt = BASICO_ANALISIS_MEMORIA.format(
-            memoria_texto=combined_memoria[:12000],  # Aumentar límite de texto
-            config_proyecto=json.dumps(config, indent=2)
-        )
+        # Crear prompt inteligente que analiza TODO el contenido
+        intelligent_prompt = f"""
+        {BASICO_GROQ_BASE}
         
-        # Añadir instrucciones específicas para extracción técnica
-        enhanced_prompt = f"""
-        {prompt}
+        ANÁLISIS INTELIGENTE COMPLETO DE DOCUMENTACIÓN DEL PROYECTO
         
-        INSTRUCCIONES ADICIONALES PARA EXTRACCIÓN TÉCNICA:
-        1. Busca específicamente valores numéricos (superficies, alturas, dimensiones)
-        2. Identifica materiales de construcción mencionados
-        3. Detecta sistemas de instalaciones (eléctricas, fontanería, climatización)
-        4. Extrae información sobre accesibilidad y normativas mencionadas
-        5. Identifica parámetros urbanísticos (retranqueos, ocupación, edificabilidad)
-        6. Busca referencias a normativas específicas (CTE, PGOUM, etc.)
-        7. Extrae información sobre sistemas estructurales y de cimentación
-        8. Identifica requisitos de seguridad contra incendios
-        9. Detecta sistemas de eficiencia energética
-        10. Extrae información sobre aislamiento térmico y acústico
+        CONFIGURACIÓN DEL PROYECTO:
+        {json.dumps(config, indent=2)}
+        
+        DOCUMENTACIÓN COMPLETA DEL PROYECTO:
+        {combined_memoria[:15000]}
+        
+        INSTRUCCIONES PARA ANÁLISIS INTELIGENTE:
+        
+        Tu tarea es analizar TODA la documentación y extraer CUALQUIER información que pueda ser relevante para la verificación normativa posterior. No te limites a buscar solo lo obvio, sino que debes:
+        
+        1. **INFORMACIÓN TÉCNICA GENERAL:**
+           - Superficies, dimensiones, alturas, volúmenes
+           - Número de plantas, altura total del edificio
+           - Tipos de uso y distribución de espacios
+           - Capacidad de ocupación
+        
+        2. **SISTEMAS CONSTRUCTIVOS:**
+           - Estructura (hormigón, acero, madera, mixta)
+           - Cimentación y sistemas de apoyo
+           - Muros, forjados, cubiertas
+           - Materiales de construcción utilizados
+        
+        3. **INSTALACIONES:**
+           - Eléctricas (potencia, distribución, iluminación)
+           - Fontanería y saneamiento
+           - Climatización y ventilación
+           - Gas, telecomunicaciones
+           - Sistemas de seguridad
+        
+        4. **ACCESIBILIDAD:**
+           - Rampas, ascensores, plataformas
+           - Anchos de paso, puertas
+           - Aseos adaptados
+           - Señalización táctil y visual
+        
+        5. **SEGURIDAD CONTRA INCENDIOS:**
+           - Compartimentación
+           - Salidas de emergencia
+           - Sistemas de detección y extinción
+           - Materiales ignífugos
+           - Distancias de evacuación
+        
+        6. **EFICIENCIA ENERGÉTICA:**
+           - Aislamiento térmico
+           - Sistemas de calefacción/refrigeración
+           - Ventilación natural
+           - Energías renovables
+           - Certificaciones energéticas
+        
+        7. **PARÁMETROS URBANÍSTICOS:**
+           - Ocupación del suelo
+           - Edificabilidad
+           - Retranqueos y distancias
+           - Alturas máximas
+           - Usos permitidos
+        
+        8. **NORMATIVAS MENCIONADAS:**
+           - Referencias a CTE, PGOUM, normativas locales
+           - Códigos técnicos aplicables
+           - Reglamentos específicos
+        
+        9. **INFORMACIÓN ADICIONAL:**
+           - Condicionantes del terreno
+           - Impacto ambiental
+           - Servidumbres
+           - Licencias y permisos
+        
+        10. **OBSERVACIONES CRÍTICAS:**
+            - Inconsistencias detectadas
+            - Información faltante
+            - Posibles incumplimientos
+            - Recomendaciones técnicas
+        
+        Devuelve un JSON con la siguiente estructura:
+        {{
+            "datos_proyecto": {{
+                "superficie_construida": "valor en m²",
+                "superficie_util": "valor en m²",
+                "plantas": "número de plantas",
+                "altura_total": "valor en m",
+                "altura_por_planta": "valor en m",
+                "uso_principal": "tipo de uso detectado",
+                "usos_secundarios": ["lista de usos"],
+                "capacidad_ocupacion": "número de personas"
+            }},
+            "analisis_tecnico": {{
+                "sistema_estructural": "tipo de estructura",
+                "cimentacion": "tipo de cimentación",
+                "materiales_principales": ["lista de materiales"],
+                "sistemas_constructivos": {{
+                    "muros": "descripción",
+                    "forjados": "descripción",
+                    "cubierta": "descripción"
+                }}
+            }},
+            "instalaciones_detectadas": {{
+                "electricas": {{
+                    "potencia_total": "valor en kW",
+                    "distribucion": "descripción",
+                    "iluminacion": "descripción"
+                }},
+                "fontaneria": {{
+                    "abastecimiento": "descripción",
+                    "saneamiento": "descripción"
+                }},
+                "climatizacion": {{
+                    "calefaccion": "descripción",
+                    "refrigeracion": "descripción",
+                    "ventilacion": "descripción"
+                }},
+                "gas": "descripción",
+                "telecomunicaciones": "descripción"
+            }},
+            "accesibilidad": {{
+                "rampas": "descripción",
+                "ascensores": "descripción",
+                "anchos_paso": "descripción",
+                "aseos_adaptados": "descripción",
+                "señalizacion": "descripción"
+            }},
+            "seguridad_incendios": {{
+                "compartimentacion": "descripción",
+                "salidas_emergencia": "descripción",
+                "sistemas_deteccion": "descripción",
+                "sistemas_extincion": "descripción",
+                "materiales_ignifugos": "descripción"
+            }},
+            "eficiencia_energetica": {{
+                "aislamiento_termico": "descripción",
+                "sistemas_climatizacion": "descripción",
+                "ventilacion_natural": "descripción",
+                "energias_renovables": "descripción",
+                "certificacion_energetica": "descripción"
+            }},
+            "parametros_urbanisticos": {{
+                "ocupacion_suelo": "valor en m²",
+                "edificabilidad": "valor en m²",
+                "retranqueos": "descripción",
+                "alturas_maximas": "descripción",
+                "usos_permitidos": ["lista de usos"]
+            }},
+            "normativas_mencionadas": {{
+                "cte": ["referencias encontradas"],
+                "pgoum": ["referencias encontradas"],
+                "normativas_locales": ["referencias encontradas"],
+                "codigos_tecnicos": ["referencias encontradas"]
+            }},
+            "informacion_adicional": {{
+                "condicionantes_terreno": "descripción",
+                "impacto_ambiental": "descripción",
+                "servidumbres": "descripción",
+                "licencias_permisos": "descripción"
+            }},
+            "observaciones_criticas": [
+                "lista de observaciones importantes"
+            ],
+            "coherencia_configuracion": {{
+                "uso_detectado_vs_configurado": "comparación",
+                "norma_zonal_detectada": "si se menciona",
+                "grado_detectado": "si se menciona",
+                "inconsistencias": ["lista de inconsistencias"]
+            }}
+        }}
         """
         
-        response = await self.ai_client.generate_response(enhanced_prompt, max_tokens=2500)
+        response = await self.ai_client.generate_response(intelligent_prompt, max_tokens=3000)
         
         return self._parse_ai_json_response(response)
     
     async def _analyze_planos_with_ai(self, session_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Análisis de planos con IA - MEJORADO PARA DIMENSIONES"""
+        """Análisis inteligente de planos con IA - EXTRACCIÓN COMPLETA DE DIMENSIONES"""
         planos_texts = {}
         
+        # Extraer texto de TODOS los archivos PDF (no solo los que parecen planos)
         for file_info in session_data.get("files", []):
-            filename = file_info["filename"].lower()
-            # Identificar archivos de planos con más criterios
-            planos_keywords = [
-                "plano", "plan", "dwg", "autocad", "plantas", "alzados", "secciones",
-                "situacion", "emplazamiento", "fachadas", "cortes", "detalles"
-            ]
-            
-            if any(keyword in filename for keyword in planos_keywords):
-                file_path = file_info["path"]
-                if file_path.lower().endswith('.pdf'):
-                    text_data = self.ocr_processor.extract_text_from_pdf(file_path)
-                    planos_texts[file_info["filename"]] = text_data
+            file_path = file_info["path"]
+            if file_path.lower().endswith('.pdf'):
+                text_data = self.ocr_processor.extract_text_from_pdf(file_path)
+                planos_texts[file_info["filename"]] = text_data
         
         if not planos_texts:
-            return {"message": "No se encontraron planos para analizar", "dimensiones_extraidas": {}}
+            return {"message": "No se encontraron archivos para analizar", "dimensiones_extraidas": {}}
         
         combined_planos = self._combine_texts(planos_texts)
         
-        # Crear prompt mejorado para extracción de dimensiones
-        enhanced_prompt = f"""
+        # Crear prompt inteligente para análisis completo de planos
+        intelligent_planos_prompt = f"""
         {BASICO_GROQ_BASE}
         
-        ANÁLISIS DE PLANOS PARA EXTRACCIÓN DE DIMENSIONES Y ELEMENTOS TÉCNICOS
+        ANÁLISIS INTELIGENTE COMPLETO DE PLANOS Y DOCUMENTACIÓN GRÁFICA
         
-        TEXTO DE PLANOS:
-        {combined_planos[:10000]}
+        DOCUMENTACIÓN GRÁFICA COMPLETA:
+        {combined_planos[:12000]}
         
-        INSTRUCCIONES ESPECÍFICAS:
-        1. Extrae TODAS las dimensiones numéricas (alturas, anchos, largos, superficies)
-        2. Identifica elementos constructivos (muros, pilares, forjados, cubiertas)
-        3. Detecta instalaciones (eléctricas, fontanería, climatización, gas)
-        4. Extrae información sobre accesibilidad (rampas, ascensores, anchos de paso)
-        5. Identifica elementos de seguridad (salidas de emergencia, extintores)
-        6. Detecta sistemas de ventilación y evacuación
-        7. Extrae información sobre materiales y acabados
-        8. Identifica elementos estructurales (vigas, pilares, cimentación)
-        9. Detecta sistemas de protección contra incendios
-        10. Extrae información sobre eficiencia energética
+        INSTRUCCIONES PARA ANÁLISIS INTELIGENTE DE PLANOS:
+        
+        Analiza TODA la documentación gráfica y extrae CUALQUIER información técnica que pueda ser relevante para la verificación normativa. Busca información en:
+        
+        1. **DIMENSIONES Y MEDIDAS:**
+           - Superficies totales y por planta
+           - Alturas totales y por planta
+           - Dimensiones de espacios, habitaciones, pasillos
+           - Cotas, escalas, medidas en planos
+           - Volúmenes construidos
+        
+        2. **ELEMENTOS CONSTRUCTIVOS:**
+           - Tipos de estructura (pilares, vigas, muros)
+           - Sistemas de cimentación
+           - Tipos de forjados y cubiertas
+           - Materiales constructivos indicados
+           - Espesores de muros y elementos
+        
+        3. **INSTALACIONES TÉCNICAS:**
+           - Redes eléctricas y puntos de luz
+           - Instalaciones de fontanería
+           - Sistemas de climatización
+           - Instalaciones de gas
+           - Telecomunicaciones y datos
+           - Sistemas de seguridad
+        
+        4. **ACCESIBILIDAD:**
+           - Rampas y sus pendientes
+           - Ascensores y plataformas
+           - Anchos de paso y puertas
+           - Aseos adaptados
+           - Señalización táctil y visual
+        
+        5. **SEGURIDAD CONTRA INCENDIOS:**
+           - Compartimentación horizontal y vertical
+           - Salidas de emergencia y recorridos
+           - Sistemas de detección
+           - Extintores y bocas de incendio
+           - Materiales ignífugos
+        
+        6. **EFICIENCIA ENERGÉTICA:**
+           - Aislamiento térmico en secciones
+           - Sistemas de ventilación
+           - Orientación y soleamiento
+           - Sistemas de energías renovables
+        
+        7. **PARÁMETROS URBANÍSTICOS:**
+           - Ocupación del suelo
+           - Retranqueos y distancias
+           - Alturas máximas
+           - Usos por planta
+        
+        8. **INFORMACIÓN ADICIONAL:**
+           - Condicionantes del terreno
+           - Servidumbres y limitaciones
+           - Accesos y aparcamientos
+           - Zonas verdes y ajardinamiento
         
         Devuelve un JSON con la siguiente estructura:
         {{
             "dimensiones_extraidas": {{
                 "superficie_total": "valor en m²",
+                "superficie_util": "valor en m²",
+                "superficie_construida": "valor en m²",
                 "altura_total": "valor en m",
                 "plantas": "número de plantas",
-                "dimensiones_por_planta": {{}},
-                "alturas_por_planta": {{}}
+                "dimensiones_por_planta": {{
+                    "planta_baja": "superficie en m²",
+                    "planta_primera": "superficie en m²",
+                    "planta_segunda": "superficie en m²"
+                }},
+                "alturas_por_planta": {{
+                    "planta_baja": "altura en m",
+                    "planta_primera": "altura en m",
+                    "planta_segunda": "altura en m"
+                }},
+                "dimensiones_espacios": {{
+                    "habitaciones": "dimensiones típicas",
+                    "pasillos": "anchos mínimos",
+                    "escaleras": "dimensiones"
+                }}
             }},
             "elementos_constructivos": {{
-                "estructura": "tipo de estructura",
-                "muros": "tipo de muros",
+                "estructura": "tipo de estructura detectada",
+                "cimentacion": "tipo de cimentación",
+                "muros": "tipo y espesor de muros",
+                "forjados": "tipo de forjados",
                 "cubierta": "tipo de cubierta",
-                "cimentacion": "tipo de cimentación"
+                "materiales_principales": ["lista de materiales"]
             }},
             "instalaciones_detectadas": {{
-                "electricas": "descripción",
-                "fontaneria": "descripción",
-                "climatizacion": "descripción",
-                "gas": "descripción"
+                "electricas": {{
+                    "distribucion": "descripción de la red",
+                    "puntos_luz": "número y ubicación",
+                    "cuadros_electricos": "ubicación y potencia"
+                }},
+                "fontaneria": {{
+                    "abastecimiento": "descripción",
+                    "saneamiento": "descripción",
+                    "instalaciones_sanitarias": "número y ubicación"
+                }},
+                "climatizacion": {{
+                    "calefaccion": "sistema detectado",
+                    "refrigeracion": "sistema detectado",
+                    "ventilacion": "sistema detectado"
+                }},
+                "gas": "sistema detectado",
+                "telecomunicaciones": "sistema detectado"
             }},
             "accesibilidad": {{
-                "rampas": "descripción",
-                "ascensores": "descripción",
-                "anchos_paso": "descripción"
+                "rampas": {{
+                    "pendiente": "valor detectado",
+                    "ancho": "valor detectado",
+                    "ubicacion": "descripción"
+                }},
+                "ascensores": {{
+                    "numero": "número detectado",
+                    "capacidad": "capacidad detectada",
+                    "ubicacion": "descripción"
+                }},
+                "anchos_paso": {{
+                    "pasillos": "ancho mínimo detectado",
+                    "puertas": "ancho mínimo detectado"
+                }},
+                "aseos_adaptados": "descripción",
+                "señalizacion": "descripción"
             }},
-            "seguridad": {{
-                "salidas_emergencia": "descripción",
-                "extintores": "descripción",
-                "sistemas_deteccion": "descripción"
+            "seguridad_incendios": {{
+                "compartimentacion": "descripción",
+                "salidas_emergencia": {{
+                    "numero": "número detectado",
+                    "ubicacion": "descripción",
+                    "ancho": "ancho detectado"
+                }},
+                "sistemas_deteccion": "sistema detectado",
+                "extintores": "ubicación y tipo",
+                "bocas_incendio": "ubicación"
             }},
-            "observaciones_tecnicas": []
+            "eficiencia_energetica": {{
+                "aislamiento_termico": "detectado en secciones",
+                "ventilacion_natural": "sistema detectado",
+                "orientacion": "orientación detectada",
+                "soleamiento": "análisis de soleamiento"
+            }},
+            "parametros_urbanisticos": {{
+                "ocupacion_suelo": "valor en m²",
+                "retranqueos": "valores detectados",
+                "alturas_maximas": "valores detectados",
+                "usos_por_planta": "distribución de usos"
+            }},
+            "informacion_adicional": {{
+                "accesos": "descripción",
+                "aparcamientos": "número y ubicación",
+                "zonas_verdes": "superficie y ubicación",
+                "servidumbres": "limitaciones detectadas"
+            }},
+            "observaciones_tecnicas": [
+                "lista de observaciones importantes"
+            ],
+            "coherencia_con_memoria": {{
+                "dimensiones_consistentes": "verificación",
+                "usos_consistentes": "verificación",
+                "inconsistencias": ["lista de inconsistencias"]
+            }}
         }}
         """
         
-        response = await self.ai_client.generate_response(enhanced_prompt, max_tokens=2000)
+        response = await self.ai_client.generate_response(intelligent_planos_prompt, max_tokens=2500)
         
         return self._parse_ai_json_response(response)
     
     async def _check_coherence_with_ai(self, ai_analysis: Dict[str, Any], config: Dict[str, Any], planos_analysis: Dict[str, Any]) -> Dict[str, Any]:
-        """Verificar coherencia entre memoria, configuración y planos"""
+        """Verificación inteligente de coherencia entre memoria, configuración y planos"""
         
-        # Extraer datos clave
+        # Extraer datos clave de la información extraída
         memoria_data = ai_analysis.get("datos_proyecto", {})
+        memoria_tecnico = ai_analysis.get("analisis_tecnico", {})
+        memoria_coherencia = ai_analysis.get("coherencia_configuracion", {})
+        
         user_config = config
         planos_data = planos_analysis.get("dimensiones_extraidas", {})
+        planos_coherencia = planos_analysis.get("coherencia_con_memoria", {})
         
-        # Verificar coherencia
-        coherence_issues = []
-        coherence_score = 100
+        # Crear prompt para verificación inteligente de coherencia
+        coherence_prompt = f"""
+        {BASICO_GROQ_BASE}
         
-        # Verificar uso principal
-        memoria_uso = memoria_data.get("uso_principal", "").lower()
-        config_uso = user_config.get("uso_principal", "").lower()
-        if memoria_uso and config_uso and memoria_uso != config_uso:
-            coherence_issues.append({
-                "tipo": "uso_principal",
-                "memoria": memoria_uso,
-                "config": config_uso,
-                "severidad": "high"
-            })
-            coherence_score -= 20
+        VERIFICACIÓN INTELIGENTE DE COHERENCIA ENTRE DOCUMENTACIÓN
         
-        # Verificar superficie
-        memoria_superficie_raw = memoria_data.get("superficie_construida", 0)
-        planos_superficie_raw = planos_data.get("superficie_planos", 0)
+        CONFIGURACIÓN DEL USUARIO:
+        {json.dumps(user_config, indent=2)}
         
-        # Convertir a números, manejando casos de "no_especificado" o strings
-        try:
-            memoria_superficie = float(memoria_superficie_raw) if isinstance(memoria_superficie_raw, (int, float)) else 0
-        except (ValueError, TypeError):
-            memoria_superficie = 0
-            
-        try:
-            planos_superficie = float(planos_superficie_raw) if isinstance(planos_superficie_raw, (int, float)) else 0
-        except (ValueError, TypeError):
-            planos_superficie = 0
+        DATOS EXTRAÍDOS DE LA MEMORIA:
+        {json.dumps(memoria_data, indent=2)}
         
-        if memoria_superficie > 0 and planos_superficie > 0:
-            diferencia = abs(memoria_superficie - planos_superficie) / memoria_superficie
-            if diferencia > 0.1:  # Más del 10% de diferencia
-                coherence_issues.append({
-                    "tipo": "superficie",
-                    "memoria": memoria_superficie,
-                    "planos": planos_superficie,
-                    "diferencia_porcentaje": diferencia * 100,
-                    "severidad": "medium"
-                })
-                coherence_score -= 15
+        ANÁLISIS TÉCNICO DE LA MEMORIA:
+        {json.dumps(memoria_tecnico, indent=2)}
         
-        return {
-            "coherence_score": max(0, coherence_score),
-            "issues": coherence_issues,
-            "total_issues": len(coherence_issues),
-            "high_severity_issues": len([i for i in coherence_issues if i.get("severidad") == "high"]),
-            "recommendations": self._generate_coherence_recommendations(coherence_issues)
-        }
+        DIMENSIONES EXTRAÍDAS DE LOS PLANOS:
+        {json.dumps(planos_data, indent=2)}
+        
+        COHERENCIA DETECTADA EN MEMORIA:
+        {json.dumps(memoria_coherencia, indent=2)}
+        
+        COHERENCIA DETECTADA EN PLANOS:
+        {json.dumps(planos_coherencia, indent=2)}
+        
+        INSTRUCCIONES PARA VERIFICACIÓN DE COHERENCIA:
+        
+        Analiza la coherencia entre:
+        1. Configuración del usuario vs datos extraídos de la memoria
+        2. Datos de la memoria vs dimensiones de los planos
+        3. Análisis técnico vs información gráfica
+        4. Consistencia interna de cada documento
+        
+        Verifica específicamente:
+        - Uso principal y usos secundarios
+        - Superficies y dimensiones
+        - Número de plantas y alturas
+        - Sistemas constructivos
+        - Instalaciones técnicas
+        - Parámetros urbanísticos
+        - Normativas mencionadas
+        
+        Devuelve un JSON con la siguiente estructura:
+        {{
+            "coherence_score": "puntuación de 0 a 100",
+            "issues": [
+                {{
+                    "tipo": "tipo de inconsistencia",
+                    "descripcion": "descripción detallada",
+                    "severidad": "low/medium/high",
+                    "fuente": "memoria/planos/config",
+                    "valor_esperado": "valor esperado",
+                    "valor_encontrado": "valor encontrado",
+                    "recomendacion": "recomendación para corregir"
+                }}
+            ],
+            "summary": "resumen de la coherencia",
+            "recomendaciones": [
+                "lista de recomendaciones generales"
+            ],
+            "datos_consistentes": {{
+                "uso_principal": "verificación",
+                "superficies": "verificación",
+                "dimensiones": "verificación",
+                "sistemas_constructivos": "verificación",
+                "instalaciones": "verificación"
+            }},
+            "confianza_analisis": {{
+                "memoria": "nivel de confianza en datos de memoria",
+                "planos": "nivel de confianza en datos de planos",
+                "configuracion": "nivel de confianza en configuración"
+            }}
+        }}
+        """
+        
+        response = await self.ai_client.generate_response(coherence_prompt, max_tokens=2000)
+        
+        return self._parse_ai_json_response(response)
     
     def _prepare_project_text(self, session_data: Dict[str, Any]) -> str:
         """Preparar texto del proyecto para análisis normativo"""
