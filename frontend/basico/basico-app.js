@@ -51,12 +51,16 @@ const flog = new FrontendLogger();
 
 class BasicoApp {
     constructor() {
+        // Inicializar logger primero
+        this.flog = new FrontendLogger();
+        window.flog = this.flog; // Hacer disponible globalmente
+
         this.baseURL = '/basico';
         this.sessionId = null;
         this.uploadedFiles = {};
         this.projectConfig = {};
-        
-        flog.info('🚀 BasicoApp inicializado');
+
+        this.flog.info('🚀 BasicoApp inicializado');
         
         // Configuración de zonas y grados
         this.zoneGrades = {
@@ -75,9 +79,16 @@ class BasicoApp {
     }
 
     init() {
-        this.setupFileUploads();
-        this.setupFormHandlers();
-        this.createSession();
+        this.flog.info('🚀 Inicializando BasicoApp...');
+        try {
+            this.setupFileUploads();
+            this.setupFormHandlers();
+            this.createSession();
+            this.flog.info('✅ BasicoApp inicializada correctamente');
+        } catch (error) {
+            this.flog.error('❌ Error en inicialización:', error);
+            throw error;
+        }
     }
 
     async createSession() {
@@ -115,36 +126,61 @@ class BasicoApp {
     }
 
     setupFileUploads() {
+        this.flog.info('🔧 Configurando file uploads...');
         const uploadAreas = document.querySelectorAll('.file-upload-area');
-        
-        uploadAreas.forEach(area => {
+        this.flog.info(`📁 Encontradas ${uploadAreas.length} áreas de upload`);
+
+        uploadAreas.forEach((area, index) => {
             const input = area.querySelector('input[type="file"]');
             const category = area.dataset.category;
-            
+
+            this.flog.debug(`📂 Configurando área ${index + 1}: categoría '${category}'`);
+
+            if (!input) {
+                this.flog.error(`❌ No se encontró input en área ${category}`);
+                return;
+            }
+
             // Click para abrir selector
-            area.addEventListener('click', () => input.click());
-            
+            area.addEventListener('click', (e) => {
+                this.flog.debug(`🖱️ Click en área ${category}`);
+                e.stopPropagation();
+                input.click();
+            });
+
             // Drag & Drop
             area.addEventListener('dragover', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 area.classList.add('dragover');
+                this.flog.debug(`🔄 Dragover en ${category}`);
             });
-            
-            area.addEventListener('dragleave', () => {
+
+            area.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 area.classList.remove('dragover');
+                this.flog.debug(`↩️ Dragleave en ${category}`);
             });
-            
+
             area.addEventListener('drop', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 area.classList.remove('dragover');
+                this.flog.info(`📥 Drop en ${category} con ${e.dataTransfer.files.length} archivos`);
                 this.handleFiles(e.dataTransfer.files, category);
             });
-            
+
             // Input change
             input.addEventListener('change', (e) => {
+                this.flog.info(`📁 Input change en ${category} con ${e.target.files.length} archivos`);
                 this.handleFiles(e.target.files, category);
             });
+
+            this.flog.debug(`✅ Área ${category} configurada correctamente`);
         });
+
+        this.flog.info('✅ File uploads configurados');
     }
 
     handleFiles(files, category) {
