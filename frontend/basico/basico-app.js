@@ -253,9 +253,9 @@ class BasicoApp {
             this.updateNormativePreview();
         });
 
-        // Guardar configuración
-        document.getElementById('saveConfig').addEventListener('click', () => {
-            this.saveConfiguration();
+        // Iniciar análisis completo
+        document.getElementById('startCompleteAnalysis').addEventListener('click', () => {
+            this.startCompleteAnalysis();
         });
     }
 
@@ -431,199 +431,217 @@ class BasicoApp {
     checkConfigComplete() {
         const uso = document.getElementById('usoSelect').value;
         const zona = document.getElementById('zonaSelect').value;
-        const saveBtn = document.getElementById('saveConfig');
-        
-        saveBtn.disabled = !uso || !zona;
+        const analyzeBtn = document.getElementById('startCompleteAnalysis');
+
+        analyzeBtn.disabled = !uso || !zona;
     }
 
-    async saveConfiguration() {
+    async startCompleteAnalysis() {
         const config = {
             uso_principal: document.getElementById('usoSelect').value,
             norma_zonal: document.getElementById('zonaSelect').value,
             grado: document.getElementById('gradoSelect').value || 'basico'
         };
 
-        flog.info(`💾 Guardando configuración: ${JSON.stringify(config)}`);
+        flog.info(`🚀 Iniciando análisis completo: ${JSON.stringify(config)}`);
         this.projectConfig = config;
         
+        // Mostrar spinner de análisis
+        this.showAnalysisSpinner();
+
         try {
-            // Ejecutar Fase 2 (análisis de memoria)
-            flog.api('POST', `${this.baseURL}/analyze/fase2/${this.sessionId}`, config);
-            
+            // ANÁLISIS COMPLETO: Ejecutar todas las fases de una vez
+            flog.api('POST', `${this.baseURL}/analyze/complete/${this.sessionId}`, config);
+
             const startTime = Date.now();
-            const response = await fetch(`${this.baseURL}/analyze/fase2/${this.sessionId}`, {
+            const response = await fetch(`${this.baseURL}/analyze/complete/${this.sessionId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(config)
+                body: JSON.stringify(config),
+                timeout: 600000  // 10 minutos timeout
             });
             const duration = Date.now() - startTime;
 
             if (response.ok) {
                 const result = await response.json();
                 flog.apiResponse(response.status, result, duration);
-                flog.info(`✅ Fase 2 completada: coherence_score=${result.coherence_score}`);
-                console.log('Fase 2 completada:', result);
-                this.showPhase3(result);
+                flog.info(`✅ Análisis completo terminado en ${duration/1000}s`);
+                this.showCompleteResults(result);
             } else {
                 const errorText = await response.text();
                 flog.apiResponse(response.status, errorText, duration);
-                flog.error(`❌ Error en Fase 2: ${response.status} - ${errorText}`);
-                console.error('Error en Fase 2:', errorText);
-                this.showAlert('Error en análisis de memoria. Continuando...', 'warning');
-                this.showPhase3({ error: 'Análisis parcial' });
+                flog.error(`❌ Error en análisis completo: ${response.status} - ${errorText}`);
+                this.showAlert(`Error en análisis: ${response.status} - ${errorText}`, 'danger');
+                this.hideAnalysisSpinner();
             }
         } catch (error) {
-            flog.error(`❌ Error en saveConfiguration: ${error.message}`);
-            console.error('Error:', error);
-            this.showAlert('Error en configuración. Continuando...', 'warning');
-            this.showPhase3({ error: 'Configuración parcial' });
+            flog.error(`❌ Error en análisis completo: ${error.message}`);
+            this.showAlert(`Error en análisis: ${error.message}`, 'danger');
+            this.hideAnalysisSpinner();
         }
     }
 
-    showPhase3(fase2Result) {
+    showAnalysisSpinner() {
+        // Ocultar fase 2 y mostrar spinner
         document.getElementById('phase2').classList.remove('active');
         document.getElementById('phase3Container').style.display = 'block';
         document.getElementById('phase3').classList.add('active');
-        
-        // Mostrar información de la sesión
-        const sessionInfo = document.getElementById('sessionInfo');
-        sessionInfo.innerHTML = `
-            <div class="row">
-                <div class="col-md-6">
-                    <h6>Información de la Sesión:</h6>
-                    <ul class="list-unstyled">
-                        <li><strong>ID:</strong> ${this.sessionId}</li>
-                        <li><strong>Uso:</strong> ${this.projectConfig.uso_principal}</li>
-                        <li><strong>Zona:</strong> ${this.projectConfig.norma_zonal.toUpperCase()}</li>
-                        <li><strong>Grado:</strong> ${this.projectConfig.grado}</li>
-                        <li><strong>Archivos subidos:</strong> ${this.getTotalFiles()}</li>
-                    </ul>
+
+        const resultsContainer = document.getElementById('resultsContainer');
+        resultsContainer.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Analizando...</span>
                 </div>
-                <div class="col-md-6">
-                    <h6>Estado del Análisis:</h6>
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-check text-success me-2"></i>Fase 1: Documentos subidos</li>
-                        <li><i class="fas fa-check text-success me-2"></i>Fase 2: Configuración guardada</li>
-                        <li><i class="fas fa-play text-info me-2"></i>Fase 3: Lista para ejecutar</li>
-                    </ul>
+                <h4>Analizando proyecto...</h4>
+                <p class="text-muted">Este proceso puede tardar unos minutos. Por favor, espera.</p>
+                <div class="progress mt-3" style="height: 10px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated"
+                         role="progressbar" style="width: 100%"></div>
+                </div>
+                <small class="text-muted mt-2 d-block">
+                    Ejecutando verificación de documentación, análisis de memoria y verificación normativa...
+                </small>
+            </div>
+        `;
+
+        // Scroll to results
+        document.getElementById('phase3').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    hideAnalysisSpinner() {
+        // Solo ocultar el spinner, mantener el contenedor
+        const resultsContainer = document.getElementById('resultsContainer');
+        resultsContainer.innerHTML = '<div class="alert alert-danger">Error en el análisis. Por favor, inténtalo de nuevo.</div>';
+    }
+
+    showCompleteResults(results) {
+        flog.info('📊 Mostrando resultados completos', results);
+
+        const resultsContainer = document.getElementById('resultsContainer');
+
+        // Extraer información de incumplimientos
+        const incumplimientos = this.extractIncumplimientos(results);
+        const puntuacionFinal = results.final_score || 0;
+
+        resultsContainer.innerHTML = `
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-clipboard-check me-2"></i>
+                                Resultados del Análisis Normativo
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <h6>Información del Proyecto:</h6>
+                                    <ul class="list-unstyled">
+                                        <li><strong>Uso:</strong> ${this.projectConfig.uso_principal}</li>
+                                        <li><strong>Zona:</strong> ${this.projectConfig.norma_zonal.toUpperCase()}</li>
+                                        <li><strong>Archivos analizados:</strong> ${this.getTotalFiles()}</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-center">
+                                        <div class="display-4 ${puntuacionFinal >= 80 ? 'text-success' : puntuacionFinal >= 60 ? 'text-warning' : 'text-danger'}">
+                                            ${puntuacionFinal}%
+                                        </div>
+                                        <p class="text-muted">Puntuación Final</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            ${this.renderIncumplimientos(incumplimientos)}
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
-        
-        // Scroll to phase 3
-        document.getElementById('phase3').scrollIntoView({ behavior: 'smooth' });
-        
-        this.showAlert('Configuración guardada correctamente', 'success');
+
+        this.showAlert('Análisis completado correctamente', 'success');
     }
 
-    async executePhase3() {
-        flog.info('🚀 Iniciando ejecución de Fase 3');
-        
-        const button = document.getElementById('executePhase3');
-        const originalText = button.innerHTML;
-        
-        // Deshabilitar botón y mostrar loading
-        button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Ejecutando verificación...';
-        
-        try {
-            flog.api('POST', `${this.baseURL}/analyze/fase3/${this.sessionId}`);
-            
-            const startTime = performance.now();
-            const response = await fetch(`${this.baseURL}/analyze/fase3/${this.sessionId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            const duration = Math.round(performance.now() - startTime);
-            
-            if (response.ok) {
-                const result = await response.json();
-                flog.apiResponse(response.status, result, duration);
-                flog.info('✅ Fase 3 completada exitosamente');
-                
-                this.displayPhase3Results(result);
-                this.updatePhase3Status('completed');
-                
-                this.showAlert('Verificación normativa completada exitosamente', 'success');
-            } else {
-                const errorText = await response.text();
-                flog.apiResponse(response.status, errorText, duration);
-                flog.error('❌ Error en Fase 3', { status: response.status, error: errorText });
-                
-                this.showAlert('Error en verificación normativa: ' + errorText, 'danger');
-            }
-        } catch (error) {
-            flog.error('❌ Error de conexión en Fase 3', error);
-            this.showAlert('Error de conexión durante la verificación', 'danger');
-        } finally {
-            // Restaurar botón
-            button.disabled = false;
-            button.innerHTML = originalText;
+    extractIncumplimientos(results) {
+        const incumplimientos = [];
+
+        // Extraer de verificación normativa
+        if (results.normative_verification && results.normative_verification.incumplimientos) {
+            incumplimientos.push(...results.normative_verification.incumplimientos);
         }
+
+        // Extraer de verificación CTE
+        if (results.cte_verification && results.cte_verification.incumplimientos) {
+            incumplimientos.push(...results.cte_verification.incumplimientos);
+        }
+
+        // Extraer de verificación PGOUM
+        if (results.pgoum_verification && results.pgoum_verification.incumplimientos) {
+            incumplimientos.push(...results.pgoum_verification.incumplimientos);
+        }
+
+        return incumplimientos;
     }
 
-    displayPhase3Results(result) {
-        const resultsContainer = document.getElementById('phase3Results');
-        
-        let html = `
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-clipboard-check me-2"></i>
-                        Resultados de la Verificación Normativa
-                    </h5>
-                </div>
-                <div class="card-body">
-        `;
-        
-        if (result.normative_verification) {
-            const verificacion = result.normative_verification;
-            
-            html += `
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="alert alert-info">
-                            <h6><i class="fas fa-chart-pie me-2"></i>Puntuación General</h6>
-                            <h4 class="mb-0">${verificacion.puntuacion_cumplimiento || 'N/A'}/100</h4>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="alert alert-${(verificacion.puntuacion_cumplimiento || 0) >= 75 ? 'success' : 'warning'}">
-                            <h6><i class="fas fa-${(verificacion.puntuacion_cumplimiento || 0) >= 75 ? 'check-circle' : 'exclamation-triangle'} me-2"></i>Estado General</h6>
-                            <h5 class="mb-0">${(verificacion.puntuacion_cumplimiento || 0) >= 75 ? 'Cumple' : 'Requiere atención'}</h5>
-                        </div>
-                    </div>
+    renderIncumplimientos(incumplimientos) {
+        if (!incumplimientos || incumplimientos.length === 0) {
+            return `
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-check-circle me-2"></i>¡Proyecto Conforme!</h6>
+                    <p class="mb-0">No se han detectado incumplimientos normativos en el proyecto analizado.</p>
                 </div>
             `;
-            
-            if (verificacion.incumplimientos_detectados && verificacion.incumplimientos_detectados.length > 0) {
-                html += `
-                    <div class="alert alert-warning">
-                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Incumplimientos Detectados</h6>
-                        <ul class="mb-0">
-                `;
-                
-                verificacion.incumplimientos_detectados.forEach(incumplimiento => {
-                    html += `
-                        <li>
-                            <strong>${incumplimiento.normativa || 'Normativa no especificada'}:</strong> 
-                            ${incumplimiento.descripcion_incumplimiento || 'Descripción no disponible'}
-                            ${incumplimiento.ubicacion_en_proyecto ? `<br><small class="text-muted">Ubicación: ${incumplimiento.ubicacion_en_proyecto}</small>` : ''}
-                        </li>
-                    `;
-                });
-                
-                html += `
-                        </ul>
-                    </div>
-                `;
-            } else {
-                html += `
+        }
+
+        return `
+            <div class="alert alert-warning">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Incumplimientos Detectados (${incumplimientos.length})</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Descripción</th>
+                            <th>Normativa</th>
+                            <th>Página Normativa</th>
+                            <th>Documento Proyecto</th>
+                            <th>Página Proyecto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${incumplimientos.map((inc, index) => `
+                            <tr>
+                                <td>
+                                    <strong>${inc.descripcion || 'Incumplimiento detectado'}</strong>
+                                    ${inc.detalle ? `<br><small class="text-muted">${inc.detalle}</small>` : ''}
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">${inc.normativa || 'N/A'}</span>
+                                </td>
+                                <td>
+                                    ${inc.pagina_normativa ? `<span class="badge bg-info">Pág. ${inc.pagina_normativa}</span>` : 'N/A'}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">${inc.documento_proyecto || 'N/A'}</span>
+                                </td>
+                                <td>
+                                    ${inc.pagina_proyecto ? `<span class="badge bg-info">Pág. ${inc.pagina_proyecto}</span>` : 'N/A'}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // Función obsoleta eliminada - ahora se usa startCompleteAnalysis()
+
+    // Funciones obsoletas eliminadas - ahora se usa showCompleteResults()
                     <div class="alert alert-success">
                         <h6><i class="fas fa-check-circle me-2"></i>¡Excelente!</h6>
                         <p class="mb-0">No se detectaron incumplimientos normativos.</p>

@@ -139,12 +139,66 @@ async def serve_js():
     else:
         raise HTTPException(status_code=404, detail="Archivo JavaScript no encontrado")
 
+@router.post("/analyze/complete/{session_id}")
+async def analyze_complete(session_id: str, config: Dict[str, Any]):
+    """Análisis completo: Ejecuta las 3 fases de una vez"""
+    logger.info(f"🚀 ANÁLISIS COMPLETO INICIADO: session_id='{session_id}'")
+    logger.info(f"⚙️ Configuración recibida: {config}")
+
+    try:
+        # Obtener datos de la sesión
+        session_data = session_manager.get_session_data(session_id)
+        if not session_data:
+            logger.error(f"❌ Sesión no encontrada: {session_id}")
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        logger.info(f"📁 Archivos en sesión: {len(session_data.get('files', []))}")
+
+        # FASE 1: Verificación de documentación
+        logger.info("🔍 Ejecutando Fase 1: Verificación de documentación")
+        fase1_result = await analyzer.fase1_verificar_documentacion(session_data)
+        logger.info(f"✅ Fase 1 completada: {fase1_result.get('combined_results', {}).get('completion_percentage', 0)}%")
+
+        # FASE 2: Análisis de memoria
+        logger.info("📖 Ejecutando Fase 2: Análisis de memoria")
+        fase2_result = await analyzer.fase2_analizar_memoria(session_data, config)
+        logger.info(f"✅ Fase 2 completada: {fase2_result.get('coherence_score', 0)}% coherencia")
+
+        # FASE 3: Verificación normativa
+        logger.info("📋 Ejecutando Fase 3: Verificación normativa")
+        context = {"fase1": fase1_result, "fase2": fase2_result}
+        fase3_result = await analyzer.fase3_verificar_normativa(session_data, context)
+        logger.info(f"✅ Fase 3 completada: {fase3_result.get('final_score', 0)}% puntuación final")
+
+        # Combinar resultados
+        complete_result = {
+            "session_id": session_id,
+            "config": config,
+            "fase1": fase1_result,
+            "fase2": fase2_result,
+            "fase3": fase3_result,
+            "final_score": fase3_result.get("final_score", 0),
+            "normative_verification": fase3_result.get("normative_verification", {}),
+            "cte_verification": fase3_result.get("cte_verification", {}),
+            "pgoum_verification": fase3_result.get("pgoum_verification", {}),
+            "timestamp": fase3_result.get("timestamp")
+        }
+
+        logger.info(f"🎉 ANÁLISIS COMPLETO FINALIZADO: {complete_result['final_score']}% puntuación final")
+        return complete_result
+
+    except Exception as e:
+        logger.error(f"❌ ERROR EN ANÁLISIS COMPLETO: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error in complete analysis: {str(e)}")
+
 @router.get("/health")
 async def health_check():
     """Health check endpoint"""
     logger.debug("🏥 HEALTH CHECK solicitado")
     return {
-        "status": "ok", 
+        "status": "ok",
         "service": "basico-verification",
         "version": "1.0.0"
     }

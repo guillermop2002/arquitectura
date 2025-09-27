@@ -336,40 +336,29 @@
                     </div>
 
                     <div class="text-center mt-4">
-                        <button class="btn btn-success btn-lg" id="saveConfig" disabled>
-                            <i class="fas fa-save me-2"></i>
-                            Guardar Configuración
+                        <button class="btn btn-primary btn-lg" id="startCompleteAnalysis" disabled>
+                            <i class="fas fa-play me-2"></i>
+                            Iniciar Análisis Completo
                         </button>
+                        <p class="text-muted mt-2 mb-0">
+                            <small>Este proceso analizará documentación, memoria y verificará normativas aplicables</small>
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Fase 3: Análisis y Verificación -->
+        <!-- Resultados del Análisis -->
         <div class="row mb-4" style="display: none;" id="phase3Container">
             <div class="col-12">
                 <div class="phase-card p-4" id="phase3">
                     <h2 class="h3 mb-4">
-                        <i class="fas fa-search me-2"></i>
-                        Fase 3: Análisis y Verificación
+                        <i class="fas fa-clipboard-check me-2"></i>
+                        Resultados del Análisis
                     </h2>
 
-                    <div class="alert alert-info">
-                        <h5>Configuración completada. Listo para verificación normativa.</h5>
-                        <div id="sessionInfo">
-                            <!-- Se llenará con información de la sesión -->
-                        </div>
-                    </div>
-
-                    <div class="text-center mb-4">
-                        <button class="btn btn-success btn-lg" id="executePhase3" onclick="app.executePhase3()">
-                            <i class="fas fa-play me-2"></i>
-                            Ejecutar Verificación Normativa (Fase 3)
-                        </button>
-                    </div>
-
-                    <div id="phase3Results" style="display: none;">
-                        <!-- Los resultados de la Fase 3 se mostrarán aquí -->
+                    <div id="resultsContainer">
+                        <!-- Los resultados se mostrarán aquí -->
                     </div>
 
                     <div class="text-center mt-4">

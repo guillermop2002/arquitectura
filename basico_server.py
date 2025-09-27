@@ -141,9 +141,11 @@ if __name__ == "__main__":
     logger.info(f"🌐 Servidor iniciando en {host}:{port}")
     
     uvicorn.run(
-        app, 
-        host=host, 
+        app,
+        host=host,
         port=port,
         log_level="debug",
-        access_log=True
+        access_log=True,
+        timeout_keep_alive=600,  # 10 minutos
+        timeout_graceful_shutdown=30
     )
