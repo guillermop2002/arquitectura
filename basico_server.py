@@ -15,13 +15,18 @@ import os
 import time
 from pathlib import Path
 
-# Configurar logging detallado para Docker logs
+# Crear directorio de logs si no existe
+logs_dir = Path('logs')
+logs_dir.mkdir(exist_ok=True)
+
+# Configurar logging detallado para Docker logs y archivos
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),  # Para docker-compose logs
-        logging.FileHandler('logs/basico_detailed.log', encoding='utf-8')
+        logging.FileHandler('logs/basico_detailed.log', encoding='utf-8'),
+        logging.FileHandler('logs/basico_api.log', encoding='utf-8')  # Log específico para API
     ]
 )
 

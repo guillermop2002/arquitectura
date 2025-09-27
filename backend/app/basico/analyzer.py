@@ -9,9 +9,18 @@ from .normative_loader import BasicoNormativeLoader
 from .basico_prompts import *
 import logging
 
-# Configurar logger
+# Configurar logger detallado
 logger = logging.getLogger("basico.analyzer")
 logger.setLevel(logging.DEBUG)
+
+# Configurar formato detallado para logs
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 class BasicoAnalyzer:
     def __init__(self, use_advanced_ocr: bool = True):
@@ -26,18 +35,28 @@ class BasicoAnalyzer:
     
     async def fase1_verificar_documentacion(self, session_data: Dict[str, Any]) -> Dict[str, Any]:
         """FASE 1: Verificar presencia de elementos según anexo1.json con IA"""
-        
+
+        logger.info("🚀 INICIANDO FASE 1: Verificación de documentación")
+        logger.info(f"📁 Archivos a procesar: {len(session_data.get('files', []))}")
+
         # 1. Extraer texto de todos los documentos
+        logger.info("📄 Extrayendo texto de documentos...")
         all_texts = self._extract_all_texts(session_data)
         combined_text = self._combine_texts(all_texts)
-        
+        logger.info(f"✅ Texto extraído: {len(combined_text)} caracteres")
+
         # 2. Verificación con IA usando Groq
+        logger.info("🤖 Iniciando verificación con IA...")
         ai_verification = await self._verify_with_ai(combined_text)
-        
+        logger.info(f"✅ Verificación IA completada: {ai_verification.get('completion_percentage', 0)}% completitud")
+
         # 3. Verificación tradicional con anexo
+        logger.info("📋 Iniciando verificación tradicional...")
         traditional_verification = self.anexo_verifier.verify_session_documents(session_data)
-        
+        logger.info(f"✅ Verificación tradicional completada: {traditional_verification.get('completion_percentage', 0)}% completitud")
+
         # 4. Combinar resultados
+        logger.info("🔄 Combinando resultados de verificación...")
         combined_verification = self._combine_verifications(ai_verification, traditional_verification)
         
         return {
@@ -52,18 +71,33 @@ class BasicoAnalyzer:
     
     async def fase2_analizar_memoria(self, session_data: Dict[str, Any], config: Dict[str, Any]) -> Dict[str, Any]:
         """FASE 2: Análisis detallado de memoria con IA"""
-        
+
+        logger.info("🚀 INICIANDO FASE 2: Análisis de memoria y planos")
+        logger.info(f"⚙️ Configuración recibida: {list(config.keys())}")
+
         # 1. Extraer texto de memoria específicamente
+        logger.info("📖 Extrayendo texto de memoria...")
         memoria_texts = self._extract_memoria_texts(session_data)
-        
+        logger.info(f"✅ Memoria extraída: {len(memoria_texts)} archivos procesados")
+
         # 2. Análisis con IA
+        logger.info("🤖 Iniciando análisis de memoria con IA...")
         ai_analysis = await self._analyze_memoria_with_ai(memoria_texts, config)
-        
+        logger.info(f"✅ Análisis de memoria completado")
+
         # 3. Análisis de planos (si existen)
+        logger.info("📐 Iniciando análisis de planos...")
         planos_analysis = await self._analyze_planos_with_ai(session_data)
-        
+        logger.info(f"✅ Análisis de planos completado")
+        if 'dimensiones_extraidas' in planos_analysis:
+            dim_data = planos_analysis['dimensiones_extraidas']
+            logger.info(f"   📏 Dimensiones extraídas: {dim_data.get('total_dimensions', 0)}")
+            logger.info(f"   📐 Áreas extraídas: {dim_data.get('total_areas', 0)}")
+
         # 4. Verificación de coherencia
+        logger.info("🔍 Verificando coherencia entre memoria y configuración...")
         coherence_check = await self._check_coherence_with_ai(ai_analysis, config, planos_analysis)
+        logger.info(f"✅ Verificación de coherencia completada: {coherence_check.get('coherence_score', 0)}% coherencia")
         
         return {
             "fase": 2,
@@ -83,17 +117,24 @@ class BasicoAnalyzer:
     
     async def fase3_verificar_normativa(self, session_data: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
         """FASE 3: Verificación normativa con IA"""
-        
+
+        logger.info("🚀 INICIANDO FASE 3: Verificación normativa")
+
         # 1. Preparar datos para análisis normativo
+        logger.info("📋 Preparando datos para análisis normativo...")
         project_text = self._prepare_project_text(session_data)
         fase2_result = context.get('fase2', {})
-        
+        logger.info(f"✅ Datos preparados: {len(project_text)} caracteres de texto del proyecto")
+
         # 2. Extraer configuración del usuario de la Fase 2 (config original del usuario)
+        logger.info("⚙️ Extrayendo configuración del usuario...")
         user_config = fase2_result.get('user_config', {})
         datos_proyecto = fase2_result.get('datos_proyecto', {})
         analisis_tecnico = fase2_result.get('analisis_tecnico', {})
-        
+        logger.info(f"✅ Configuración extraída: {list(user_config.keys())}")
+
         # 3. Crear contexto enriquecido combinando datos extraídos y configuración del usuario
+        logger.info("🔄 Creando contexto enriquecido...")
         enriched_context = {
             "user_config": user_config,  # Configuración original del usuario
             "datos_proyecto": datos_proyecto,  # Datos extraídos de la memoria
@@ -101,18 +142,27 @@ class BasicoAnalyzer:
             "planos_analysis": fase2_result.get('planos_analysis', {}),
             "coherence_check": fase2_result.get('coherencia_config', {})
         }
-        
+        logger.info(f"✅ Contexto enriquecido creado con {len(enriched_context)} elementos")
+
         # 4. Verificación normativa con IA usando contexto enriquecido
+        logger.info("📖 Iniciando verificación normativa general...")
         normative_verification = await self._verify_normative_with_ai(project_text, user_config, enriched_context)
-        
+        logger.info(f"✅ Verificación normativa completada")
+
         # 5. Verificación CTE específica
+        logger.info("🏗️ Iniciando verificación CTE específica...")
         cte_verification = await self._verify_cte_with_ai(project_text, user_config)
-        
+        logger.info(f"✅ Verificación CTE completada")
+
         # 6. Verificación PGOUM (si aplica)
+        logger.info("🏙️ Iniciando verificación PGOUM...")
         pgoum_verification = await self._verify_pgoum_with_ai(project_text, user_config)
-        
+        logger.info(f"✅ Verificación PGOUM completada")
+
         # 7. Calcular puntuación final
+        logger.info("📊 Calculando puntuación final...")
         final_score = self._calculate_final_score(normative_verification, cte_verification, pgoum_verification)
+        logger.info(f"✅ Puntuación final calculada: {final_score}%")
         
         return {
             "fase": 3,
@@ -401,30 +451,40 @@ class BasicoAnalyzer:
     
     async def _analyze_planos_with_ai(self, session_data: Dict[str, Any]) -> Dict[str, Any]:
         """Análisis inteligente de planos con IA - EXTRACCIÓN AVANZADA DE DIMENSIONES Y OCR MEJORADO"""
+        logger.info("📐 Iniciando análisis detallado de planos...")
+
         planos_texts = {}
         dimensional_data = {}
         technical_info_data = {}
+        files_processed = 0
 
         # Extraer texto de TODOS los archivos PDF con OCR avanzado
         for file_info in session_data.get("files", []):
             file_path = file_info["path"]
             if file_path.lower().endswith('.pdf'):
                 category = file_info.get("category", "")
+                files_processed += 1
 
                 # Usar OCR avanzado para planos
                 if self.use_advanced_ocr and self.advanced_ocr_processor and self._should_use_advanced_ocr(category):
-                    logger.info(f"🔍 Análisis avanzado de planos: {file_info['filename']}")
+                    logger.info(f"🔍 Análisis avanzado de planos: {file_info['filename']} (categoría: {category})")
                     text_data = self.advanced_ocr_processor.extract_text_from_pdf_advanced(file_path)
 
                     # Extraer información técnica avanzada
                     if "technical_info" in text_data:
                         technical_info_data[file_info["filename"]] = text_data["technical_info"]
+                        tech_info = text_data["technical_info"]
+                        logger.info(f"   ✅ Info técnica extraída: {len(tech_info.get('dimensions', []))} dimensiones, "
+                                   f"{len(tech_info.get('areas', []))} áreas, {len(tech_info.get('materials', []))} materiales")
 
                     # Extraer análisis dimensional avanzado
                     if "dimensional_analysis" in text_data:
                         dimensional_data[file_info["filename"]] = text_data["dimensional_analysis"]
+                        dim_analysis = text_data["dimensional_analysis"]
+                        logger.info(f"   ✅ Análisis dimensional: {dim_analysis.get('total_dimensions', 0)} dimensiones totales")
 
                 else:
+                    logger.info(f"📄 Análisis estándar de planos: {file_info['filename']} (categoría: {category})")
                     # Usar OCR estándar
                     text_data = self.ocr_processor.extract_text_from_pdf(file_path)
 
@@ -433,6 +493,8 @@ class BasicoAnalyzer:
                         dimensional_data[file_info["filename"]] = text_data["dimensional_analysis"]
 
                 planos_texts[file_info["filename"]] = text_data
+
+        logger.info(f"✅ Procesados {files_processed} archivos de planos")
         
         if not planos_texts:
             return {"message": "No se encontraron archivos para analizar", "dimensiones_extraidas": {}}
