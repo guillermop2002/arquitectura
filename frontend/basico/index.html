@@ -377,5 +377,17 @@
     
     <!-- JavaScript personalizado -->
     <script src="basico-app.js"></script>
+    <script>
+        // Inicializar la aplicación cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Inicializando aplicación Básico...');
+            try {
+                window.app = new BasicoApp();
+                console.log('✅ Aplicación inicializada correctamente');
+            } catch (error) {
+                console.error('❌ Error al inicializar aplicación:', error);
+            }
+        });
+    </script>
 </body>
 </html>

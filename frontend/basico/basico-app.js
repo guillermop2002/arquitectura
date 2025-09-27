@@ -522,8 +522,9 @@ class BasicoApp {
 
         const resultsContainer = document.getElementById('resultsContainer');
 
-        // Extraer información de incumplimientos
+        // Extraer información de incumplimientos y anexo I
         const incumplimientos = this.extractIncumplimientos(results);
+        const anexoI = this.extractAnexoI(results);
         const puntuacionFinal = results.final_score || 0;
 
         resultsContainer.innerHTML = `
@@ -533,12 +534,12 @@ class BasicoApp {
                         <div class="card-header bg-primary text-white">
                             <h5 class="mb-0">
                                 <i class="fas fa-clipboard-check me-2"></i>
-                                Resultados del Análisis Normativo
+                                Resultados del Análisis Completo
                             </h5>
                         </div>
                         <div class="card-body">
                             <div class="row mb-4">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <h6>Información del Proyecto:</h6>
                                     <ul class="list-unstyled">
                                         <li><strong>Uso:</strong> ${this.projectConfig.uso_principal}</li>
@@ -546,7 +547,7 @@ class BasicoApp {
                                         <li><strong>Archivos analizados:</strong> ${this.getTotalFiles()}</li>
                                     </ul>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="text-center">
                                         <div class="display-4 ${puntuacionFinal >= 80 ? 'text-success' : puntuacionFinal >= 60 ? 'text-warning' : 'text-danger'}">
                                             ${puntuacionFinal}%
@@ -554,8 +555,17 @@ class BasicoApp {
                                         <p class="text-muted">Puntuación Final</p>
                                     </div>
                                 </div>
+                                <div class="col-md-4">
+                                    <div class="text-center">
+                                        <div class="display-6 ${anexoI.completitud >= 80 ? 'text-success' : anexoI.completitud >= 60 ? 'text-warning' : 'text-danger'}">
+                                            ${anexoI.completitud}%
+                                        </div>
+                                        <p class="text-muted">Completitud Anexo I</p>
+                                    </div>
+                                </div>
                             </div>
 
+                            ${this.renderAnexoI(anexoI)}
                             ${this.renderIncumplimientos(incumplimientos)}
                         </div>
                     </div>
@@ -564,6 +574,72 @@ class BasicoApp {
         `;
 
         this.showAlert('Análisis completado correctamente', 'success');
+    }
+
+    extractAnexoI(results) {
+        const anexoI = {
+            completitud: 0,
+            elementos_faltantes: [],
+            elementos_presentes: []
+        };
+
+        // Extraer de fase1
+        if (results.fase1 && results.fase1.combined_results) {
+            anexoI.completitud = results.fase1.combined_results.completion_percentage || 0;
+
+            if (results.fase1.combined_results.missing_elements) {
+                anexoI.elementos_faltantes = results.fase1.combined_results.missing_elements;
+            }
+
+            if (results.fase1.combined_results.present_elements) {
+                anexoI.elementos_presentes = results.fase1.combined_results.present_elements;
+            }
+        }
+
+        return anexoI;
+    }
+
+    renderAnexoI(anexoI) {
+        if (!anexoI.elementos_faltantes || anexoI.elementos_faltantes.length === 0) {
+            return `
+                <div class="alert alert-success mb-4">
+                    <h6><i class="fas fa-check-circle me-2"></i>Documentación Completa (Anexo I)</h6>
+                    <p class="mb-0">Todos los elementos requeridos del Anexo I están presentes en el proyecto.</p>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="alert alert-warning mb-4">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Elementos Faltantes del Anexo I (${anexoI.elementos_faltantes.length})</h6>
+            </div>
+            <div class="table-responsive mb-4">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Elemento Faltante</th>
+                            <th>Categoría</th>
+                            <th>Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${anexoI.elementos_faltantes.map((elemento, index) => `
+                            <tr>
+                                <td>
+                                    <strong>${elemento.nombre || elemento.element || elemento}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">${elemento.categoria || elemento.category || 'General'}</span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">${elemento.descripcion || elemento.description || 'Elemento requerido por Anexo I'}</small>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
     }
 
     extractIncumplimientos(results) {
@@ -639,78 +715,7 @@ class BasicoApp {
         `;
     }
 
-    // Función obsoleta eliminada - ahora se usa startCompleteAnalysis()
-
-    // Funciones obsoletas eliminadas - ahora se usa showCompleteResults()
-                    <div class="alert alert-success">
-                        <h6><i class="fas fa-check-circle me-2"></i>¡Excelente!</h6>
-                        <p class="mb-0">No se detectaron incumplimientos normativos.</p>
-                    </div>
-                `;
-            }
-            
-            if (verificacion.elementos_faltantes_verificados && verificacion.elementos_faltantes_verificados.length > 0) {
-                html += `
-                    <div class="alert alert-info">
-                        <h6><i class="fas fa-info-circle me-2"></i>Elementos Faltantes</h6>
-                        <ul class="mb-0">
-                `;
-                
-                verificacion.elementos_faltantes_verificados.forEach(elemento => {
-                    html += `<li>${elemento.elemento || elemento} (de ${elemento.normativa_origen || 'normativa'})</li>`;
-                });
-                
-                html += `
-                        </ul>
-                    </div>
-                `;
-            }
-            
-            if (verificacion.observaciones_especificas && verificacion.observaciones_especificas.length > 0) {
-                html += `
-                    <div class="alert alert-light">
-                        <h6><i class="fas fa-comment me-2"></i>Observaciones Específicas</h6>
-                        <ul class="mb-0">
-                `;
-                
-                verificacion.observaciones_especificas.forEach(obs => {
-                    html += `<li>${obs}</li>`;
-                });
-                
-                html += `
-                        </ul>
-                    </div>
-                `;
-            }
-        } else {
-            html += `
-                <div class="alert alert-warning">
-                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Resultados Parciales</h6>
-                    <p class="mb-0">Los resultados de la verificación no están completamente disponibles.</p>
-                </div>
-            `;
-        }
-        
-        html += `
-                </div>
-            </div>
-        `;
-        
-        resultsContainer.innerHTML = html;
-        resultsContainer.style.display = 'block';
-        
-        // Scroll to results
-        resultsContainer.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    updatePhase3Status(status) {
-        const statusElement = document.querySelector('#sessionInfo ul li:last-child');
-        if (statusElement) {
-            const icon = status === 'completed' ? 'fas fa-check text-success' : 'fas fa-play text-info';
-            const text = status === 'completed' ? 'Fase 3: Completada' : 'Fase 3: Lista para ejecutar';
-            statusElement.innerHTML = `<i class="${icon} me-2"></i>${text}`;
-        }
-    }
+    // Funciones obsoletas eliminadas - ahora se usa startCompleteAnalysis() y showCompleteResults()
 
     getTotalFiles() {
         return Object.values(this.uploadedFiles).reduce((total, files) => total + files.length, 0);
@@ -737,10 +742,7 @@ class BasicoApp {
     }
 }
 
-// Inicializar aplicación cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
-    window.app = new BasicoApp();
-});
+// Inicialización movida al HTML para mejor control
 
 // Funciones globales para uso en HTML
 function removeFile(category, fileId) {
