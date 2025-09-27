@@ -5,13 +5,6 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     tesseract-ocr-spa \
     libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgomp1 \
-    libfontconfig1-dev \
-    libfreetype6-dev \
-    poppler-utils \
     curl \
     && rm -rf /var/lib/apt/lists/*
 

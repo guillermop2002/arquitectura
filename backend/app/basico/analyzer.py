@@ -3,16 +3,26 @@ from typing import Dict, Any, List
 from pathlib import Path
 from .anexo_verifier import BasicoAnexoVerifier
 from .ocr_processor import BasicoOCRProcessor
+from .advanced_ocr_processor import AdvancedOCRProcessor
 from .ai_client import BasicoAIClient
 from .normative_loader import BasicoNormativeLoader
 from .basico_prompts import *
+import logging
+
+# Configurar logger
+logger = logging.getLogger("basico.analyzer")
+logger.setLevel(logging.DEBUG)
 
 class BasicoAnalyzer:
-    def __init__(self):
+    def __init__(self, use_advanced_ocr: bool = True):
         self.anexo_verifier = BasicoAnexoVerifier()
         self.ocr_processor = BasicoOCRProcessor()
+        self.advanced_ocr_processor = AdvancedOCRProcessor() if use_advanced_ocr else None
         self.ai_client = BasicoAIClient()
         self.normative_loader = BasicoNormativeLoader()
+        self.use_advanced_ocr = use_advanced_ocr
+
+        logger.info(f"🔧 BasicoAnalyzer inicializado con OCR {'avanzado' if use_advanced_ocr else 'estándar'}")
     
     async def fase1_verificar_documentacion(self, session_data: Dict[str, Any]) -> Dict[str, Any]:
         """FASE 1: Verificar presencia de elementos según anexo1.json con IA"""
@@ -121,16 +131,41 @@ class BasicoAnalyzer:
         }
     
     def _extract_all_texts(self, session_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Extraer texto de todos los archivos de la sesión"""
+        """Extraer texto de todos los archivos de la sesión con OCR mejorado"""
         all_texts = {}
-        
+
         for file_info in session_data.get("files", []):
             file_path = file_info["path"]
             if file_path.lower().endswith('.pdf'):
-                text_data = self.ocr_processor.extract_text_from_pdf(file_path)
+
+                # Decidir qué OCR usar según el tipo de archivo
+                category = file_info.get("category", "")
+
+                if self.use_advanced_ocr and self.advanced_ocr_processor and self._should_use_advanced_ocr(category):
+                    logger.info(f"🚀 Usando OCR avanzado para: {file_info['filename']} (categoría: {category})")
+                    text_data = self.advanced_ocr_processor.extract_text_from_pdf_advanced(file_path)
+                else:
+                    logger.info(f"📄 Usando OCR estándar para: {file_info['filename']} (categoría: {category})")
+                    text_data = self.ocr_processor.extract_text_from_pdf(file_path)
+
                 all_texts[file_info["filename"]] = text_data
-        
+
         return all_texts
+
+    def _should_use_advanced_ocr(self, category: str) -> bool:
+        """Determinar si usar OCR avanzado según la categoría del archivo"""
+
+        # Usar OCR avanzado para planos y documentos técnicos
+        advanced_categories = [
+            "Planos_Situacion_Emplazamiento",
+            "Planos_Plantas_Generales",
+            "Planos_Alzados_Secciones",
+            "Planos_Incendios",
+            "Planos_Instalaciones",
+            "Documentacion_Adicional"
+        ]
+
+        return category in advanced_categories
     
     def _combine_texts(self, all_texts: Dict[str, Any]) -> str:
         """Combinar todos los textos en uno solo"""
@@ -365,21 +400,39 @@ class BasicoAnalyzer:
         return self._parse_ai_json_response(response)
     
     async def _analyze_planos_with_ai(self, session_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Análisis inteligente de planos con IA - EXTRACCIÓN COMPLETA DE DIMENSIONES Y OCR MEJORADO"""
+        """Análisis inteligente de planos con IA - EXTRACCIÓN AVANZADA DE DIMENSIONES Y OCR MEJORADO"""
         planos_texts = {}
         dimensional_data = {}
-        
-        # Extraer texto de TODOS los archivos PDF con OCR mejorado
+        technical_info_data = {}
+
+        # Extraer texto de TODOS los archivos PDF con OCR avanzado
         for file_info in session_data.get("files", []):
             file_path = file_info["path"]
             if file_path.lower().endswith('.pdf'):
-                # Usar OCR mejorado con análisis dimensional
-                text_data = self.ocr_processor.extract_text_from_pdf(file_path)
+                category = file_info.get("category", "")
+
+                # Usar OCR avanzado para planos
+                if self.use_advanced_ocr and self.advanced_ocr_processor and self._should_use_advanced_ocr(category):
+                    logger.info(f"🔍 Análisis avanzado de planos: {file_info['filename']}")
+                    text_data = self.advanced_ocr_processor.extract_text_from_pdf_advanced(file_path)
+
+                    # Extraer información técnica avanzada
+                    if "technical_info" in text_data:
+                        technical_info_data[file_info["filename"]] = text_data["technical_info"]
+
+                    # Extraer análisis dimensional avanzado
+                    if "dimensional_analysis" in text_data:
+                        dimensional_data[file_info["filename"]] = text_data["dimensional_analysis"]
+
+                else:
+                    # Usar OCR estándar
+                    text_data = self.ocr_processor.extract_text_from_pdf(file_path)
+
+                    # Extraer datos dimensionales estándar
+                    if "dimensional_analysis" in text_data:
+                        dimensional_data[file_info["filename"]] = text_data["dimensional_analysis"]
+
                 planos_texts[file_info["filename"]] = text_data
-                
-                # Extraer datos dimensionales
-                if "dimensional_analysis" in text_data:
-                    dimensional_data[file_info["filename"]] = text_data["dimensional_analysis"]
         
         if not planos_texts:
             return {"message": "No se encontraron archivos para analizar", "dimensiones_extraidas": {}}
@@ -388,18 +441,24 @@ class BasicoAnalyzer:
         
         # Combinar análisis dimensional de todos los archivos
         combined_dimensional_analysis = self._combine_dimensional_analysis(dimensional_data)
-        
-        # Crear prompt inteligente para análisis completo de planos con datos dimensionales
+
+        # Combinar información técnica avanzada
+        combined_technical_info = self._combine_technical_info(technical_info_data)
+
+        # Crear prompt inteligente para análisis completo de planos con datos avanzados
         intelligent_planos_prompt = f"""
         {BASICO_GROQ_BASE}
-        
-        ANÁLISIS INTELIGENTE COMPLETO DE PLANOS CON OCR MEJORADO Y ANÁLISIS DIMENSIONAL
-        
+
+        ANÁLISIS INTELIGENTE AVANZADO DE PLANOS CON OCR MEJORADO Y EXTRACCIÓN TÉCNICA
+
         DOCUMENTACIÓN GRÁFICA COMPLETA:
-        {combined_planos[:12000]}
-        
+        {combined_planos[:10000]}
+
         ANÁLISIS DIMENSIONAL EXTRAÍDO POR OCR:
-        {json.dumps(combined_dimensional_analysis, indent=2)}
+        {json.dumps(combined_dimensional_analysis, indent=2)[:2000]}
+
+        INFORMACIÓN TÉCNICA AVANZADA EXTRAÍDA:
+        {json.dumps(combined_technical_info, indent=2)[:3000]}
         
         INSTRUCCIONES PARA ANÁLISIS INTELIGENTE DE PLANOS:
         
@@ -758,7 +817,7 @@ class BasicoAnalyzer:
                 }
             
             return combined
-            
+
         except Exception as e:
             logger.error(f"❌ Error combinando análisis dimensional: {str(e)}")
             return {
@@ -766,6 +825,97 @@ class BasicoAnalyzer:
                 'total_dimensions': 0,
                 'total_areas': 0,
                 'total_heights': 0,
+                'error': str(e)
+            }
+
+    def _combine_technical_info(self, technical_info_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Combinar información técnica avanzada de múltiples archivos"""
+
+        try:
+            combined = {
+                'total_files_analyzed': len(technical_info_data),
+                'scales': [],
+                'dimensions': [],
+                'areas': [],
+                'materials': [],
+                'installations': [],
+                'structural_elements': [],
+                'accessibility_features': [],
+                'fire_safety_elements': [],
+                'energy_efficiency_data': [],
+                'urban_parameters': [],
+                'file_analysis': {}
+            }
+
+            for filename, tech_info in technical_info_data.items():
+                if not tech_info:
+                    continue
+
+                # Registrar análisis por archivo
+                combined['file_analysis'][filename] = {
+                    'scales_found': len(tech_info.get('scales', [])),
+                    'dimensions_found': len(tech_info.get('dimensions', [])),
+                    'areas_found': len(tech_info.get('areas', [])),
+                    'materials_found': len(tech_info.get('materials', [])),
+                    'installations_found': len(tech_info.get('installations', [])),
+                    'structural_elements_found': len(tech_info.get('structural_elements', []))
+                }
+
+                # Combinar todas las categorías
+                for category in combined.keys():
+                    if category in ['total_files_analyzed', 'file_analysis']:
+                        continue
+
+                    if category in tech_info:
+                        combined[category].extend(tech_info[category])
+
+            # Análisis de escalas detectadas
+            if combined['scales']:
+                scale_counts = {}
+                for scale_info in combined['scales']:
+                    scale = scale_info.get('scale', 'unknown')
+                    scale_counts[scale] = scale_counts.get(scale, 0) + 1
+
+                combined['scale_analysis'] = {
+                    'total_scale_references': len(combined['scales']),
+                    'unique_scales': list(scale_counts.keys()),
+                    'most_common_scale': max(scale_counts.items(), key=lambda x: x[1])[0] if scale_counts else None,
+                    'scale_distribution': scale_counts
+                }
+
+            # Análisis de materiales
+            if combined['materials']:
+                material_types = {}
+                for material in combined['materials']:
+                    mat_type = material.get('type', 'unknown')
+                    material_types[mat_type] = material_types.get(mat_type, 0) + 1
+
+                combined['material_analysis'] = {
+                    'total_materials': len(combined['materials']),
+                    'material_distribution': material_types
+                }
+
+            # Análisis estructural
+            if combined['structural_elements']:
+                structural_types = {}
+                for element in combined['structural_elements']:
+                    elem_type = element.get('type', 'unknown')
+                    structural_types[elem_type] = structural_types.get(elem_type, 0) + 1
+
+                combined['structural_analysis'] = {
+                    'total_elements': len(combined['structural_elements']),
+                    'element_distribution': structural_types
+                }
+
+            logger.info(f"📊 Información técnica combinada: {len(combined['scales'])} escalas, "
+                       f"{len(combined['materials'])} materiales, {len(combined['structural_elements'])} elementos estructurales")
+
+            return combined
+
+        except Exception as e:
+            logger.error(f"❌ Error combinando información técnica: {str(e)}")
+            return {
+                'total_files_analyzed': 0,
                 'error': str(e)
             }
     
