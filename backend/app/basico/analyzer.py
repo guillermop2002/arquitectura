@@ -54,28 +54,33 @@ class BasicoAnalyzer:
     async def fase1_verificar_documentacion(self, session_data: Dict[str, Any]) -> Dict[str, Any]:
         """FASE 1: Verificar presencia de elementos según anexo1.json con IA"""
 
-        logger.info("🚀 INICIANDO FASE 1: Verificación de documentación")
-        logger.info(f"📁 Archivos a procesar: {len(session_data.get('files', []))}")
+        logger.info("🚀 FASE 1: Verificación de documentación (Anexo I CTE)")
+        files_count = len(session_data.get('files', []))
+        logger.info(f"📁 Procesando {files_count} archivos PDF")
 
         # 1. Extraer texto de todos los documentos
-        logger.info("📄 Extrayendo texto de documentos...")
+        logger.info("📄 Extrayendo texto con OCR...")
         all_texts = self._extract_all_texts(session_data)
         combined_text = self._combine_texts(all_texts)
-        logger.info(f"✅ Texto extraído: {len(combined_text)} caracteres")
+        logger.info(f"✅ OCR completado: {len(combined_text):,} caracteres extraídos")
 
         # 2. Verificación con IA usando Groq
-        logger.info("🤖 Iniciando verificación con IA...")
+        logger.info("🤖 Analizando con IA (Groq) - buscando elementos del Anexo I...")
         ai_verification = await self._verify_with_ai(combined_text)
-        logger.info(f"✅ Verificación IA completada: {ai_verification.get('completion_percentage', 0)}% completitud")
+        ai_completion = ai_verification.get('completion_percentage', 0)
+        logger.info(f"✅ IA completada: {ai_completion}% de elementos encontrados")
 
         # 3. Verificación tradicional con anexo
-        logger.info("📋 Iniciando verificación tradicional...")
+        logger.info("📋 Verificación tradicional con anexo1.json...")
         traditional_verification = self.anexo_verifier.verify_session_documents(session_data)
-        logger.info(f"✅ Verificación tradicional completada: {traditional_verification.get('completion_percentage', 0)}% completitud")
+        trad_completion = traditional_verification.get('completion_percentage', 0)
+        logger.info(f"✅ Verificación tradicional: {trad_completion}% completitud")
 
         # 4. Combinar resultados
-        logger.info("🔄 Combinando resultados de verificación...")
+        logger.info("🔄 Combinando resultados IA + tradicional...")
         combined_verification = self._combine_verifications(ai_verification, traditional_verification)
+        final_completion = combined_verification.get('completion_percentage', 0)
+        logger.info(f"🎯 RESULTADO FASE 1: {final_completion}% completitud final")
         
         return {
             "fase": 1,
@@ -90,32 +95,38 @@ class BasicoAnalyzer:
     async def fase2_analizar_memoria(self, session_data: Dict[str, Any], config: Dict[str, Any]) -> Dict[str, Any]:
         """FASE 2: Análisis detallado de memoria con IA"""
 
-        logger.info("🚀 INICIANDO FASE 2: Análisis de memoria y planos")
-        logger.info(f"⚙️ Configuración recibida: {list(config.keys())}")
+        logger.info("🚀 FASE 2: Análisis inteligente de memoria y planos")
+        uso = config.get('uso_principal', 'desconocido')
+        zona = config.get('norma_zonal', 'desconocida')
+        grado = config.get('grado', 'desconocido')
+        logger.info(f"⚙️ Proyecto: {uso} | Zona: {zona} | Grado: {grado}")
 
         # 1. Extraer texto de memoria específicamente
-        logger.info("📖 Extrayendo texto de memoria...")
+        logger.info("📖 Extrayendo información de memoria...")
         memoria_texts = self._extract_memoria_texts(session_data)
-        logger.info(f"✅ Memoria extraída: {len(memoria_texts)} archivos procesados")
+        logger.info(f"✅ Memoria procesada: {len(memoria_texts)} documentos analizados")
 
         # 2. Análisis con IA
-        logger.info("🤖 Iniciando análisis de memoria con IA...")
+        logger.info("🤖 Analizando memoria con IA (Groq) - extrayendo información técnica...")
         ai_analysis = await self._analyze_memoria_with_ai(memoria_texts, config)
-        logger.info(f"✅ Análisis de memoria completado")
+        logger.info(f"✅ Análisis IA completado: información técnica extraída")
 
         # 3. Análisis de planos (si existen)
-        logger.info("📐 Iniciando análisis de planos...")
+        logger.info("📐 Analizando planos con OCR avanzado...")
         planos_analysis = await self._analyze_planos_with_ai(session_data)
         logger.info(f"✅ Análisis de planos completado")
         if 'dimensiones_extraidas' in planos_analysis:
             dim_data = planos_analysis['dimensiones_extraidas']
-            logger.info(f"   📏 Dimensiones extraídas: {dim_data.get('total_dimensions', 0)}")
-            logger.info(f"   📐 Áreas extraídas: {dim_data.get('total_areas', 0)}")
+            total_dims = dim_data.get('total_dimensions', 0)
+            total_areas = dim_data.get('total_areas', 0)
+            logger.info(f"   📏 Dimensiones extraídas: {total_dims} medidas")
+            logger.info(f"   📐 Áreas extraídas: {total_areas} superficies")
 
         # 4. Verificación de coherencia
-        logger.info("🔍 Verificando coherencia entre memoria y configuración...")
+        logger.info("🔍 Verificando coherencia memoria vs configuración usuario...")
         coherence_check = await self._check_coherence_with_ai(ai_analysis, config, planos_analysis)
-        logger.info(f"✅ Verificación de coherencia completada: {coherence_check.get('coherence_score', 0)}% coherencia")
+        coherence_score = coherence_check.get('coherence_score', 0)
+        logger.info(f"✅ Coherencia verificada: {coherence_score}% de consistencia")
         
         return {
             "fase": 2,
@@ -136,16 +147,16 @@ class BasicoAnalyzer:
     async def fase3_verificar_normativa(self, session_data: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
         """FASE 3: Verificación normativa con IA"""
 
-        logger.info("🚀 INICIANDO FASE 3: Verificación normativa")
+        logger.info("🚀 FASE 3: Verificación normativa contra regulaciones")
 
         # 1. Preparar datos para análisis normativo
-        logger.info("📋 Preparando datos para análisis normativo...")
+        logger.info("📋 Preparando contexto del proyecto...")
         project_text = self._prepare_project_text(session_data)
         fase2_result = context.get('fase2', {})
-        logger.info(f"✅ Datos preparados: {len(project_text)} caracteres de texto del proyecto")
+        logger.info(f"✅ Contexto preparado: {len(project_text):,} caracteres de documentación")
 
         # 2. Extraer configuración del usuario de la Fase 2 (config original del usuario)
-        logger.info("⚙️ Extrayendo configuración del usuario...")
+        logger.info("⚙️ Cargando configuración del proyecto...")
         user_config = fase2_result.get('user_config', {})
         datos_proyecto = fase2_result.get('datos_proyecto', {})
         analisis_tecnico = fase2_result.get('analisis_tecnico', {})
@@ -163,24 +174,27 @@ class BasicoAnalyzer:
         logger.info(f"✅ Contexto enriquecido creado con {len(enriched_context)} elementos")
 
         # 4. Verificación normativa con IA usando contexto enriquecido
-        logger.info("📖 Iniciando verificación normativa general...")
+        logger.info("📖 Verificando cumplimiento normativo general...")
         normative_verification = await self._verify_normative_with_ai(project_text, user_config, enriched_context)
-        logger.info(f"✅ Verificación normativa completada")
+        norm_score = normative_verification.get('puntuacion_cumplimiento', 0)
+        logger.info(f"✅ Verificación normativa: {norm_score}% cumplimiento")
 
         # 5. Verificación CTE específica
-        logger.info("🏗️ Iniciando verificación CTE específica...")
+        logger.info("🏗️ Verificando cumplimiento CTE (Código Técnico)...")
         cte_verification = await self._verify_cte_with_ai(project_text, user_config)
-        logger.info(f"✅ Verificación CTE completada")
+        cte_score = cte_verification.get('puntuacion_cumplimiento', 0)
+        logger.info(f"✅ Verificación CTE: {cte_score}% cumplimiento")
 
         # 6. Verificación PGOUM (si aplica)
-        logger.info("🏙️ Iniciando verificación PGOUM...")
+        logger.info("🏙️ Verificando cumplimiento PGOUM (Plan General)...")
         pgoum_verification = await self._verify_pgoum_with_ai(project_text, user_config)
-        logger.info(f"✅ Verificación PGOUM completada")
+        pgoum_score = pgoum_verification.get('puntuacion_cumplimiento', 0)
+        logger.info(f"✅ Verificación PGOUM: {pgoum_score}% cumplimiento")
 
         # 7. Calcular puntuación final
-        logger.info("📊 Calculando puntuación final...")
+        logger.info("📊 Calculando puntuación final de cumplimiento...")
         final_score = self._calculate_final_score(normative_verification, cte_verification, pgoum_verification)
-        logger.info(f"✅ Puntuación final calculada: {final_score}%")
+        logger.info(f"🎯 RESULTADO FASE 3: {final_score}% cumplimiento normativo final")
         
         return {
             "fase": 3,
@@ -1227,10 +1241,21 @@ class BasicoAnalyzer:
         cte_weight = 0.3
         pgoum_weight = 0.2
         
-        # Obtener puntuaciones individuales
-        normative_score = normative_verification.get("puntuacion_cumplimiento", 0)
-        cte_score = cte_verification.get("puntuacion_cte", 0)
-        pgoum_score = pgoum_verification.get("puntuacion_pgoum", 0)
+        # Obtener puntuaciones individuales y convertir a float
+        try:
+            normative_score = float(normative_verification.get("puntuacion_cumplimiento", 0))
+        except (ValueError, TypeError):
+            normative_score = 0.0
+            
+        try:
+            cte_score = float(cte_verification.get("puntuacion_cte", 0))
+        except (ValueError, TypeError):
+            cte_score = 0.0
+            
+        try:
+            pgoum_score = float(pgoum_verification.get("puntuacion_pgoum", 0))
+        except (ValueError, TypeError):
+            pgoum_score = 0.0
         
         # Calcular promedio ponderado
         final_score = (
