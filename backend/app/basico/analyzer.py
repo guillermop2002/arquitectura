@@ -3,11 +3,20 @@ from typing import Dict, Any, List
 from pathlib import Path
 from .anexo_verifier import BasicoAnexoVerifier
 from .ocr_processor import BasicoOCRProcessor
-from .advanced_ocr_processor import AdvancedOCRProcessor
 from .ai_client import BasicoAIClient
 from .normative_loader import BasicoNormativeLoader
 from .basico_prompts import *
 import logging
+
+# Import advanced OCR only if needed
+try:
+    from .advanced_ocr_processor import AdvancedOCRProcessor
+    ADVANCED_OCR_AVAILABLE = True
+except ImportError as e:
+    logger = logging.getLogger("basico.analyzer")
+    logger.warning(f"⚠️ Advanced OCR no disponible: {e}")
+    ADVANCED_OCR_AVAILABLE = False
+    AdvancedOCRProcessor = None
 
 # Configurar logger detallado
 logger = logging.getLogger("basico.analyzer")
@@ -23,15 +32,24 @@ if not logger.handlers:
     logger.addHandler(handler)
 
 class BasicoAnalyzer:
-    def __init__(self, use_advanced_ocr: bool = True):
+    def __init__(self, use_advanced_ocr: bool = False):
         self.anexo_verifier = BasicoAnexoVerifier()
         self.ocr_processor = BasicoOCRProcessor()
-        self.advanced_ocr_processor = AdvancedOCRProcessor() if use_advanced_ocr else None
+        
+        # Only initialize advanced OCR if available and requested
+        if use_advanced_ocr and ADVANCED_OCR_AVAILABLE:
+            self.advanced_ocr_processor = AdvancedOCRProcessor()
+            self.use_advanced_ocr = True
+        else:
+            self.advanced_ocr_processor = None
+            self.use_advanced_ocr = False
+            if use_advanced_ocr and not ADVANCED_OCR_AVAILABLE:
+                logger.warning("⚠️ Advanced OCR solicitado pero no disponible, usando OCR estándar")
+        
         self.ai_client = BasicoAIClient()
         self.normative_loader = BasicoNormativeLoader()
-        self.use_advanced_ocr = use_advanced_ocr
 
-        logger.info(f"🔧 BasicoAnalyzer inicializado con OCR {'avanzado' if use_advanced_ocr else 'estándar'}")
+        logger.info(f"🔧 BasicoAnalyzer inicializado con OCR {'avanzado' if self.use_advanced_ocr else 'estándar'}")
     
     async def fase1_verificar_documentacion(self, session_data: Dict[str, Any]) -> Dict[str, Any]:
         """FASE 1: Verificar presencia de elementos según anexo1.json con IA"""
