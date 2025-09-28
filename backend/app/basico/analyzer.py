@@ -265,13 +265,19 @@ class BasicoAnalyzer:
         # Promedio ponderado (IA 70%, tradicional 30%)
         combined_completion = (ai_completion * 0.7) + (traditional_completion * 0.3)
         
+        # Obtener lista detallada de elementos faltantes
+        missing_elements_list = self.anexo_verifier.get_missing_elements(
+            traditional_result.get("verification_results", {})
+        )
+        
         return {
             "completion_percentage": combined_completion,
             "ai_confidence": ai_result.get("completitud_general", {}).get("porcentaje", 0) / 100,
             "traditional_confidence": traditional_completion / 100,
             "found_elements": traditional_result.get("statistics", {}).get("found_elements", 0),
             "total_elements": traditional_result.get("statistics", {}).get("total_elements", 22),
-            "missing_elements": traditional_result.get("statistics", {}).get("missing_elements", 0),
+            "missing_elements": traditional_result.get("statistics", {}).get("missing_elements", 0),  # Count
+            "missing_elements_list": missing_elements_list,  # Detailed list
             "recommendations": ai_result.get("completitud_general", {}).get("recomendaciones", [])
         }
     

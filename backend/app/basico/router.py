@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Body
 from fastapi.responses import FileResponse
 from typing import List, Dict, Any, Optional
+from pydantic import BaseModel, Field
 import json
 import logging
 from pathlib import Path
@@ -18,6 +19,15 @@ if not logger.handlers:
     logger.addHandler(handler)
 
 router = APIRouter(prefix="/basico", tags=["basico"])
+
+# Pydantic models
+class AnalysisConfig(BaseModel):
+    """Configuración para análisis completo"""
+    uso_principal: str = Field(..., description="Uso principal del edificio")
+    norma_zonal: str = Field(..., description="Norma zonal aplicable")
+    grado: str = Field(..., description="Grado de análisis")
+    superficie_construida: Optional[int] = Field(150, description="Superficie construida en m²")
+    plantas: Optional[int] = Field(2, description="Número de plantas")
 
 # Inicializar componentes
 session_manager = BasicoSessionManager()
@@ -140,10 +150,10 @@ async def serve_js():
         raise HTTPException(status_code=404, detail="Archivo JavaScript no encontrado")
 
 @router.post("/analyze/complete/{session_id}")
-async def analyze_complete(session_id: str, config: Dict[str, Any]):
+async def analyze_complete(session_id: str, config: AnalysisConfig):
     """Análisis completo: Ejecuta las 3 fases de una vez"""
     logger.info(f"🚀 ANÁLISIS COMPLETO INICIADO: session_id='{session_id}'")
-    logger.info(f"⚙️ Configuración recibida: {config}")
+    logger.info(f"⚙️ Configuración recibida: {config.model_dump()}")
 
     try:
         # Obtener datos de la sesión
@@ -161,7 +171,7 @@ async def analyze_complete(session_id: str, config: Dict[str, Any]):
 
         # FASE 2: Análisis de memoria
         logger.info("📖 Ejecutando Fase 2: Análisis de memoria")
-        fase2_result = await analyzer.fase2_analizar_memoria(session_data, config)
+        fase2_result = await analyzer.fase2_analizar_memoria(session_data, config.model_dump())
         logger.info(f"✅ Fase 2 completada: {fase2_result.get('coherence_score', 0)}% coherencia")
 
         # FASE 3: Verificación normativa
@@ -173,7 +183,7 @@ async def analyze_complete(session_id: str, config: Dict[str, Any]):
         # Combinar resultados
         complete_result = {
             "session_id": session_id,
-            "config": config,
+            "config": config.model_dump(),
             "fase1": fase1_result,
             "fase2": fase2_result,
             "fase3": fase3_result,

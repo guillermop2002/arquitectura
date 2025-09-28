@@ -64,6 +64,13 @@ class BasicoSessionManager:
             raise ValueError(f"Sesión {session_id} no encontrada")
         return self.sessions[session_id]
     
+    def get_session_data(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Obtener datos de sesión (alias para compatibilidad)"""
+        try:
+            return self.get_session(session_id)
+        except ValueError:
+            return None
+    
     def save_phase_result(self, session_id: str, phase: int, result: Dict[str, Any]):
         """Guardar resultado de una fase"""
         if session_id not in self.sessions:

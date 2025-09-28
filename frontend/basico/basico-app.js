@@ -186,16 +186,31 @@ class BasicoApp {
     handleFiles(files, category) {
         if (!files.length) return;
         
+        flog.info(`📁 Procesando ${files.length} archivos para categoría: ${category}`);
+        
         // Validar PDFs
         const validFiles = Array.from(files).filter(file => {
+            flog.debug(`🔍 Validando archivo: ${file.name} (${file.type}, ${file.size} bytes)`);
             if (file.type !== 'application/pdf') {
+                flog.warn(`⚠️ Archivo rechazado: ${file.name} - Tipo: ${file.type}`);
                 this.showAlert(`${file.name} no es un PDF válido`, 'warning');
                 return false;
             }
+            if (file.size === 0) {
+                flog.warn(`⚠️ Archivo rechazado: ${file.name} - Tamaño: 0 bytes`);
+                this.showAlert(`${file.name} está vacío`, 'warning');
+                return false;
+            }
+            flog.debug(`✅ Archivo válido: ${file.name}`);
             return true;
         });
         
-        if (!validFiles.length) return;
+        if (!validFiles.length) {
+            flog.warn(`⚠️ No hay archivos válidos para la categoría: ${category}`);
+            return;
+        }
+        
+        flog.info(`✅ ${validFiles.length} archivos válidos para ${category}`);
         
         // Inicializar categoría si no existe
         if (!this.uploadedFiles[category]) {
@@ -304,14 +319,23 @@ class BasicoApp {
             const formData = new FormData();
             let totalFiles = 0;
             
-            // Añadir todos los archivos
+            // Añadir todos los archivos con categorización
             Object.keys(this.uploadedFiles).forEach(category => {
                 this.uploadedFiles[category].forEach(fileObj => {
+                    // Añadir archivo con categoría
                     formData.append('files', fileObj.file);
+                    // Añadir metadatos de categoría
+                    formData.append('categories', category);
                     totalFiles++;
-                    flog.debug(`📄 Archivo: ${fileObj.file.name} (${fileObj.file.size} bytes)`);
+                    flog.debug(`📄 Archivo: ${fileObj.file.name} (${fileObj.file.size} bytes) - Categoría: ${category}`);
                 });
             });
+
+            if (totalFiles === 0) {
+                flog.warn('⚠️ No hay archivos para subir');
+                this.showAlert('No hay archivos seleccionados para subir', 'warning');
+                return;
+            }
 
             flog.info(`📊 Total de archivos a subir: ${totalFiles}`);
             flog.api('POST', `${this.baseURL}/session/${this.sessionId}/upload`, formData);
@@ -319,25 +343,29 @@ class BasicoApp {
             const startTime = Date.now();
             const response = await fetch(`${this.baseURL}/session/${this.sessionId}/upload`, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                // No establecer Content-Type manualmente, dejar que el navegador lo haga para multipart/form-data
             });
 
+            const duration = Date.now() - startTime;
+            
             if (response.ok) {
                 const result = await response.json();
-                flog.apiResponse(response.status, result, Date.now() - startTime);
+                flog.apiResponse(response.status, result, duration);
                 flog.info(`✅ Archivos subidos: ${result.total_files} archivos`);
                 console.log('Archivos subidos:', result);
                 this.showAlert(`${result.total_files} archivos subidos correctamente`, 'success');
             } else {
                 const errorText = await response.text();
-                flog.apiResponse(response.status, errorText, Date.now() - startTime);
+                flog.apiResponse(response.status, errorText, duration);
                 flog.error(`❌ Error subiendo archivos: ${response.status} - ${errorText}`);
+                this.showAlert(`Error al subir archivos: ${response.status} - ${errorText}`, 'danger');
                 throw new Error(`Error subiendo archivos: ${response.status} - ${errorText}`);
             }
         } catch (error) {
             flog.error(`❌ Error en uploadFiles: ${error.message}`);
             console.error('Error:', error);
-            this.showAlert('Error al subir archivos', 'danger');
+            this.showAlert(`Error al subir archivos: ${error.message}`, 'danger');
             throw error;
         }
     }
@@ -623,8 +651,12 @@ class BasicoApp {
         if (results.fase1 && results.fase1.combined_results) {
             anexoI.completitud = results.fase1.combined_results.completion_percentage || 0;
 
-            if (results.fase1.combined_results.missing_elements) {
-                anexoI.elementos_faltantes = results.fase1.combined_results.missing_elements;
+            // Usar missing_elements_list (array) en lugar de missing_elements (count)
+            if (results.fase1.combined_results.missing_elements_list) {
+                anexoI.elementos_faltantes = results.fase1.combined_results.missing_elements_list;
+            } else if (results.fase1.combined_results.missing_elements) {
+                // Fallback: si solo tenemos el count, crear array vacío
+                anexoI.elementos_faltantes = [];
             }
 
             if (results.fase1.combined_results.present_elements) {
@@ -662,13 +694,13 @@ class BasicoApp {
                         ${anexoI.elementos_faltantes.map((elemento, index) => `
                             <tr>
                                 <td>
-                                    <strong>${elemento.nombre || elemento.element || elemento}</strong>
+                                    <strong>${elemento.element || elemento.nombre || elemento}</strong>
                                 </td>
                                 <td>
-                                    <span class="badge bg-info">${elemento.categoria || elemento.category || 'General'}</span>
+                                    <span class="badge bg-info">${elemento.section || elemento.categoria || elemento.category || 'General'}</span>
                                 </td>
                                 <td>
-                                    <small class="text-muted">${elemento.descripcion || elemento.description || 'Elemento requerido por Anexo I'}</small>
+                                    <small class="text-muted">${elemento.description || elemento.descripcion || 'Elemento requerido por Anexo I'}</small>
                                 </td>
                             </tr>
                         `).join('')}
