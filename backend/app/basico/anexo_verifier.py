@@ -83,17 +83,26 @@ class BasicoAnexoVerifier:
         verification_results = {}
         anexo_proyecto = self.anexo_template.get("Proyecto_Basico_Obligatorio", {})
         
-        for section_name, section_elements in anexo_proyecto.items():
+        for section_name, section_data in anexo_proyecto.items():
+            # Skip non-dictionary sections like "Documentos_Analizados", "Resumen_Resultados"
+            if not isinstance(section_data, dict):
+                continue
+                
             section_results = {
                 "completion_percentage": 0.0,
                 "found_count": 0,
-                "total_count": len(section_elements),
+                "total_count": 0,
                 "elements": {}
             }
             
             found_elements = 0
+            total_elements = 0
             
-            for element_name, element_data in section_elements.items():
+            # Recursively process all elements in the section
+            elements_to_process = self._extract_verifiable_elements(section_data)
+            section_results["total_count"] = len(elements_to_process)
+            
+            for element_name, element_data in elements_to_process.items():
                 element_result = self._verify_single_element(
                     element_name, 
                     element_data, 
@@ -107,11 +116,87 @@ class BasicoAnexoVerifier:
                     found_elements += 1
             
             section_results["found_count"] = found_elements
-            section_results["completion_percentage"] = (found_elements / len(section_elements)) * 100
+            if section_results["total_count"] > 0:
+                section_results["completion_percentage"] = (found_elements / section_results["total_count"]) * 100
             
             verification_results[section_name] = section_results
         
         return verification_results
+    
+    def _extract_verifiable_elements(self, data: Dict[str, Any], prefix: str = "") -> Dict[str, Any]:
+        """Recursively extract verifiable elements from the JSON structure"""
+        elements = {}
+        
+        for key, value in data.items():
+            if key == "origen":  # Skip origen arrays
+                continue
+                
+            full_key = f"{prefix}_{key}" if prefix else key
+            
+            if isinstance(value, dict):
+                # Check if this is a verifiable element (has presente, pages, snippet fields)
+                if "presente" in value and "pages" in value and "snippet" in value:
+                    # This is a verifiable element
+                    elements[full_key] = {
+                        "keywords": self._generate_keywords_for_element(full_key),
+                        "element_type": "verifiable"
+                    }
+                else:
+                    # Recursively process nested elements
+                    nested_elements = self._extract_verifiable_elements(value, full_key)
+                    elements.update(nested_elements)
+        
+        return elements
+    
+    def _generate_keywords_for_element(self, element_name: str) -> List[str]:
+        """Generate keywords for an element based on its name"""
+        # Convert element name to keywords
+        keywords = []
+        
+        # Add the element name itself
+        keywords.append(element_name.lower().replace("_", " "))
+        
+        # Add common variations
+        if "promotor" in element_name.lower():
+            keywords.extend(["promotor", "promotora", "cliente", "propietario"])
+        elif "constructor" in element_name.lower():
+            keywords.extend(["constructor", "constructora", "empresa constructora"])
+        elif "proyectista" in element_name.lower():
+            keywords.extend(["proyectista", "arquitecto", "arquitecta", "diseñador"])
+        elif "director_obra" in element_name.lower():
+            keywords.extend(["director obra", "director de obra", "jefe obra"])
+        elif "director_ejecucion" in element_name.lower():
+            keywords.extend(["director ejecución", "director de ejecución"])
+        elif "antecedentes" in element_name.lower():
+            keywords.extend(["antecedentes", "condicionantes", "situación previa"])
+        elif "emplazamiento" in element_name.lower():
+            keywords.extend(["emplazamiento", "situación", "localización", "ubicación"])
+        elif "normativa" in element_name.lower():
+            keywords.extend(["normativa", "reglamento", "ordenanza", "código"])
+        elif "programa" in element_name.lower():
+            keywords.extend(["programa", "necesidades", "usos", "funciones"])
+        elif "geometria" in element_name.lower():
+            keywords.extend(["geometría", "volumen", "dimensiones", "forma"])
+        elif "superficie" in element_name.lower():
+            keywords.extend(["superficie", "área", "metros cuadrados", "m²"])
+        elif "estructura" in element_name.lower():
+            keywords.extend(["estructura", "cimentación", "forjados", "pilares"])
+        elif "incendio" in element_name.lower():
+            keywords.extend(["incendio", "seguridad", "evacuación", "sectores"])
+        elif "presupuesto" in element_name.lower():
+            keywords.extend(["presupuesto", "coste", "precio", "valoración"])
+        elif "situacion" in element_name.lower():
+            keywords.extend(["situación", "emplazamiento", "localización"])
+        elif "plantas" in element_name.lower():
+            keywords.extend(["plantas", "distribución", "layout", "espacios"])
+        elif "alzados" in element_name.lower():
+            keywords.extend(["alzados", "fachadas", "elevaciones"])
+        elif "secciones" in element_name.lower():
+            keywords.extend(["secciones", "cortes", "perfiles"])
+        elif "cubiertas" in element_name.lower():
+            keywords.extend(["cubiertas", "tejados", "azoteas"])
+        
+        return keywords
     
     def _verify_single_element(self, element_name: str, element_data: Dict[str, Any], 
                              combined_text: str, all_texts: Dict[str, Any]) -> Dict[str, Any]:
